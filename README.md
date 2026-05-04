@@ -1,36 +1,113 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pintó — Plataforma de Activación Comercial Local
 
-## Getting Started
+> "Encontrá qué hacer hoy cerca tuyo: promos, planes y experiencias reales."
 
-First, run the development server:
+## Stack
+
+- **Frontend:** Next.js 14 + TypeScript + Tailwind CSS
+- **Backend:** Supabase (Auth, Postgres, RLS)
+- **State:** TanStack Query
+- **Forms:** React Hook Form + Zod
+- **Mobile:** Capacitor (Android/iOS)
+- **Icons:** Lucide React
+
+## Setup
+
+### 1. Instalar dependencias
+
+```bash
+npm install
+```
+
+### 2. Configurar variables de entorno
+
+El archivo `.env.local` ya debe existir con:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://ukipynbrluridibtgben.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_anon_key_aqui
+```
+
+### 3. Crear tablas en Supabase
+
+1. Ir al [Dashboard de Supabase](https://supabase.com/dashboard)
+2. Abrir el **SQL Editor**
+3. Ejecutar `supabase/migrations/001_schema.sql` (esquema + RLS + seed básico)
+4. Ejecutar `supabase/migrations/002_seed_data.sql` (negocios y campañas demo)
+
+### 4. Correr en desarrollo
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+La app estará en `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+### 5. Build para producción
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+```
 
-## Learn More
+### 6. Build para Android
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run build:mobile    # Build + sync
+npm run open:android    # Abre Android Studio
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Estructura del Proyecto
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+src/
+├── app/                  # Páginas (App Router)
+│   ├── page.tsx          # Home (feed de campañas)
+│   ├── login/            # Login
+│   ├── registro/         # Registro (user/business)
+│   ├── explorar/         # Explorar negocios
+│   ├── campana/[id]/     # Detalle de campaña
+│   ├── negocio/          # Dashboard del negocio
+│   │   ├── nuevo/        # Crear negocio
+│   │   ├── campanas/     # Gestión de campañas
+│   │   └── reservas/     # Reservas recibidas
+│   ├── favoritos/        # Favoritos del usuario
+│   ├── reservas/         # Mis reservas
+│   ├── perfil/           # Perfil
+│   └── admin/            # Panel admin
+├── components/
+│   ├── layout/           # BottomNav, Header
+│   └── providers/        # QueryClient, Auth
+├── lib/
+│   ├── supabase.ts       # Cliente Supabase
+│   └── auth.tsx          # AuthContext + useAuth
+├── types/
+│   └── database.ts       # TypeScript types
+└── supabase/
+    └── migrations/       # SQL schema + seeds
+```
 
-## Deploy on Vercel
+## Roles
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Rol | Acceso |
+|-----|--------|
+| `user` | Explorar, reservar, favoritos |
+| `business` | Dashboard, campañas, métricas |
+| `admin` | Gestión global, moderar, destacar |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Decisiones Técnicas
+
+- **Static Export** para compatibilidad con Capacitor
+- **Client-side rendering** con TanStack Query para data fetching
+- **RLS policies** en todas las tablas para seguridad
+- **Trigger SQL** para auto-crear perfil al registrarse
+- **Analytics events** table para tracking de conversiones
+- **Demo user** en seed data para testing rápido
+
+## Roadmap post-MVP
+
+- [ ] Notificaciones push (FCM via Capacitor)
+- [ ] Chat entre usuario y negocio
+- [ ] Mapas con ubicación de negocios
+- [ ] Sistema de pagos para suscripciones
+- [ ] Check-in con QR code
+- [ ] Algoritmo de recomendaciones
