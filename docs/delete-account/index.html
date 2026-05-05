@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pintó — Eliminar cuenta</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8f9fa; color: #1a1a2e; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .card { background: white; border-radius: 20px; padding: 32px; max-width: 480px; width: 100%; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+        .logo { font-size: 28px; font-weight: 800; background: linear-gradient(135deg, #FF6B4A, #FF8F6B); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+        .subtitle { color: #6b7280; font-size: 14px; margin-bottom: 24px; }
+        .alert { background: #FEF2F2; border: 1px solid #FECACA; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+        .alert h3 { color: #DC2626; font-size: 16px; margin-bottom: 8px; }
+        .alert p, .alert li { color: #B91C1C; font-size: 13px; line-height: 1.6; }
+        .alert ul { padding-left: 16px; margin-top: 8px; }
+        .info { background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+        .info h3 { color: #0369A1; font-size: 14px; margin-bottom: 6px; }
+        .info p { color: #0C4A6E; font-size: 13px; }
+        .steps { background: #F9FAFB; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+        .steps h3 { font-size: 14px; margin-bottom: 12px; }
+        .step { display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start; }
+        .step-num { background: #FF6B4A; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+        .step p { font-size: 13px; color: #374151; }
+        .contact { text-align: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid #f3f4f6; }
+        .contact p { font-size: 12px; color: #9ca3af; }
+        .contact a { color: #FF6B4A; font-weight: 600; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="logo">Pintó</div>
+        <p class="subtitle">Solicitud de eliminación de cuenta y datos</p>
+
+        <div class="alert">
+            <h3>⚠️ Eliminación de cuenta</h3>
+            <p>Al eliminar tu cuenta de Pintó, se borrarán permanentemente:</p>
+            <ul>
+                <li>Tu perfil y foto de avatar</li>
+                <li>Todos tus mensajes de chat</li>
+                <li>Tus fotos de juntadas</li>
+                <li>Tus reseñas y valoraciones</li>
+                <li>Tus tarjetas de fidelidad y sellos</li>
+                <li>Tus reservas y favoritos</li>
+                <li>Tus planes serán cancelados</li>
+            </ul>
+        </div>
+
+        <div class="steps">
+            <h3>📋 Cómo eliminar tu cuenta</h3>
+            <div class="step">
+                <div class="step-num">1</div>
+                <p>Abrí la app Pintó e iniciá sesión</p>
+            </div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <p>Andá a <strong>Perfil → Configuración de cuenta</strong></p>
+            </div>
+            <div class="step">
+                <div class="step-num">3</div>
+                <p>Bajá hasta el final y tocá <strong>"Eliminar mi cuenta"</strong></p>
+            </div>
+            <div class="step">
+                <div class="step-num">4</div>
+                <p>Confirmá escribiendo <strong>ELIMINAR</strong> y presioná el botón rojo</p>
+            </div>
+        </div>
+
+        <div class="info">
+            <h3>📧 ¿Preferís contactarnos?</h3>
+            <p>Si tenés problemas o querés solicitar la eliminación por email, escribinos a <strong>soporte@pinto.app</strong> desde el email asociado a tu cuenta. Procesamos solicitudes en un máximo de 48 horas.</p>
+        </div>
+
+        <div class="info">
+            <h3>🔒 Retención de datos</h3>
+            <p>Los datos personales se eliminan inmediatamente. Datos anonimizados de actividad pueden conservarse hasta 90 días por motivos de seguridad y luego se eliminan automáticamente.</p>
+        </div>
+
+        <div class="contact">
+            <p>Pintó — San Fernando del Valle de Catamarca</p>
+            <p><a href="mailto:soporte@pinto.app">soporte@pinto.app</a></p>
+        </div>
+    </div>
+</body>
+</html>

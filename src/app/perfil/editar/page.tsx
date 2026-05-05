@@ -265,6 +265,12 @@ export default function EditarPerfilPage() {
           {loading ? '⏳ Guardando...' : '💾 Guardar cambios'}
         </button>
       </form>
+
+      <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+        <a href="/perfil/eliminar" className="text-xs text-red-400 hover:text-red-500">
+          Eliminar mi cuenta
+        </a>
+      </div>
     </div>
   );
 }
