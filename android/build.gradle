@@ -7,7 +7,10 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.7.2'
+        // AGP 8.7.2 no soporta compileSdk 36 (avisa y puede fallar).
+        // 8.9.1 es la primera versión que lo declara estable y funciona con
+        // el wrapper de Gradle 8.11.1 que ya trae el proyecto.
+        classpath 'com.android.tools.build:gradle:8.9.1'
         classpath 'com.google.gms:google-services:4.4.2'
         classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0'
 

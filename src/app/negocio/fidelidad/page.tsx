@@ -15,9 +15,11 @@ export default function FidelidadNegocioPage() {
   const [form, setForm] = useState({ name: 'Tarjeta de Fidelidad', stamps_required: '5', reward: '' });
 
   const { data: business } = useQuery({
-    queryKey: ['my_business_loyalty'],
+    queryKey: ['my_business_loyalty', user?.id],
     queryFn: async () => {
-      const { data } = await supabase.from('businesses').select('id,name').eq('owner_user_id', user!.id).single();
+      // .single() tira error cuando el usuario todavía no creó su negocio;
+      // .maybeSingle() devuelve null, que es lo que espera el resto.
+      const { data } = await supabase.from('businesses').select('id,name').eq('owner_user_id', user!.id).maybeSingle();
       return data;
     },
     enabled: !!user,
@@ -26,11 +28,18 @@ export default function FidelidadNegocioPage() {
   const { data: cards, isLoading } = useQuery({
     queryKey: ['loyalty_cards', business?.id],
     queryFn: async () => {
-      const { data } = await supabase.from('loyalty_cards')
+      const { data, error } = await supabase.from('loyalty_cards')
+        // PostgREST devuelve el agregado como [{ count: N }], así que el
+        // `card.stamps?.length` de la vista daba siempre 1 (o 0): la tarjeta
+        // mostraba "1 clientes participando" tuviera 0 o 300.
         .select('*, stamps:loyalty_stamps(count)')
         .eq('business_id', business!.id)
         .order('created_at', { ascending: false });
-      return data ?? [];
+      if (error) throw error;
+      return (data ?? []).map((card: any) => ({
+        ...card,
+        participants: card.stamps?.[0]?.count ?? 0,
+      }));
     },
     enabled: !!business,
   });
@@ -108,10 +117,80 @@ export default function FidelidadNegocioPage() {
                 </span>
               </div>
               <p className="text-sm text-gray-600">🎁 Premio: <span className="font-medium">{card.reward}</span></p>
-              <p className="text-xs text-gray-500 mt-1">📊 {card.stamps_required} sellos necesarios • {card.stamps?.length ?? 0} clientes participando</p>
+              <p className="text-xs text-gray-500 mt-1">📊 {card.stamps_required} sellos necesarios • {card.participants} {card.participants === 1 ? 'cliente' : 'clientes'} participando</p>
             </div>
           ))
         )}
+
+        {/*
+          Clientes con la tarjeta completa. Antes no había forma de canjear
+          un premio desde ningún lado: loyalty_stamps no se tocaba nunca.
+        */}
+        {business && <ReadyToRedeem businessId={business.id} />}
+      </div>
+    </div>
+  );
+}
+
+function ReadyToRedeem({ businessId }: { businessId: string }) {
+  const queryClient = useQueryClient();
+  const [feedback, setFeedback] = useState('');
+
+  const { data: ready } = useQuery({
+    queryKey: ['loyalty_ready', businessId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('loyalty_stamps')
+        .select('id, stamps_count, redeemed, user:profiles(full_name), card:loyalty_cards!inner(id, reward, stamps_required, business_id)')
+        .eq('redeemed', false)
+        .eq('card.business_id', businessId);
+      if (error) throw error;
+      return (data ?? []).filter((s: any) => s.stamps_count >= (s.card?.stamps_required ?? 99));
+    },
+    refetchInterval: 30_000,
+  });
+
+  const redeem = useMutation({
+    mutationFn: async (stampId: string) => {
+      const { data, error } = await supabase.rpc('redeem_loyalty_card', { p_stamp_id: stampId });
+      if (error) throw error;
+      const res = data as { ok: boolean; error?: string; reward?: string };
+      if (!res.ok) throw new Error(res.error ?? 'No se pudo canjear');
+      return res;
+    },
+    onSuccess: (res) => {
+      setFeedback(`🎉 Premio entregado: ${res.reward}`);
+      queryClient.invalidateQueries({ queryKey: ['loyalty_ready', businessId] });
+      queryClient.invalidateQueries({ queryKey: ['loyalty_cards'] });
+      setTimeout(() => setFeedback(''), 4000);
+    },
+    onError: (err: any) => setFeedback(`⚠️ ${err.message}`),
+  });
+
+  if (!ready?.length) return null;
+
+  return (
+    <div className="pt-2">
+      <h2 className="font-display font-bold text-sm mb-2">🎁 Listos para canjear</h2>
+      {feedback && <p className="text-xs mb-2 text-gray-600">{feedback}</p>}
+      <div className="space-y-2">
+        {ready.map((s: any) => (
+          <div key={s.id} className="flex items-center gap-3 bg-white rounded-2xl border border-yellow-200 p-3 shadow-sm">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold truncate">{s.user?.full_name ?? 'Cliente'}</p>
+              <p className="text-[0.65rem] text-gray-400">
+                {s.stamps_count}/{s.card?.stamps_required} sellos · {s.card?.reward}
+              </p>
+            </div>
+            <button
+              onClick={() => redeem.mutate(s.id)}
+              disabled={redeem.isPending}
+              className="px-3.5 py-2 bg-yellow-400 text-yellow-900 rounded-xl text-xs font-bold disabled:opacity-50 active:scale-95 transition"
+            >
+              Entregar
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );

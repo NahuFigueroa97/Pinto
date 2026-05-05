@@ -126,6 +126,11 @@ function UserProfile() {
           <span className="font-medium text-sm">Mis tarjetas de fidelidad</span>
           <ChevronRight size={16} className="ml-auto text-gray-300" />
         </Link>
+        <Link href="/mensajes" className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+          <span className="text-xl">💬</span>
+          <span className="font-medium text-sm">Mis mensajes</span>
+          <ChevronRight size={16} className="ml-auto text-gray-300" />
+        </Link>
         <Link href="/feed" className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
           <span className="text-xl">📣</span>
           <span className="font-medium text-sm">Actividad</span>
@@ -144,6 +149,27 @@ function UserProfile() {
           <span className="font-medium text-sm text-gray-600">Cerrar sesión</span>
         </button>
       </div>
+
+      <LegalLinks />
+    </div>
+  );
+}
+
+/**
+ * Enlaces legales. Las páginas /privacidad y /seguridad-infantil existían
+ * pero no estaban enlazadas desde ningún lado de la app: eran rutas muertas.
+ * Play pide que la política de privacidad sea accesible desde dentro de la
+ * app, y para apps sociales también los estándares de seguridad infantil.
+ */
+function LegalLinks() {
+  return (
+    <div className="px-4 pt-8 pb-4 text-center space-y-2">
+      <div className="flex items-center justify-center gap-4 flex-wrap">
+        <Link href="/privacidad" className="text-xs text-gray-400 underline">Política de privacidad</Link>
+        <Link href="/seguridad-infantil" className="text-xs text-gray-400 underline">Seguridad infantil</Link>
+      </div>
+      <Link href="/perfil/eliminar" className="block text-xs text-red-400">Eliminar mi cuenta</Link>
+      <p className="text-[0.6rem] text-gray-300 pt-2">Pintó · Catamarca, Argentina</p>
     </div>
   );
 }
@@ -209,6 +235,15 @@ function BusinessProfile() {
           <ChevronRight size={16} className="ml-auto text-gray-300" />
         </Link>
 
+        <Link href="/negocio/checkin" className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+          <span className="text-xl">📷</span>
+          <div>
+            <span className="font-medium text-sm block">Validar reservas</span>
+            <span className="text-[0.6rem] text-gray-400">Escanear el QR del cliente</span>
+          </div>
+          <ChevronRight size={16} className="ml-auto text-gray-300" />
+        </Link>
+
         <div className="pt-2" />
         <button onClick={async () => { await signOut(); router.push('/'); }}
           className="flex items-center gap-3 p-4 bg-white rounded-xl border border-red-100 shadow-sm w-full text-left">
@@ -216,6 +251,8 @@ function BusinessProfile() {
           <span className="font-medium text-sm text-red-500">Cerrar sesión</span>
         </button>
       </div>
+
+      <LegalLinks />
     </div>
   );
 }

@@ -15,6 +15,7 @@ export default function CercaPage() {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
+  const markerIconRef = useRef<any>(null);
 
   const { data: nearbyCampaigns } = useQuery({
     queryKey: ['nearby_campaigns', location?.lat, location?.lng, maxKm],
@@ -62,6 +63,22 @@ export default function CercaPage() {
   useEffect(() => {
     if (viewMode === 'map' && location && mapRef.current && !mapInstanceRef.current) {
       import('leaflet').then((L) => {
+        // Leaflet resuelve el icono del marcador a partir de la URL del PNG
+        // que encuentra en su CSS y deriva marker-icon-2x.png y
+        // marker-shadow.png por sustitución de texto. El bundler solo emite
+        // marker-icon.png, así que en cualquier pantalla retina (o sea:
+        // todos los celulares) las dos derivadas daban 404 y los marcadores
+        // salían invisibles. Se fuerza un divIcon propio y no se depende
+        // de las imágenes de Leaflet.
+        const pinIcon = L.divIcon({
+          className: 'pinto-map-pin',
+          html: '<div style="width:26px;height:26px;background:#FF6B4A;border:3px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,.35)"></div>',
+          iconSize: [26, 26],
+          iconAnchor: [13, 26],
+          popupAnchor: [0, -24],
+        });
+        markerIconRef.current = pinIcon;
+
         const map = L.map(mapRef.current!).setView([location.lat, location.lng], 14);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '&copy; OpenStreetMap'
@@ -101,16 +118,39 @@ export default function CercaPage() {
         const items = tab === 'campaigns' ? nearbyCampaigns : tab === 'businesses' ? nearbyBusinesses : nearbyPlans;
         items?.forEach((item: any) => {
           if (item.latitude && item.longitude) {
-            const marker = L.marker([item.latitude, item.longitude]).addTo(map);
-            const popupContent = `
-              <div style="font-family: inherit; font-size: 13px;">
-                <p style="font-weight: 700; margin-bottom: 2px;">${item.title || item.name}</p>
-                <p style="color: #6B7280; margin-bottom: 4px;">${item.business?.name || item.address || ''}</p>
-                <a href="${tab === 'campaigns' ? `/campana?id=${item.id}` : tab === 'businesses' ? `/negocio/detalle?slug=${item.slug}` : `/planes/detalle?id=${item.id}`}" 
-                   style="color: #3B82F6; font-weight: 600; text-decoration: none;">Ver más →</a>
-              </div>
-            `;
-            marker.bindPopup(popupContent);
+            const marker = L.marker(
+              [item.latitude, item.longitude],
+              markerIconRef.current ? { icon: markerIconRef.current } : undefined,
+            ).addTo(map);
+
+            // El popup se arma con nodos del DOM y textContent en vez de con
+            // una plantilla de HTML. item.title / item.name son texto escrito
+            // por usuarios: interpolarlos crudos permitía inyectar
+            // <img src=x onerror=...> y ejecutar JS dentro del WebView, con
+            // acceso a la sesión de Supabase y a los plugins de Capacitor.
+            const href =
+              tab === 'campaigns' ? `/campana?id=${encodeURIComponent(item.id)}`
+              : tab === 'businesses' ? `/negocio/detalle?slug=${encodeURIComponent(item.slug ?? '')}`
+              : `/planes/detalle?id=${encodeURIComponent(item.id)}`;
+
+            const box = document.createElement('div');
+            box.style.cssText = 'font-family:inherit;font-size:13px';
+
+            const title = document.createElement('p');
+            title.style.cssText = 'font-weight:700;margin-bottom:2px';
+            title.textContent = item.title || item.name || '';
+
+            const sub = document.createElement('p');
+            sub.style.cssText = 'color:#6B7280;margin-bottom:4px';
+            sub.textContent = item.business?.name || item.address || '';
+
+            const link = document.createElement('a');
+            link.href = href;
+            link.style.cssText = 'color:#FF6B4A;font-weight:600;text-decoration:none';
+            link.textContent = 'Ver más →';
+
+            box.append(title, sub, link);
+            marker.bindPopup(box);
           }
         });
       });

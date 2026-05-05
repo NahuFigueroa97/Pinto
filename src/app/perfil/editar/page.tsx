@@ -6,6 +6,7 @@ import { ArrowLeft, Camera, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { moderateAll } from '@/lib/moderation';
 
 export default function EditarPerfilPage() {
   const { user, profile, refreshProfile } = useAuth();
@@ -86,21 +87,32 @@ export default function EditarPerfilPage() {
 
     setUploadingPhoto(true);
     try {
-      const ext = file.name.split('.').pop();
-      const filePath = `avatars/${user.id}.${ext}`;
+      // Límite de tamaño: el bucket rechaza >5 MB y sin este chequeo el
+      // usuario solo veía un error críptico de Storage.
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error('La foto no puede superar los 5 MB');
+      }
 
-      // Upload to storage
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+      // La ruta ahora arranca con el id del usuario. Antes era
+      // `avatars/<uid>.<ext>` y las policies de Storage solo miraban el
+      // bucket, así que CUALQUIER usuario autenticado podía sobrescribir o
+      // borrar el avatar de cualquier otro. Con `<uid>/avatar.<ext>` la
+      // policy avatars_*_own compara la carpeta contra auth.uid().
+      const filePath = `${user.id}/avatar.${ext}`;
+
       const { error: uploadErr } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, file, { upsert: true, contentType: file.type });
 
       if (uploadErr) throw uploadErr;
 
-      // Get public URL
+      // Cache-buster: el nombre del archivo es siempre el mismo, así que sin
+      // esto el CDN seguía sirviendo el avatar viejo.
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      const versionedUrl = `${publicUrl}?v=${Date.now()}`;
 
-      // Update profile
-      await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
+      await supabase.from('profiles').update({ avatar_url: versionedUrl }).eq('id', user.id);
       await refreshProfile();
     } catch (err: any) {
       setError(`Error al subir foto: ${err.message}`);
@@ -115,6 +127,11 @@ export default function EditarPerfilPage() {
     setLoading(true); setError(''); setSuccess(false);
 
     try {
+      // El bio, el nombre y los intereses no pasaban por ninguna moderación:
+      // el filtro solo corría al crear un plan.
+      const check = moderateAll(form.full_name, form.bio, form.interests_text);
+      if (!check.ok) throw new Error(check.reason);
+
       const { error: updateErr } = await supabase.from('profiles').update({
         full_name: form.full_name,
         bio: form.bio || null,
@@ -266,8 +283,11 @@ export default function EditarPerfilPage() {
         </button>
       </form>
 
-      <div className="mt-8 pt-6 border-t border-gray-100 text-center">
-        <a href="/perfil/eliminar" className="text-xs text-red-400 hover:text-red-500">
+      <div className="mt-8 pt-6 border-t border-gray-100 text-center space-y-3">
+        <a href="/actualizar-clave" className="block text-sm text-brand-500 font-medium hover:text-brand-600">
+          🔒 Cambiar contraseña
+        </a>
+        <a href="/perfil/eliminar" className="block text-xs text-red-400 hover:text-red-500">
           Eliminar mi cuenta
         </a>
       </div>

@@ -3,19 +3,22 @@ apply plugin: 'kotlin-android'
 
 def keystorePropertiesFile = rootProject.file("keystore.properties")
 def keystoreProperties = new Properties()
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+def hasReleaseKeystore = keystorePropertiesFile.exists()
+if (hasReleaseKeystore) {
+    keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
 }
 
 android {
-    namespace "com.pinto.app"
+    namespace "com.pinto.social"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.pinto.app"
+        applicationId "com.pinto.social"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
+        // versionCode tiene que subir en CADA subida a Play Console.
+        // versionName queda alineado con la version de package.json (2.0.0).
         versionCode 1
-        versionName "1.0"
+        versionName "2.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -24,18 +27,30 @@ android {
         }
     }
     signingConfigs {
-        release {
-            storeFile file(keystoreProperties['RELEASE_STORE_FILE'] ?: '/dev/null')
-            storePassword keystoreProperties['RELEASE_STORE_PASSWORD'] ?: ''
-            keyAlias keystoreProperties['RELEASE_KEY_ALIAS'] ?: ''
-            keyPassword keystoreProperties['RELEASE_KEY_PASSWORD'] ?: ''
+        // Antes esto se declaraba siempre y, sin keystore.properties, apuntaba
+        // a storeFile '/dev/null': el build de release fallaba con un error
+        // críptico de keystore en vez de decir que falta el archivo.
+        if (hasReleaseKeystore) {
+            release {
+                storeFile file(keystoreProperties['RELEASE_STORE_FILE'])
+                storePassword keystoreProperties['RELEASE_STORE_PASSWORD']
+                keyAlias keystoreProperties['RELEASE_KEY_ALIAS']
+                keyPassword keystoreProperties['RELEASE_KEY_PASSWORD']
+            }
         }
     }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
+            if (hasReleaseKeystore) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+    packagingOptions {
+        resources {
+            excludes += ['META-INF/DEPENDENCIES', 'META-INF/LICENSE*', 'META-INF/NOTICE*']
         }
     }
 }
@@ -64,11 +79,14 @@ dependencies {
 
 apply from: 'capacitor.build.gradle'
 
-try {
-    def servicesJSON = file('google-services.json')
-    if (servicesJSON.text) {
-        apply plugin: 'com.google.gms.google-services'
-    }
-} catch(Exception e) {
-    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+def servicesJSON = file('google-services.json')
+if (servicesJSON.exists() && servicesJSON.length() > 0) {
+    apply plugin: 'com.google.gms.google-services'
+} else {
+    // Antes esto estaba dentro de un try/catch que se tragaba el error en
+    // silencio: si faltaba google-services.json el APK compilaba igual y el
+    // push simplemente no funcionaba, sin ninguna pista de por qué.
+    throw new GradleException(
+        "Falta android/app/google-services.json. Descargalo de Firebase Console " +
+        "(Configuracion del proyecto > Tus apps > Android) o el push no va a funcionar.")
 }

@@ -36,12 +36,15 @@ export interface Profile {
   show_age: boolean;
   gender: Gender | null;
   zone_id: string | null;
-  latitude: number | null;
-  longitude: number | null;
+  // profiles.latitude / longitude se eliminaron en la migración 010:
+  // "profiles_select USING (true)" las dejaba legibles por cualquiera
+  // (incluso sin sesión) y la app nunca las escribía ni las usaba.
   interests_text: string | null;
   reputation_score: number;
   plans_created_count: number;
   plans_joined_count: number;
+  is_verified: boolean;
+  verification_requested_at: string | null;
   created_at: string;
   updated_at: string;
   // Joined
@@ -146,6 +149,8 @@ export interface Reservation {
   user_id: string;
   party_size: number;
   status: ReservationStatus;
+  /** Código de 8 caracteres que valida el negocio (migración 011). */
+  checkin_code: string | null;
   reserved_at: string;
   notes: string | null;
   campaign?: Campaign;
@@ -373,3 +378,56 @@ export interface LoyaltyStamp {
   card?: LoyaltyCard;
 }
 
+// ============================================================
+// Tablas agregadas en las migraciones 010 / 011
+// ============================================================
+
+/** Token de FCM por dispositivo. No tiene lectura pública. */
+export interface DeviceToken {
+  id: string;
+  user_id: string;
+  token: string;
+  platform: 'android' | 'ios' | 'web';
+  created_at: string;
+  updated_at: string;
+}
+
+export type NotificationStatus = 'pending' | 'sent' | 'failed' | 'skipped';
+
+/** Cola que llena la base y vacía la Edge Function send-push. */
+export interface QueuedNotification {
+  id: string;
+  user_id: string;
+  title: string;
+  body: string;
+  route: string | null;
+  data: Record<string, unknown>;
+  status: NotificationStatus;
+  error: string | null;
+  created_at: string;
+  sent_at: string | null;
+}
+
+/** Bloqueo entre usuarios (requisito de Google Play para UGC social). */
+export interface UserBlock {
+  id: string;
+  blocker_id: string;
+  blocked_id: string;
+  created_at: string;
+}
+
+/** Resultado de public.redeem_reservation(). */
+export interface CheckinResult {
+  ok: boolean;
+  error?: string;
+  user_name?: string;
+  party_size?: number;
+  reservation_id?: string;
+  stamps?: {
+    stamp_id: string;
+    current: number;
+    required: number;
+    reward: string;
+    ready: boolean;
+  } | null;
+}

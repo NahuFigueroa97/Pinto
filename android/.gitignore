@@ -16,6 +16,8 @@
 bin/
 gen/
 out/
+# Salida de `next build` que quedo dentro de android/ por error
+.next/
 #  Uncomment the following line in case you need and you don't have the release build type files in your app
 # release/
 
@@ -53,9 +55,10 @@ captures/
 .idea/navEditor.xml
 
 # Keystore files
-# Uncomment the following lines if you do not want to check your keystore files in.
-#*.jks
-#*.keystore
+# NO comentar estas lineas: si la keystore de firma se sube al repo y se filtra,
+# no hay forma de revocarla. Google Play te ata a esa clave de por vida.
+*.jks
+*.keystore
 
 # External native build folder generated in Android Studio 2.2 and later
 .externalNativeBuild

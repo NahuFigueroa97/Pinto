@@ -6,6 +6,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import type { Business } from '@/types/database';
+import { parseMoney, formatMoney } from '@/lib/money';
+import { useState } from 'react';
 
 export default function NegocioDashboard() {
   const { user } = useAuth();
@@ -55,11 +57,15 @@ export default function NegocioDashboard() {
       if (!business) return [];
       const { data: campData } = await supabase.from('campaigns').select('id, title, price_text').eq('business_id', business.id);
       if (!campData?.length) return [];
-      const { data } = await supabase.from('reservations')
+      const { data, error } = await supabase.from('reservations')
         .select('*, user:profiles(full_name)')
         .in('campaign_id', campData.map(c => c.id))
         .eq('status', 'confirmed')
-        .order('created_at', { ascending: false }).limit(10);
+        // La columna es reserved_at, no created_at. Con created_at PostgREST
+        // devolvía 42703, data quedaba en null y la lista de "Reservas por
+        // aprobar" salía SIEMPRE vacía, aunque hubiera reservas.
+        .order('reserved_at', { ascending: false }).limit(10);
+      if (error) throw error;
       return (data ?? []).map((r: any) => ({ ...r, campaign: campData.find(c => c.id === r.campaign_id) }));
     },
     enabled: !!business,
@@ -67,14 +73,16 @@ export default function NegocioDashboard() {
 
   // Approve
   const approveReservation = useMutation({
-    mutationFn: async ({ reservationId, campaignTitle, priceText, partySize }: { reservationId: string; campaignTitle: string; priceText: string | null; partySize: number }) => {
+    mutationFn: async ({ reservationId, campaignTitle, amountPerPerson, partySize }: { reservationId: string; campaignTitle: string; amountPerPerson: number; partySize: number }) => {
       if (!business) return;
       await supabase.from('reservations').update({ status: 'completed' }).eq('id', reservationId);
-      const amount = priceText ? parseFloat(priceText.replace(/[^0-9.,]/g, '').replace(',', '.')) : 0;
-      if (amount > 0) {
+      // El importe ahora lo confirma el negocio. Antes se adivinaba con
+      // parseFloat(price_text): "$1.500" se convertía en 1.5 y el ingreso
+      // registrado quedaba mil veces por debajo del real.
+      if (amountPerPerson > 0) {
         await supabase.from('business_transactions').insert({
           business_id: business.id, type: 'income',
-          amount: amount * partySize,
+          amount: amountPerPerson * partySize,
           description: `💰 ${campaignTitle} (x${partySize})`,
           category: 'promo',
         });
@@ -119,6 +127,27 @@ export default function NegocioDashboard() {
         <h1 className="text-xl font-display font-bold">{business.name} ✨</h1>
       </header>
 
+      {/*
+        Los negocios entran como 'pending' y los aprueba un admin. Antes el
+        alta mandaba status:'active' desde el cliente y se salteaba la
+        moderación; ahora hay que avisarle al dueño que está en revisión, si
+        no no entiende por qué su negocio no aparece en Explorar.
+      */}
+      {business.status !== 'active' && (
+        <div className="mx-4 mb-3 rounded-2xl border border-yellow-200 bg-yellow-50 p-3">
+          <p className="text-sm font-bold text-yellow-800">
+            {business.status === 'pending' ? '⏳ Tu negocio está en revisión' :
+             business.status === 'suspended' ? '⛔ Tu negocio está suspendido' :
+             '❌ Tu negocio fue rechazado'}
+          </p>
+          <p className="text-xs text-yellow-700 mt-0.5">
+            {business.status === 'pending'
+              ? 'Podés ir cargando tus promos. Cuando lo aprobemos va a aparecer en Explorar y en Cerca mío.'
+              : 'Escribinos a soporte@pinto.app para revisar tu caso.'}
+          </p>
+        </div>
+      )}
+
       {/* Stats */}
       <div className="grid grid-cols-4 gap-2 px-4 pb-4">
         <div className="bg-white rounded-2xl border border-gray-100 p-2.5 text-center shadow-sm">
@@ -144,6 +173,19 @@ export default function NegocioDashboard() {
         </Link>
       </div>
 
+      {/* Lector de QR para validar reservas en el mostrador */}
+      <div className="px-4 pb-4">
+        <Link href="/negocio/checkin"
+          className="flex items-center gap-3 p-3.5 bg-gradient-to-br from-accent-500 to-brand-500 text-white rounded-2xl shadow-md active:scale-[0.98] transition">
+          <span className="text-2xl">📷</span>
+          <div className="flex-1">
+            <p className="font-bold text-sm">Validar reserva</p>
+            <p className="text-[0.65rem] text-white/80">Escaneá el QR del cliente o cargá su código</p>
+          </div>
+          <span className="text-lg">›</span>
+        </Link>
+      </div>
+
       {/* Pending Reservations */}
       <div className="px-4 pb-4">
         <h2 className="font-display font-bold text-sm mb-2">🔔 Reservas por aprobar</h2>
@@ -155,27 +197,17 @@ export default function NegocioDashboard() {
         ) : (
           <div className="space-y-2">
             {pendingReservations.map((r: any) => (
-              <div key={r.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold truncate">🧑 {r.user?.full_name ?? 'Usuario'}</p>
-                    <p className="text-[0.65rem] text-gray-400">🎫 {r.campaign?.title ?? 'Campaña'} · 👥 {r.party_size} pers.</p>
-                    {r.campaign?.price_text && <p className="text-[0.6rem] text-green-600 font-bold mt-0.5">💵 {r.campaign.price_text}</p>}
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => approveReservation.mutate({
-                    reservationId: r.id, campaignTitle: r.campaign?.title ?? 'Promo',
-                    priceText: r.campaign?.price_text, partySize: r.party_size,
-                  })} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-500 text-white rounded-xl text-xs font-bold active:scale-95 transition">
-                    <CheckCircle size={14} /> Pagó ✅
-                  </button>
-                  <button onClick={() => rejectReservation.mutate(r.id)}
-                    className="flex items-center justify-center gap-1.5 px-4 py-2 bg-red-50 text-red-500 rounded-xl text-xs font-bold active:scale-95 transition">
-                    <XCircle size={14} /> ✖️
-                  </button>
-                </div>
-              </div>
+              <PendingReservationCard
+                key={r.id}
+                reservation={r}
+                onApprove={(amountPerPerson) => approveReservation.mutate({
+                  reservationId: r.id,
+                  campaignTitle: r.campaign?.title ?? 'Promo',
+                  amountPerPerson,
+                  partySize: r.party_size,
+                })}
+                onReject={() => rejectReservation.mutate(r.id)}
+              />
             ))}
           </div>
         )}
@@ -187,6 +219,74 @@ export default function NegocioDashboard() {
           <p className="text-sm font-bold mb-1">💡 Tip del día</p>
           <p className="text-xs text-gray-600">Cuando un cliente reserva y paga, aprobalo acá arriba y el ingreso se registra automáticamente en 💰 Finanzas.</p>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Tarjeta de reserva pendiente con el importe editable.
+ * price_text es texto libre ("2x1", "$1.500", "Gratis"), así que derivar
+ * plata de ahí automáticamente era adivinar. Se propone el valor parseado
+ * y el negocio lo confirma o lo corrige antes de registrar el ingreso.
+ */
+function PendingReservationCard({
+  reservation: r,
+  onApprove,
+  onReject,
+}: {
+  reservation: any;
+  onApprove: (amountPerPerson: number) => void;
+  onReject: () => void;
+}) {
+  const suggested = parseMoney(r.campaign?.price_text) ?? 0;
+  const [amount, setAmount] = useState(suggested > 0 ? String(suggested) : '');
+
+  const parsed = parseMoney(amount) ?? 0;
+  const total = parsed * (r.party_size ?? 1);
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3">
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold truncate">🧑 {r.user?.full_name ?? 'Usuario'}</p>
+          <p className="text-[0.65rem] text-gray-400">
+            🎫 {r.campaign?.title ?? 'Campaña'} · 👥 {r.party_size} pers.
+          </p>
+          {r.campaign?.price_text && (
+            <p className="text-[0.6rem] text-gray-400 mt-0.5">Precio publicado: {r.campaign.price_text}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 mb-2">
+        <label className="text-[0.65rem] text-gray-500 shrink-0">$ por persona</label>
+        <input
+          type="text"
+          inputMode="decimal"
+          value={amount}
+          onChange={e => setAmount(e.target.value)}
+          placeholder="0"
+          className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs outline-none focus:border-accent-400"
+        />
+        {total > 0 && (
+          <span className="text-[0.65rem] font-bold text-green-600 shrink-0">{formatMoney(total)}</span>
+        )}
+      </div>
+
+      <div className="flex gap-2">
+        <button
+          onClick={() => onApprove(parsed)}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-500 text-white rounded-xl text-xs font-bold active:scale-95 transition"
+        >
+          <CheckCircle size={14} /> Confirmar asistencia
+        </button>
+        <button
+          onClick={onReject}
+          className="flex items-center justify-center gap-1.5 px-4 py-2 bg-red-50 text-red-500 rounded-xl text-xs font-bold active:scale-95 transition"
+        >
+          <XCircle size={14} /> ✖️
+        </button>
       </div>
     </div>
   );

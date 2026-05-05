@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  styles.xml referencia @color/colorPrimary, @color/colorPrimaryDark y
+  @color/colorAccent, pero este archivo no existía: `@capacitor/assets`
+  regeneró res/ y se lo llevó puesto. Sin él, :app:processReleaseResources
+  falla con "resource color/colorPrimary not found" y el AAB no compila.
+  Los valores son los de la marca (brand-500 / brand-700 / accent-500 de
+  tailwind.config.js).
+-->
+<resources>
+    <color name="colorPrimary">#FF6B4A</color>
+    <color name="colorPrimaryDark">#C44A30</color>
+    <color name="colorAccent">#7C5CFC</color>
+
+    <!-- Color de acento que aplica FCM a la notificación -->
+    <color name="pinto_notification">#FF6B4A</color>
+</resources>

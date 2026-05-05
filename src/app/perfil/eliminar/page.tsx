@@ -12,42 +12,42 @@ export default function EliminarCuentaPage() {
   const [step, setStep] = useState<'info' | 'confirm' | 'done'>('info');
   const [loading, setLoading] = useState(false);
   const [confirmText, setConfirmText] = useState('');
+  const [error, setError] = useState('');
 
   const handleDelete = async () => {
     if (confirmText !== 'ELIMINAR' || !user) return;
     setLoading(true);
+    setError('');
     try {
-      // Delete user data in order
-      await supabase.from('social_plan_members').delete().eq('user_id', user.id);
-      await supabase.from('plan_chat_messages').delete().eq('user_id', user.id);
-      await supabase.from('plan_photos').delete().eq('user_id', user.id);
-      await supabase.from('plan_reviews').delete().eq('reviewer_id', user.id);
-      await supabase.from('user_reports').delete().eq('reporter_id', user.id);
-      await supabase.from('activity_feed').delete().eq('user_id', user.id);
-      await supabase.from('loyalty_stamps').delete().eq('user_id', user.id);
-      await supabase.from('loyalty_cards').delete().eq('user_id', user.id);
-      await supabase.from('favorites').delete().eq('user_id', user.id);
-      await supabase.from('reservations').delete().eq('user_id', user.id);
-      await supabase.from('social_plans').update({ status: 'cancelled' }).eq('creator_id', user.id);
-
-      // Mark profile as deleted
-      await supabase.from('profiles').update({
-        full_name: 'Usuario eliminado',
-        bio: null,
-        avatar_url: null,
-        is_verified: false,
-      }).eq('id', user.id);
+      // Antes esto era una lista de DELETE sueltos desde el cliente y NO
+      // borraba casi nada:
+      //   - activity_feed.user_id y loyalty_cards.user_id no existen (las
+      //     columnas son actor_id y business_id) → error 42703 ignorado;
+      //   - plan_chat_messages, plan_reviews, user_reports, loyalty_stamps y
+      //     reservations no tenían policy de DELETE, así que RLS los filtraba
+      //     a 0 filas SIN devolver error;
+      //   - el usuario de auth nunca se borraba, así que podía volver a
+      //     iniciar sesión.
+      // La pantalla decía "permanente e irreversible" y mostraba "Cuenta
+      // eliminada" igual. Google Play pide borrado real de cuenta y datos.
+      //
+      // Ahora lo hace delete_my_account() (migración 011), una función
+      // SECURITY DEFINER que borra todo en una sola transacción, incluida la
+      // fila de auth.users y los archivos del usuario en Storage.
+      const { error: rpcError } = await supabase.rpc('delete_my_account');
+      if (rpcError) throw rpcError;
 
       setStep('done');
 
-      // Sign out after 3 seconds
+      // La sesión ya quedó huérfana: se limpia local y se sale.
       setTimeout(async () => {
         await signOut();
-        router.push('/login');
+        router.push('/');
       }, 3000);
-    } catch (err) {
-      console.error(err);
-      alert('Error al eliminar la cuenta. Contactá a soporte.');
+    } catch (err: any) {
+      console.error('[eliminar cuenta]', err);
+      setError(err?.message ?? 'No se pudo eliminar la cuenta. Escribinos a soporte@pinto.app.');
+      setStep('confirm');
     } finally {
       setLoading(false);
     }
@@ -81,14 +81,18 @@ export default function EliminarCuentaPage() {
                 Esta acción es <strong>permanente e irreversible</strong>. Se eliminarán:
               </p>
               <ul className="text-sm text-red-600 space-y-1.5">
-                <li>• Tu perfil y foto de avatar</li>
-                <li>• Todos tus mensajes de chat</li>
-                <li>• Tus fotos de juntadas</li>
+                <li>• Tu cuenta y tu perfil (incluida la foto)</li>
+                <li>• Todos tus mensajes de chat y consultas a negocios</li>
+                <li>• Tus fotos de juntadas y de perfil</li>
                 <li>• Tus reseñas y valoraciones</li>
                 <li>• Tus tarjetas de fidelidad y sellos</li>
-                <li>• Tus reservas y favoritos</li>
-                <li>• Tus planes serán cancelados</li>
+                <li>• Tus reservas, check-ins y favoritos</li>
+                <li>• Los planes que creaste</li>
+                <li>• Tu negocio y sus campañas, si tenías uno</li>
               </ul>
+              <p className="text-xs text-red-500 mt-3">
+                No vas a poder volver a entrar con este email salvo que te registres de nuevo desde cero.
+              </p>
             </div>
 
             <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
@@ -113,6 +117,11 @@ export default function EliminarCuentaPage() {
 
         {step === 'confirm' && (
           <>
+            {error && (
+              <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100">
+                ⚠️ {error}
+              </div>
+            )}
             <div className="bg-yellow-50 rounded-2xl p-5 border border-yellow-200">
               <h2 className="font-bold text-yellow-800 mb-2">⚠️ Confirmación final</h2>
               <p className="text-sm text-yellow-700 mb-4">
@@ -147,7 +156,7 @@ export default function EliminarCuentaPage() {
           <div className="text-center py-16">
             <p className="text-4xl mb-4">👋</p>
             <h2 className="text-xl font-bold text-gray-900 mb-2">Cuenta eliminada</h2>
-            <p className="text-gray-500">Tu cuenta y datos han sido eliminados. Redirigiendo...</p>
+            <p className="text-gray-500">Tu cuenta y tus datos fueron eliminados. Redirigiendo...</p>
           </div>
         )}
       </div>

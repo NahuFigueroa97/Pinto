@@ -1,10 +1,13 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ArrowLeft, MapPin, Shield, Calendar, Star, Users, Camera } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowLeft, MapPin, Shield, Calendar, Star, Users, Camera, Ban, Flag } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/lib/auth';
+import { useBlockedIds, useBlockUser } from '@/lib/blocks';
 import type { Profile, UserInterest } from '@/types/database';
 
 function getAge(birthYear: number | null): string | null {
@@ -28,12 +31,20 @@ function VerPerfilInner() {
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
   const router = useRouter();
+  const { user } = useAuth();
+  const { isBlocked } = useBlockedIds();
+  const { block, unblock } = useBlockUser();
+  const [confirmBlock, setConfirmBlock] = useState(false);
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['profile_public', id],
     queryFn: async () => {
       if (!id) return null;
-      const { data } = await supabase.from('profiles').select('*, zone:zones(name)').eq('id', id).single();
+      // Antes era select('*'): devolvía al cliente toda la fila del perfil.
+      // Se piden solo los campos que esta pantalla realmente muestra.
+      const { data } = await supabase.from('profiles')
+        .select('id, full_name, avatar_url, bio, birth_year, show_age, interests_text, reputation_score, plans_created_count, plans_joined_count, is_verified, zone:zones(name)')
+        .eq('id', id).single();
       return data as Profile | null;
     },
     enabled: !!id,
@@ -161,6 +172,61 @@ function VerPerfilInner() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/*
+          Acciones de seguridad. No existían: desde el perfil de otra persona
+          no se podía ni denunciar ni bloquear, y Google Play exige las dos
+          cosas para apps sociales con contenido de usuarios.
+        */}
+        {user && user.id !== id && (
+          <div className="pt-2 border-t border-gray-100 space-y-2">
+            {isBlocked(id) ? (
+              <div className="bg-gray-50 rounded-xl p-3 text-center">
+                <p className="text-xs text-gray-500 mb-2">🚫 Tenés a esta persona bloqueada</p>
+                <button
+                  onClick={() => id && unblock.mutate(id)}
+                  disabled={unblock.isPending}
+                  className="text-xs font-semibold text-brand-500 disabled:opacity-50"
+                >
+                  Desbloquear
+                </button>
+              </div>
+            ) : confirmBlock ? (
+              <div className="bg-red-50 rounded-xl p-3 border border-red-100">
+                <p className="text-xs text-red-700 mb-3">
+                  Al bloquear, esta persona no va a poder pedir unirse a tus planes y dejás de ver su actividad.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { if (id) block.mutate(id); setConfirmBlock(false); }}
+                    disabled={block.isPending}
+                    className="flex-1 py-2 bg-red-500 text-white rounded-xl text-xs font-bold disabled:opacity-50"
+                  >
+                    Sí, bloquear
+                  </button>
+                  <button onClick={() => setConfirmBlock(false)} className="flex-1 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium">
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setConfirmBlock(true)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-gray-50 text-gray-600 rounded-xl text-xs font-medium border border-gray-200"
+                >
+                  <Ban size={14} /> Bloquear
+                </button>
+                <Link
+                  href={`/reportar?type=user&id=${id}`}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-gray-50 text-gray-600 rounded-xl text-xs font-medium border border-gray-200"
+                >
+                  <Flag size={14} /> Denunciar
+                </Link>
+              </div>
+            )}
           </div>
         )}
 

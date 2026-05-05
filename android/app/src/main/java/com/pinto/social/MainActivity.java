@@ -1,4 +1,4 @@
-package com.pinto.app;
+package com.pinto.social;
 
 import com.getcapacitor.BridgeActivity;
 

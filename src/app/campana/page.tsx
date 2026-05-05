@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Campaign, Reservation } from '@/types/database';
+import { moderateContent } from '@/lib/moderation';
 import Link from 'next/link';
 
 const TYPE_LABELS: Record<string, string> = {
@@ -25,6 +26,8 @@ function CampaignDetailInner() {
   const [partySize, setPartySize] = useState(1);
   const [showMsgBox, setShowMsgBox] = useState(false);
   const [msgText, setMsgText] = useState('');
+  const [msgError, setMsgError] = useState('');
+  const [msgSent, setMsgSent] = useState(false);
 
   const { data: campaign, isLoading } = useQuery({
     queryKey: ['campaign', id],
@@ -178,7 +181,12 @@ function CampaignDetailInner() {
         {/* Message the business */}
         {role !== 'business' && campaign.business && (
           <div className="px-4 pt-2 pb-4">
-            {!showMsgBox ? (
+            {msgSent ? (
+              <Link href="/mensajes"
+                className="w-full flex items-center justify-center gap-2 py-3 bg-green-50 border border-green-200 text-green-700 font-bold rounded-xl text-sm">
+                ✅ Consulta enviada — ver mis mensajes
+              </Link>
+            ) : !showMsgBox ? (
               <button onClick={() => user ? setShowMsgBox(true) : router.push('/login')}
                 className="w-full flex items-center justify-center gap-2 py-3 bg-white border-2 border-dashed border-brand-200 text-brand-500 font-bold rounded-xl text-sm hover:border-brand-400 transition">
                 💬 Consultale al negocio
@@ -186,21 +194,29 @@ function CampaignDetailInner() {
             ) : (
               <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-4 space-y-3">
                 <p className="text-sm font-bold">💬 Mensaje para {campaign.business.name}</p>
-                <textarea value={msgText} onChange={e => setMsgText(e.target.value)}
+                {msgError && <p className="text-xs text-red-500">{msgError}</p>}
+                <textarea value={msgText} onChange={e => { setMsgText(e.target.value); setMsgError(''); }}
                   placeholder="Ej: ¿Hasta qué hora es válida la promo? ¿Puedo ir con niños?"
                   className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-brand-400 outline-none resize-none" rows={3} />
                 <div className="flex gap-2">
                   <button onClick={async () => {
                     if (!msgText.trim() || !user) return;
-                    await supabase.from('business_messages').insert({
+                    // Los mensajes a negocios no pasaban por ningún filtro.
+                    const check = moderateContent(msgText);
+                    if (!check.ok) { setMsgError(check.reason); return; }
+
+                    const { error: sendErr } = await supabase.from('business_messages').insert({
                       business_id: campaign.business.id,
                       user_id: user.id,
                       campaign_id: campaign.id,
                       sender_role: 'user',
                       message: msgText.trim(),
                     });
-                    setMsgText(''); setShowMsgBox(false);
-                    alert('✅ Mensaje enviado! El negocio te va a responder pronto.');
+                    // El error se ignoraba y el alert() de éxito salía igual:
+                    // el usuario creía que había enviado la consulta.
+                    if (sendErr) { setMsgError('No se pudo enviar. Probá de nuevo.'); return; }
+
+                    setMsgText(''); setMsgError(''); setShowMsgBox(false); setMsgSent(true);
                   }} disabled={!msgText.trim()}
                     className="flex-1 py-2.5 bg-brand-500 text-white font-bold rounded-xl text-sm disabled:opacity-40">
                     Enviar ✉️

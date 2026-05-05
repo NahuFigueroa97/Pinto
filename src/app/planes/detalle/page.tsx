@@ -17,6 +17,7 @@ function PlanDetailInner() {
   const queryClient = useQueryClient();
   const [joinMsg, setJoinMsg] = useState('');
   const [showJoinForm, setShowJoinForm] = useState(false);
+  const [joinError, setJoinError] = useState('');
 
   const { data: plan, isLoading } = useQuery({
     queryKey: ['plan', id],
@@ -79,14 +80,26 @@ function PlanDetailInner() {
   const requestJoin = useMutation({
     mutationFn: async () => {
       if (!user || !id) return;
-      await supabase.from('social_plan_requests').insert({
+      const { error } = await supabase.from('social_plan_requests').insert({
         plan_id: id, user_id: user.id, message: joinMsg || null,
       });
+      // El error se descartaba: si RLS rechazaba la solicitud (por ejemplo
+      // porque el creador te bloqueó) el formulario se cerraba como si
+      // hubiera funcionado y la solicitud nunca existía.
+      if (error) {
+        throw new Error(
+          error.code === '42501'
+            ? 'No podés pedir unirte a este plan.'
+            : 'No se pudo enviar la solicitud. Probá de nuevo.',
+        );
+      }
     },
     onSuccess: () => {
       setShowJoinForm(false);
+      setJoinError('');
       queryClient.invalidateQueries({ queryKey: ['my_plan_request', id] });
     },
+    onError: (err: any) => setJoinError(err?.message ?? 'No se pudo enviar la solicitud'),
   });
 
   const handleRequest = useMutation({
@@ -320,12 +333,18 @@ function PlanDetailInner() {
           </button>
         )}
 
-        {/* v3: Report button */}
+        {/* Denunciar el plan, o ir al perfil del organizador para bloquearlo */}
         {user && !isCreator && (
-          <Link href={`/reportar?type=plan&id=${id}`}
-            className="text-center text-xs text-gray-400 py-2 block">
-            🚩 Reportar este plan
-          </Link>
+          <div className="flex items-center justify-center gap-4 py-2">
+            <Link href={`/reportar?type=plan&id=${id}`} className="text-xs text-gray-400">
+              🚩 Reportar este plan
+            </Link>
+            {plan.creator_id && (
+              <Link href={`/perfil/ver?id=${plan.creator_id}`} className="text-xs text-gray-400">
+                🚫 Bloquear al organizador
+              </Link>
+            )}
+          </div>
         )}
       </div>
 
@@ -352,10 +371,11 @@ function PlanDetailInner() {
               </div>
             ) : showJoinForm ? (
               <div className="space-y-2">
+                {joinError && <p className="text-xs text-red-500">{joinError}</p>}
                 <input
                   type="text"
                   value={joinMsg}
-                  onChange={e => setJoinMsg(e.target.value)}
+                  onChange={e => { setJoinMsg(e.target.value); setJoinError(''); }}
                   placeholder="Mensaje para el organizador (opcional)"
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:border-brand-400"
                 />

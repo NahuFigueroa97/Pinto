@@ -1,8 +1,10 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { Profile, UserRole } from '@/types/database';
+import { initPushNotifications, unregisterPush } from '@/lib/pushNotifications';
 import type { User } from '@supabase/supabase-js';
 
 interface AuthState {
@@ -19,6 +21,7 @@ interface AuthState {
 const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,6 +56,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchProfile]);
 
   const signOut = useCallback(async () => {
+    // Primero se borra el token de push: después de signOut() el RPC ya no
+    // tendría sesión y el token quedaría asociado al usuario anterior,
+    // que seguiría recibiendo los avisos en ese teléfono.
+    await unregisterPush();
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
@@ -63,22 +70,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user, fetchProfile]);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    // onAuthStateChange dispara también en TOKEN_REFRESHED y USER_UPDATED, que
+    // ocurren cada hora y en cada vuelta a primer plano. Inicializar el push en
+    // todos esos eventos re-suscribía los listeners de Capacitor una y otra vez.
+    const PUSH_EVENTS = new Set(['INITIAL_SESSION', 'SIGNED_IN']);
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       const u = session?.user ?? null;
       setUser(u);
       if (u) {
         await fetchProfile(u.id);
+        if (PUSH_EVENTS.has(event)) void initPushNotifications(u.id);
       } else {
         setProfile(null);
       }
       setLoading(false);
     });
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      const u = session?.user ?? null;
-      setUser(u);
-      if (u) await fetchProfile(u.id);
-      setLoading(false);
+    // supabase-js ya emite INITIAL_SESSION en el listener de arriba, así que
+    // este getSession() solo sirve de red de seguridad para apagar el loading
+    // si el evento no llega (p. ej. storage bloqueado).
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) setLoading(false);
     });
 
     return () => subscription.unsubscribe();

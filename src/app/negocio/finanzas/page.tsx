@@ -5,6 +5,8 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { BusinessTransaction } from '@/types/database';
+import { parseMoney } from '@/lib/money';
+import { useRouter } from 'next/navigation';
 
 type Period = 'day' | 'week' | 'month';
 
@@ -17,12 +19,14 @@ function periodStart(p: Period): string {
 
 export default function FinanzasPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const queryClient = useQueryClient();
+  const [expenseError, setExpenseError] = useState('');
   const [period, setPeriod] = useState<Period>('week');
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [expForm, setExpForm] = useState({ amount: '', description: '', category: 'insumos' });
 
-  const { data: business } = useQuery({
+  const { data: business, isLoading: loadingBusiness } = useQuery({
     queryKey: ['business_me_fin', user?.id],
     queryFn: async () => {
       if (!user) return null;
@@ -47,22 +51,40 @@ export default function FinanzasPage() {
 
   const addExpense = useMutation({
     mutationFn: async () => {
-      if (!business || !expForm.amount) return;
-      await supabase.from('business_transactions').insert({
+      if (!business) return;
+      // parseFloat('1.500,50') daba NaN y el insert fallaba en silencio
+      // (amount es NOT NULL). parseMoney entiende el formato argentino.
+      const amount = parseMoney(expForm.amount);
+      if (amount == null || amount <= 0) {
+        throw new Error('Poné un importe válido, por ejemplo 1.500,50');
+      }
+      const { error } = await supabase.from('business_transactions').insert({
         business_id: business.id, type: 'expense',
-        amount: parseFloat(expForm.amount),
+        amount,
         description: expForm.description || '📦 Gasto general',
         category: expForm.category,
       });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['biz_transactions'] });
       setShowAddExpense(false);
+      setExpenseError('');
       setExpForm({ amount: '', description: '', category: 'insumos' });
     },
+    onError: (err: any) => setExpenseError(err?.message ?? 'No se pudo registrar el gasto'),
   });
 
-  if (!business) return <div className="flex justify-center pt-20"><div className="spinner" /></div>;
+  if (loadingBusiness) return <div className="flex justify-center pt-20"><div className="spinner" /></div>;
+  if (!business) return (
+    <div className="max-w-lg mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
+      <p className="text-5xl mb-3">💰</p>
+      <p className="text-gray-500 font-medium mb-1">Todavía no creaste tu negocio</p>
+      <p className="text-sm text-gray-400 mb-6">Las finanzas se habilitan cuando tengas uno</p>
+      <button onClick={() => router.push('/negocio/nuevo')}
+        className="px-6 py-2.5 bg-accent-500 text-white rounded-xl font-medium shadow-md">Crear mi negocio</button>
+    </div>
+  );
 
   const income = transactions?.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0) ?? 0;
   const expense = transactions?.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0) ?? 0;
@@ -117,8 +139,15 @@ export default function FinanzasPage() {
 
         {showAddExpense && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-4 mb-4 space-y-3">
-            <input type="number" placeholder="💲 Monto" value={expForm.amount}
-              onChange={e => setExpForm({ ...expForm, amount: e.target.value })} className={inputClass} />
+            {expenseError && (
+              <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">⚠️ {expenseError}</p>
+            )}
+            {/* type="number" rechaza "1.500,50" en teclados es-AR: el campo
+                quedaba vacío y no se entendía por qué. Ahora es texto y lo
+                normaliza parseMoney(). */}
+            <input type="text" inputMode="decimal" placeholder="💲 Monto (ej: 1.500,50)" value={expForm.amount}
+              onChange={e => { setExpForm({ ...expForm, amount: e.target.value }); setExpenseError(''); }}
+              className={inputClass} />
             <input type="text" placeholder="📋 ¿En qué gastaste?" value={expForm.description}
               onChange={e => setExpForm({ ...expForm, description: e.target.value })} className={inputClass} />
             <select value={expForm.category} onChange={e => setExpForm({ ...expForm, category: e.target.value })} className={inputClass}>

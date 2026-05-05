@@ -5,4 +5,10 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 // NOTE: When you run `supabase gen types typescript` to generate DB types,
 // add the Database generic back: createClient<Database>(...)
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    flowType: 'implicit',
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+});

@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.pinto.app',
+  appId: 'com.pinto.social',
   appName: 'Pintó',
   webDir: 'out',
   server: {
@@ -20,6 +20,11 @@ const config: CapacitorConfig = {
     StatusBar: {
       style: 'LIGHT',
       backgroundColor: '#FFFFFF',
+    },
+    // Faltaba por completo: sin esta sección, en iOS las notificaciones que
+    // llegan con la app abierta no se muestran.
+    PushNotifications: {
+      presentationOptions: ['badge', 'sound', 'alert'],
     },
   },
 };

@@ -17,11 +17,19 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName || !email || !password) { setError('Completá todos los campos'); return; }
     if (password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return; }
+    // La página de seguridad infantil declara un mínimo de 13 años y Play
+    // pide coherencia entre esa declaración y la app. Antes no se preguntaba
+    // la edad en ningún momento del alta.
+    if (!acceptedTerms) {
+      setError('Necesitamos que confirmes tu edad y aceptes la política de privacidad');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -114,9 +122,25 @@ export default function RegisterPage() {
             </div>
           </div>
 
+          <label className="flex items-start gap-2.5 text-xs text-gray-600 leading-relaxed cursor-pointer">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={e => { setAcceptedTerms(e.target.checked); setError(''); }}
+              className="mt-0.5 rounded border-gray-300 shrink-0"
+            />
+            <span>
+              Tengo 13 años o más y acepto la{' '}
+              <Link href="/privacidad" className="text-brand-500 underline">política de privacidad</Link>
+              {' '}y los{' '}
+              <Link href="/seguridad-infantil" className="text-brand-500 underline">estándares de seguridad</Link>
+              {' '}de Pintó.
+            </span>
+          </label>
+
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !acceptedTerms}
             className={`w-full py-3 text-white font-semibold rounded-xl disabled:opacity-50 transition shadow-md ${
               role === 'business'
                 ? 'bg-accent-500 hover:bg-accent-600 shadow-accent-500/20'

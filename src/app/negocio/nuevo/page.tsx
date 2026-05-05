@@ -71,14 +71,10 @@ export default function NuevoNegocioPage() {
       const leaflet = await import('leaflet');
       leafletRef.current = leaflet.default;
 
-      // Import CSS via link tag
-      if (!document.getElementById('leaflet-css')) {
-        const link = document.createElement('link');
-        link.id = 'leaflet-css';
-        link.rel = 'stylesheet';
-        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-        document.head.appendChild(link);
-      }
+      // El CSS de Leaflet ya viene empaquetado desde globals.css
+      // (@import "leaflet/dist/leaflet.css"). Antes se inyectaba además un
+      // <link> a unpkg.com: sin internet el mapa quedaba sin estilos y era
+      // una dependencia de CDN dentro de un APK.
 
       const centerLat = userLocation?.lat ?? DEFAULT_LAT;
       const centerLng = userLocation?.lng ?? DEFAULT_LNG;
@@ -204,7 +200,10 @@ export default function NuevoNegocioPage() {
       zone_id: null,
       latitude: pin?.lat ?? null,
       longitude: pin?.lng ?? null,
-      status: 'active',
+      // status ya NO se manda desde el cliente: el trigger
+      // force_business_pending() lo fija en 'pending'. Antes se mandaba
+      // 'active' y todo negocio quedaba publicado sin pasar por el panel
+      // de admin, que tiene el circuito de aprobar/rechazar.
     };
 
     try {
@@ -229,8 +228,7 @@ export default function NuevoNegocioPage() {
       await refreshProfile();
       await queryClient.invalidateQueries({ queryKey: ['my_business'] });
 
-      alert('✅ ¡Negocio creado con éxito!');
-      router.push('/negocio');
+      router.push('/negocio?nuevo=1');
     } catch (err: any) {
       console.error('[Pinto] Create business error:', err);
       setError(err.message || 'Error al crear el negocio');

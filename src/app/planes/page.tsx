@@ -7,12 +7,14 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { useQuery } from '@tanstack/react-query';
 import { useUserLocation, haversineDistance } from '@/lib/geolocation';
+import { useBlockedIds, filterBlocked } from '@/lib/blocks';
 import { DistanceBadge } from '@/components/shared/DistanceBadge';
 import type { SocialPlan } from '@/types/database';
 
 export default function PlanesFeedPage() {
   const { user, role } = useAuth();
   const { location } = useUserLocation();
+  const { blockedSet } = useBlockedIds();
   const [filter, setFilter] = useState<'all' | 'nearby' | 'today'>('all');
   const [catFilter, setCatFilter] = useState('');
 
@@ -25,7 +27,10 @@ export default function PlanesFeedPage() {
   });
 
   const { data: plans, isLoading } = useQuery({
-    queryKey: ['social_plans', filter],
+    // catFilter y location se usan dentro de queryFn pero no estaban en la
+    // key: al tocar una categoría, react-query servía el resultado cacheado
+    // y los botones de filtro parecían no hacer nada.
+    queryKey: ['social_plans', filter, catFilter, location?.lat, location?.lng],
     queryFn: async () => {
       let query = supabase
         .from('social_plans')
@@ -64,6 +69,9 @@ export default function PlanesFeedPage() {
       return result;
     },
   });
+
+  // Los planes de personas bloqueadas no se muestran
+  const visiblePlans = filterBlocked<any>(plans, blockedSet, p => p.creator_id);
 
   return (
     <div className="max-w-lg mx-auto pb-6">
@@ -124,7 +132,7 @@ export default function PlanesFeedPage() {
             <div className="spinner" />
             <p className="mt-3 text-sm">Buscando planes...</p>
           </div>
-        ) : !plans?.length ? (
+        ) : !visiblePlans.length ? (
           <div className="text-center py-16 text-gray-400">
             <Users size={40} className="mx-auto mb-3 text-gray-200" />
             <p>No hay planes disponibles</p>
@@ -133,7 +141,7 @@ export default function PlanesFeedPage() {
             )}
           </div>
         ) : (
-          plans.map((plan: any) => (
+          visiblePlans.map((plan: any) => (
             <Link
               key={plan.id}
               href={`/planes/detalle?id=${plan.id}`}

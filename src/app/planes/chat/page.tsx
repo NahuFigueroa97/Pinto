@@ -6,6 +6,8 @@ import { ArrowLeft, Send } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useBlockedIds, filterBlocked } from '@/lib/blocks';
+import { moderateContent } from '@/lib/moderation';
 
 function ChatInner() {
   const searchParams = useSearchParams();
@@ -13,8 +15,10 @@ function ChatInner() {
   const router = useRouter();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { blockedSet } = useBlockedIds();
   const [msg, setMsg] = useState('');
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const { data: plan } = useQuery({
@@ -45,13 +49,32 @@ function ChatInner() {
   }, [messages]);
 
   const sendMessage = async () => {
-    if (!msg.trim() || !user || !planId) return;
+    if (!msg.trim() || !user || !planId || sending) return;
+
+    // El chat no pasaba por ningún filtro: la moderación solo corría al crear
+    // un plan. Play pide moderar todo el contenido generado por usuarios.
+    const check = moderateContent(msg);
+    if (!check.ok) { setError(check.reason); return; }
+
     setSending(true);
-    await supabase.from('plan_chat_messages').insert({ plan_id: planId, user_id: user.id, content: msg.trim() });
-    setMsg('');
+    setError('');
+    const { error: insertErr } = await supabase
+      .from('plan_chat_messages')
+      .insert({ plan_id: planId, user_id: user.id, content: msg.trim() });
     setSending(false);
+
+    if (insertErr) {
+      // Antes el error se descartaba: el mensaje desaparecía del input y el
+      // usuario creía que se había enviado.
+      setError('No se pudo enviar el mensaje. Probá de nuevo.');
+      return;
+    }
+    setMsg('');
     queryClient.invalidateQueries({ queryKey: ['chat_messages', planId] });
   };
+
+  // Los mensajes de personas bloqueadas no se muestran
+  const visibleMessages = filterBlocked<any>(messages, blockedSet, m => m.user_id);
 
   return (
     <div className="flex flex-col h-[100dvh] max-w-lg mx-auto">
@@ -64,13 +87,13 @@ function ChatInner() {
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-        {messages?.length === 0 && (
+        {visibleMessages.length === 0 && (
           <div className="text-center py-10 text-gray-400 text-sm">
             <p className="text-3xl mb-2">💬</p>
             <p>¡Arrancá la conversación!</p>
           </div>
         )}
-        {messages?.map((m: any) => {
+        {visibleMessages.map((m: any) => {
           const isMe = m.user_id === user?.id;
           return (
             <div key={m.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
@@ -88,10 +111,11 @@ function ChatInner() {
       </div>
 
       <div className="shrink-0 border-t border-gray-100 bg-white px-4 py-3 safe-bottom">
+        {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
         <div className="flex gap-2">
           <input
             value={msg}
-            onChange={e => setMsg(e.target.value)}
+            onChange={e => { setMsg(e.target.value); setError(''); }}
             onKeyDown={e => e.key === 'Enter' && sendMessage()}
             placeholder="Escribí un mensaje..."
             className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:border-brand-400"

@@ -59,17 +59,31 @@ function FotosInner() {
       let photoUrl = '';
 
       // Try Supabase Storage first
-      const ext = file.name.split('.').pop();
-      const path = `plan-photos/${planId}/${user.id}_${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from('plan-photos').upload(path, file, { upsert: true });
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error('La foto no puede superar los 5 MB');
+      }
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+      // La ruta repetía el nombre del bucket ("plan-photos/<plan>/..."), así
+      // que la carpeta [1] era 'plan-photos' y no el id del plan. Por eso la
+      // policy de borrado de Storage nunca coincidía y los archivos quedaban
+      // huérfanos en el bucket para siempre.
+      const path = `${planId}/${user.id}_${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from('plan-photos')
+        .upload(path, file, { upsert: true, contentType: file.type });
 
       if (!upErr) {
         const { data: { publicUrl } } = supabase.storage.from('plan-photos').getPublicUrl(path);
         photoUrl = publicUrl;
       } else {
-        // Fallback: compress and store as data URL
-        console.warn('Storage upload failed, using compressed data URL:', upErr.message);
-        photoUrl = await compressImage(file);
+        // El fallback metía la imagen entera como data URL en una columna text
+        // de Postgres: cientos de KB por fila, devueltos enteros en cada
+        // listado. Se comprime más fuerte y se corta si aun así no entra.
+        console.warn('[fotos] falló Storage, se usa data URL comprimida:', upErr.message);
+        photoUrl = await compressImage(file, 640, 0.6);
+        if (photoUrl.length > 200_000) {
+          throw new Error('No se pudo subir la foto. Probá con una imagen más chica.');
+        }
       }
 
       const { error: insertErr } = await supabase.from('plan_photos').insert({
@@ -127,6 +141,15 @@ function FotosInner() {
                     onClick={async () => {
                       if (!confirm('¿Borrar esta foto?')) return;
                       await supabase.from('plan_photos').delete().eq('id', p.id);
+                      // Antes solo se borraba la fila: el archivo seguía
+                      // público en Storage indefinidamente.
+                      const marker = '/plan-photos/';
+                      const url = String(p.photo_url ?? '');
+                      const idx = url.indexOf(marker);
+                      if (idx >= 0) {
+                        const objectPath = url.slice(idx + marker.length).split('?')[0];
+                        await supabase.storage.from('plan-photos').remove([decodeURIComponent(objectPath)]);
+                      }
                       queryClient.invalidateQueries({ queryKey: ['plan_photos', planId] });
                     }}
                     className="absolute top-1.5 right-1.5 w-7 h-7 bg-black/50 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 active:opacity-100 transition"

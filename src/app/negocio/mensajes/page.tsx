@@ -16,7 +16,7 @@ export default function NegocioMensajesPage() {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Get business
-  const { data: business } = useQuery({
+  const { data: business, isLoading: loadingBusiness } = useQuery({
     queryKey: ['business_me_msg', user?.id],
     queryFn: async () => {
       if (!user) return null;
@@ -31,12 +31,18 @@ export default function NegocioMensajesPage() {
     queryKey: ['biz_conversations', business?.id],
     queryFn: async () => {
       if (!business) return [];
-      const { data } = await supabase
+      // El embed hacia profiles fallaba con PGRST200 porque el FK de
+      // business_messages.user_id apuntaba a auth.users, no a profiles. Como
+      // el error se descartaba con `if (!data) return []`, la bandeja del
+      // negocio salía SIEMPRE vacía aunque hubiera consultas sin responder.
+      // La migración 010 reapunta el FK; acá además se deja de tragar el error.
+      const { data, error: err } = await supabase
         .from('business_messages')
         .select('user_id, message, created_at, is_read, sender_role, user:profiles!business_messages_user_id_fkey(full_name, avatar_url)')
         .eq('business_id', business.id)
         .order('created_at', { ascending: false });
 
+      if (err) throw err;
       if (!data) return [];
 
       // Group by user, keep latest message
@@ -94,7 +100,18 @@ export default function NegocioMensajesPage() {
     },
   });
 
-  if (!business) return <div className="flex justify-center pt-20"><div className="spinner" /></div>;
+  // `if (!business) return <spinner/>` dejaba la pantalla girando para
+  // siempre cuando la cuenta todavía no tenía negocio creado.
+  if (loadingBusiness) return <div className="flex justify-center pt-20"><div className="spinner" /></div>;
+  if (!business) return (
+    <div className="max-w-lg mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
+      <p className="text-5xl mb-3">🏪</p>
+      <p className="text-gray-500 font-medium mb-1">Todavía no creaste tu negocio</p>
+      <p className="text-sm text-gray-400 mb-6">Cuando lo crees vas a poder recibir consultas de clientes acá</p>
+      <button onClick={() => router.push('/negocio/nuevo')}
+        className="px-6 py-2.5 bg-accent-500 text-white rounded-xl font-medium shadow-md">Crear mi negocio</button>
+    </div>
+  );
 
   // Chat view
   if (selectedChat) {

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { Clock, Users, ChevronRight } from 'lucide-react';
+import { useBlockedIds, filterBlocked } from '@/lib/blocks';
 
 const ACTION_LABELS: Record<string, { emoji: string; text: (m: any) => string }> = {
   created_plan: { emoji: '🎉', text: (m) => `creó el plan "${m?.title || ''}"` },
@@ -25,6 +26,8 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function FeedPage() {
+  const { blockedSet } = useBlockedIds();
+
   const { data: feed, isLoading } = useQuery({
     queryKey: ['activity_feed'],
     queryFn: async () => {
@@ -37,6 +40,9 @@ export default function FeedPage() {
     refetchInterval: 15000,
   });
 
+  // La actividad de personas bloqueadas no aparece en el feed
+  const visibleFeed = filterBlocked<any>(feed, blockedSet, item => item.actor_id);
+
   return (
     <div className="max-w-lg mx-auto pb-6">
       <header className="px-4 pt-6 pb-3">
@@ -47,13 +53,13 @@ export default function FeedPage() {
       <div className="px-4 space-y-2">
         {isLoading ? (
           <div className="flex justify-center py-16"><div className="spinner" /></div>
-        ) : !feed?.length ? (
+        ) : !visibleFeed.length ? (
           <div className="text-center py-16 text-gray-400">
             <p className="text-4xl mb-3">📣</p>
             <p>Todavía no hay actividad</p>
           </div>
         ) : (
-          feed.map((item: any) => {
+          visibleFeed.map((item: any) => {
             const action = ACTION_LABELS[item.action] || { emoji: '📋', text: () => item.action };
             return (
               <Link key={item.id}

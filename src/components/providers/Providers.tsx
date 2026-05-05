@@ -6,18 +6,25 @@ import { useState, useEffect, type ReactNode } from 'react';
 import { initNotifications, startNotificationPolling, stopNotificationPolling } from '@/lib/notifications';
 
 function NotificationManager() {
-  const { user, role } = useAuth();
+  // Se depende de user.id y no del objeto `user`: supabase-js devuelve una
+  // instancia nueva en cada refresco de token, así que con [user] el efecto
+  // se reejecutaba cada hora y reiniciaba el polling sin necesidad.
+  const userId = useAuth().user?.id ?? null;
 
   useEffect(() => {
-    if (user) {
-      initNotifications().then(() => {
-        startNotificationPolling(user.id, role);
-      });
-    } else {
+    if (!userId) {
       stopNotificationPolling();
+      return;
     }
-    return () => stopNotificationPolling();
-  }, [user, role]);
+    let cancelled = false;
+    initNotifications().then(() => {
+      if (!cancelled) startNotificationPolling(userId);
+    });
+    return () => {
+      cancelled = true;
+      stopNotificationPolling();
+    };
+  }, [userId]);
 
   return null;
 }

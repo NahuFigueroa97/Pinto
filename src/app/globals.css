@@ -3,7 +3,19 @@
 @tailwind utilities;
 
 @import "leaflet/dist/leaflet.css";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap');
+
+/*
+  Las fuentes ya NO se importan por URL.
+  El @import de Google Fonts estaba después de @tailwind, o sea después de
+  miles de reglas: por especificación CSS un @import que no está al principio
+  de la hoja es inválido y el navegador lo descarta. Inter y Outfit nunca se
+  cargaban y toda la app caía al system-ui.
+  Además, en una app empaquetada, pedir las fuentes a fonts.googleapis.com en
+  cada arranque significa sin conexión = sin fuentes, y la IP del usuario
+  viajando a Google en cada inicio.
+  Ahora se cargan con next/font/google desde src/app/layout.tsx, que las
+  descarga en tiempo de build y las deja dentro del APK.
+*/
 
 @layer base {
   :root {

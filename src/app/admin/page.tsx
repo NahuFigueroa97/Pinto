@@ -7,6 +7,16 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
+// Había 5 tabs pero la expresión ternaria solo cubría 3, así que
+// "verifications" y "stats" se dibujaban las dos como "Reportes".
+const TAB_LABELS: Record<string, string> = {
+  businesses: 'Negocios',
+  campaigns: 'Campañas',
+  reports: 'Reportes',
+  verifications: 'Verificaciones',
+  stats: 'Métricas',
+};
+
 export default function AdminDashboard() {
   const { role } = useAuth();
   const queryClient = useQueryClient();
@@ -151,16 +161,16 @@ export default function AdminDashboard() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 px-4 pb-4">
+      <div className="flex gap-1 px-4 pb-4 overflow-x-auto no-scrollbar">
         {(['businesses', 'campaigns', 'reports', 'verifications', 'stats'] as const).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+            className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition ${
               tab === t ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600'
             }`}
           >
-            {t === 'businesses' ? 'Negocios' : t === 'campaigns' ? 'Campañas' : 'Reportes'}
+            {TAB_LABELS[t]}
           </button>
         ))}
       </div>

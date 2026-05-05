@@ -31,6 +31,19 @@ function EditarCampanaInner() {
     price_text: '', is_free: false, requires_reservation: false,
   });
 
+  /**
+   * Un <input type="datetime-local"> trabaja en hora LOCAL.
+   * Antes se lo llenaba con `new Date(x).toISOString().slice(0,16)`, que
+   * devuelve UTC: en Argentina (UTC-3) la campaña se mostraba 3 horas más
+   * tarde de lo real, y al guardar se volvía a correr otras 3 horas. Cada
+   * edición desplazaba el horario un poco más.
+   */
+  const toLocalInput = (iso: string) => {
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
   const { data: campaign, isLoading: isLoadingCampaign } = useQuery({
     queryKey: ['campaign_edit', id],
     queryFn: async () => {
@@ -49,8 +62,8 @@ function EditarCampanaInner() {
         short_description: campaign.short_description,
         full_description: campaign.full_description || '',
         type: campaign.type,
-        starts_at: new Date(campaign.starts_at).toISOString().slice(0, 16),
-        ends_at: new Date(campaign.ends_at).toISOString().slice(0, 16),
+        starts_at: toLocalInput(campaign.starts_at),
+        ends_at: toLocalInput(campaign.ends_at),
         max_capacity: campaign.max_capacity?.toString() || '',
         min_group_size: campaign.min_group_size?.toString() || '',
         price_text: campaign.price_text || '',

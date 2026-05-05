@@ -1,7 +1,10 @@
 ext {
     minSdkVersion = 24
-    compileSdkVersion = 35
-    targetSdkVersion = 35
+    // Google Play exige apuntar a un API level reciente para poder publicar
+    // (API 35 desde el 31/08/2025, API 36 desde el 31/08/2026). Estaba en 35.
+    // Verificá el mínimo vigente en Play Console > Política del programa.
+    compileSdkVersion = 36
+    targetSdkVersion = 36
     androidxActivityVersion = '1.9.2'
     androidxAppCompatVersion = '1.7.0'
     androidxCoordinatorLayoutVersion = '1.2.0'
