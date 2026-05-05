@@ -266,8 +266,11 @@ export default function EditarPerfilPage() {
         </button>
       </form>
 
-      <div className="mt-8 pt-6 border-t border-gray-100 text-center">
-        <a href="/perfil/eliminar" className="text-xs text-red-400 hover:text-red-500">
+      <div className="mt-8 pt-6 border-t border-gray-100 text-center space-y-3">
+        <a href="/actualizar-clave" className="block text-sm text-brand-500 font-medium hover:text-brand-600">
+          🔒 Cambiar contraseña
+        </a>
+        <a href="/perfil/eliminar" className="block text-xs text-red-400 hover:text-red-500">
           Eliminar mi cuenta
         </a>
       </div>

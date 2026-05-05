@@ -71,6 +71,11 @@ export default function LoginPage() {
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
+            <div className="flex justify-end mt-1">
+              <Link href="/recuperar-clave" className="text-xs text-brand-500 font-medium">
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
           </div>
 
           <button

@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.pinto.app',
+  appId: 'com.pinto.social',
   appName: 'Pintó',
   webDir: 'out',
   server: {

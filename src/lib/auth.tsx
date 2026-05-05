@@ -1,8 +1,10 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { Profile, UserRole } from '@/types/database';
+import { initPushNotifications, unregisterPush } from '@/lib/pushNotifications';
 import type { User } from '@supabase/supabase-js';
 
 interface AuthState {
@@ -19,6 +21,7 @@ interface AuthState {
 const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchProfile]);
 
   const signOut = useCallback(async () => {
+    await unregisterPush();
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
@@ -68,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(u);
       if (u) {
         await fetchProfile(u.id);
+        initPushNotifications(u.id);
       } else {
         setProfile(null);
       }
