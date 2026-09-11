@@ -40,6 +40,50 @@ function isNativeApp(): boolean {
   return cap?.isNativePlatform?.() === true;
 }
 
+/**
+ * Lock en memoria para la sesión de auth, solo en la app nativa.
+ *
+ * supabase-js serializa TODA operación que necesite el token detrás de un
+ * lock. En navegador usa navigator.locks y, en varias rutas internas, lo
+ * pide sin límite de espera. Si ese lock queda tomado y no se libera, cada
+ * consulta posterior se encola detrás y no resuelve nunca: ni error, ni
+ * timeout, ni reintento. El sintoma es que de golpe deja de andar todo —
+ * primero un insert que "no se manda", despues cualquier pantalla con el
+ * spinner eterno.
+ *
+ * El timeout de fetch no alcanza para esto: la petición HTTP ni siquiera
+ * llega a empezar.
+ *
+ * En un WebView de Capacitor hay un unico contexto de ejecución, así que el
+ * lock entre pestañas no protege de nada. Se reemplaza por una cola en
+ * memoria que ademas nunca espera indefinidamente: si el anterior no
+ * termina en 5 s, se sigue igual.
+ */
+function createSerialLock() {
+  let tail: Promise<unknown> = Promise.resolve();
+
+  return async function serialLock<R>(
+    _name: string,
+    _acquireTimeout: number,
+    fn: () => Promise<R>,
+  ): Promise<R> {
+    const previous = tail;
+    let release!: () => void;
+    tail = new Promise<void>((resolve) => { release = resolve; });
+
+    await Promise.race([
+      previous.catch(() => { /* que un fallo previo no bloquee la cola */ }),
+      new Promise((resolve) => setTimeout(resolve, 5_000)),
+    ]);
+
+    try {
+      return await fn();
+    } finally {
+      release();
+    }
+  };
+}
+
 function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -71,6 +115,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     // En web SÍ hace falta: /actualizar-clave recibe el token del mail en el
     // hash de la URL, y sin esto la recuperación de contraseña se rompe.
     detectSessionInUrl: !isNativeApp(),
+    // En web se deja el navigator.locks nativo, que ahí sí hace falta
+    // porque puede haber varias pestañas compartiendo la sesión.
+    ...(isNativeApp() ? { lock: createSerialLock() } : {}),
   },
   global: { fetch: fetchWithTimeout },
 });
