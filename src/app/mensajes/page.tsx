@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Send, MessageCircle } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -17,11 +17,19 @@ import { moderateContent } from '@/lib/moderation';
  * notificaciones de respuesta apuntaban a /perfil, que tampoco mostraba
  * nada. O sea: la conversación era de ida nada más.
  */
-export default function MensajesUsuarioPage() {
+function MensajesUsuarioInner() {
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-  const [selectedBusiness, setSelectedBusiness] = useState<string | null>(null);
+
+  // La conversación abierta vivía solo en estado local, así que la
+  // notificación de "te respondió el negocio" te dejaba en la LISTA y
+  // tenías que buscar la conversación a mano. Ahora se puede enlazar
+  // directo con /mensajes?id=<businessId>.
+  const [selectedBusiness, setSelectedBusiness] = useState<string | null>(
+    () => searchParams.get('id'),
+  );
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -108,7 +116,10 @@ export default function MensajesUsuarioPage() {
     return (
       <div className="max-w-lg mx-auto flex flex-col h-[calc(100vh-60px)]">
         <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 bg-white sticky top-0 z-10">
-          <button onClick={() => setSelectedBusiness(null)} className="p-1 text-gray-400"><ArrowLeft size={20} /></button>
+          <button
+            onClick={() => { setSelectedBusiness(null); router.replace('/mensajes'); }}
+            className="p-1 text-gray-400"
+          ><ArrowLeft size={20} /></button>
           <div className="w-8 h-8 rounded-full bg-accent-100 flex items-center justify-center text-sm">🏪</div>
           <h1 className="font-bold text-sm truncate">{(current?.business as any)?.name ?? 'Negocio'}</h1>
         </header>
@@ -196,5 +207,13 @@ export default function MensajesUsuarioPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function MensajesUsuarioPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center pt-20"><div className="spinner" /></div>}>
+      <MensajesUsuarioInner />
+    </Suspense>
   );
 }

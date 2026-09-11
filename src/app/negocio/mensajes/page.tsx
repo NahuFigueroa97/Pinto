@@ -1,17 +1,24 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, Suspense } from 'react';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Send, MessageCircle } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function NegocioMensajesPage() {
+function NegocioMensajesInner() {
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-  const [selectedChat, setSelectedChat] = useState<string | null>(null);
+
+  // Igual que en /mensajes: la conversación abierta vivía solo en estado
+  // local, así que la notificación de consulta nueva dejaba al negocio en
+  // la lista. Ahora se enlaza con /negocio/mensajes?user=<userId>.
+  const [selectedChat, setSelectedChat] = useState<string | null>(
+    () => searchParams.get('user'),
+  );
   const [message, setMessage] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -119,7 +126,10 @@ export default function NegocioMensajesPage() {
     return (
       <div className="max-w-lg mx-auto flex flex-col h-[calc(100vh-60px)]">
         <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 bg-white sticky top-0 z-10">
-          <button onClick={() => setSelectedChat(null)} className="p-1 text-gray-400"><ArrowLeft size={20} /></button>
+          <button
+            onClick={() => { setSelectedChat(null); router.replace('/negocio/mensajes'); }}
+            className="p-1 text-gray-400"
+          ><ArrowLeft size={20} /></button>
           <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center text-sm font-bold text-brand-600">
             {(chatUser?.user as any)?.full_name?.[0] ?? '?'}
           </div>
@@ -204,5 +214,13 @@ export default function NegocioMensajesPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function NegocioMensajesPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center pt-20"><div className="spinner" /></div>}>
+      <NegocioMensajesInner />
+    </Suspense>
   );
 }
