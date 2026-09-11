@@ -8,6 +8,17 @@ if (hasReleaseKeystore) {
     keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
 }
 
+// Versión de la app, desde android/gradle.properties (ver ese archivo).
+//
+// Se resuelve acá y no inline dentro de defaultConfig porque en Groovy
+//     versionCode (expr).toString().toInteger()
+// se parsea como la llamada al método versionCode(expr) y después aplica
+// .toString() al valor que devuelve ese setter, que es null:
+//     "A problem occurred evaluating project ':app'. > Value is null"
+def pintoVersionCodeValue = Integer.parseInt(
+    (project.findProperty('pintoVersionCode') ?: '1').toString().trim())
+def pintoVersionNameValue = (project.findProperty('pintoVersionName') ?: '1.0').toString().trim()
+
 android {
     namespace "com.pinto.social"
     compileSdk rootProject.ext.compileSdkVersion
@@ -15,12 +26,9 @@ android {
         applicationId "com.pinto.social"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        // Se definen en android/gradle.properties para no tener que editar
-        // este archivo en cada release, y para poder pisarlos desde CI con
-        // -PpintoVersionCode=N. Estaba hardcodeado en 1, que Play rechaza
-        // si ya hay algo subido.
-        versionCode (project.findProperty('pintoVersionCode') ?: '1').toString().toInteger()
-        versionName (project.findProperty('pintoVersionName') ?: '1.0').toString()
+        // Definidos arriba desde android/gradle.properties.
+        versionCode pintoVersionCodeValue
+        versionName pintoVersionNameValue
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -48,11 +56,6 @@ android {
             if (hasReleaseKeystore) {
                 signingConfig signingConfigs.release
             }
-        }
-    }
-    packagingOptions {
-        resources {
-            excludes += ['META-INF/DEPENDENCIES', 'META-INF/LICENSE*', 'META-INF/NOTICE*']
         }
     }
 }

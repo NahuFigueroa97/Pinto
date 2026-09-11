@@ -5,6 +5,28 @@ primero.
 
 ---
 
+## Requisitos
+
+**Node 22 o superior.** `@capacitor/cli` v8 lo exige y no hay ninguna versión
+de la v8 que acepte menos. Con Node 20 el build de Next pasa y recién falla en
+`cap sync`:
+
+```
+[fatal] The Capacitor CLI requires NodeJS >=22.0.0
+```
+
+```bash
+node -v            # ¿v22 o más?
+
+nvm install 22 && nvm use 22 && nvm alias default 22
+rm -rf node_modules && npm ci    # reinstalar tras cambiar de versión de Node
+```
+
+El `engine-strict=true` de `.npmrc` hace que `npm ci` corte de entrada si la
+versión no alcanza, en vez de dejarte descubrirlo tres pasos después.
+
+---
+
 ## A. Probar un cambio en tu teléfono (30-60 s)
 
 Este es el loop de desarrollo. **No pasa por Play Store.** Instala un APK de
