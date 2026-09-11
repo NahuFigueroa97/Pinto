@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { Clock, Users, ChevronRight } from 'lucide-react';
 import { useBlockedIds, filterBlocked } from '@/lib/blocks';
+import { withTimeout } from '@/lib/withTimeout';
 
 const ACTION_LABELS: Record<string, { emoji: string; text: (m: any) => string }> = {
   created_plan: { emoji: '🎉', text: (m) => `creó el plan "${m?.title || ''}"` },
@@ -28,13 +29,19 @@ function timeAgo(dateStr: string): string {
 export default function FeedPage() {
   const { blockedSet } = useBlockedIds();
 
-  const { data: feed, isLoading } = useQuery({
+  const { data: feed, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['activity_feed'],
     queryFn: async () => {
-      const { data } = await supabase.from('activity_feed')
-        .select('*, actor:profiles(full_name, avatar_url)')
-        .order('created_at', { ascending: false })
-        .limit(50);
+      // El error se descartaba con `data ?? []`, así que un fallo de RLS o
+      // de red se veía igual que "no hay actividad". Y sin timeout, una
+      // petición colgada dejaba el spinner girando indefinidamente.
+      const { data, error: queryError } = await withTimeout(
+        supabase.from('activity_feed')
+          .select('*, actor:profiles(full_name, avatar_url)')
+          .order('created_at', { ascending: false })
+          .limit(50),
+      );
+      if (queryError) throw queryError;
       return data ?? [];
     },
     refetchInterval: 15000,
@@ -53,6 +60,19 @@ export default function FeedPage() {
       <div className="px-4 space-y-2">
         {isLoading ? (
           <div className="flex justify-center py-16"><div className="spinner" /></div>
+        ) : error ? (
+          <div className="text-center py-16">
+            <p className="text-4xl mb-3">😕</p>
+            <p className="text-gray-600 font-medium">No se pudo cargar la actividad</p>
+            <p className="text-xs text-gray-400 mt-1 px-6">{(error as Error).message}</p>
+            <button
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="mt-4 px-5 py-2.5 bg-brand-500 text-white rounded-xl font-medium text-sm disabled:opacity-50"
+            >
+              {isFetching ? 'Reintentando...' : 'Reintentar'}
+            </button>
+          </div>
         ) : !visibleFeed.length ? (
           <div className="text-center py-16 text-gray-400">
             <p className="text-4xl mb-3">📣</p>
