@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { ArrowLeft, Camera, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -284,12 +285,16 @@ export default function EditarPerfilPage() {
       </form>
 
       <div className="mt-8 pt-6 border-t border-gray-100 text-center space-y-3">
-        <a href="/actualizar-clave" className="block text-sm text-brand-500 font-medium hover:text-brand-600">
+        {/* <a href> hacía una navegación dura contra el servidor local de
+            Capacitor, que con trailingSlash no resuelve "/perfil/eliminar"
+            sin la barra final: la pantalla quedaba colgada. <Link> hace
+            routing del lado del cliente y no pide nada al servidor. */}
+        <Link href="/actualizar-clave" className="block text-sm text-brand-500 font-medium hover:text-brand-600">
           🔒 Cambiar contraseña
-        </a>
-        <a href="/perfil/eliminar" className="block text-xs text-red-400 hover:text-red-500">
+        </Link>
+        <Link href="/perfil/eliminar" className="block text-xs text-red-400 hover:text-red-500">
           Eliminar mi cuenta
-        </a>
+        </Link>
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import { PushNotifications, type Token } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from './supabase';
 import { PUSH_CHANNEL_ID, setPushActive, showForegroundNotification } from './notifications';
+import { navigateTo } from './navigation';
 
 /** Rutas a las que una notificación puede navegar. Nada fuera de esta lista. */
 const ALLOWED_ROUTE_PREFIXES = [
@@ -36,10 +37,18 @@ function safeRoute(raw: unknown): string | null {
 
 function routeFromData(data: Record<string, unknown> | undefined): string | null {
   if (!data) return null;
+
+  // La ruta explícita que manda el servidor gana. Antes se miraba primero
+  // data.planId, así que un aviso de chat —que trae planId Y route—
+  // terminaba llevando al detalle del plan en vez de al chat.
+  const explicit = safeRoute(data.route);
+  if (explicit) return explicit;
+
+  // Fallback para payloads que solo traen el id del plan
   if (typeof data.planId === 'string' && data.planId) {
     return `/planes/detalle?id=${encodeURIComponent(data.planId)}`;
   }
-  return safeRoute(data.route);
+  return null;
 }
 
 // Estado a nivel de módulo: los listeners se registran UNA sola vez por
@@ -92,9 +101,7 @@ async function ensureListeners() {
 
   await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
     const route = routeFromData(action.notification.data as Record<string, unknown>);
-    if (route && typeof window !== 'undefined') {
-      window.location.assign(route);
-    }
+    if (route) navigateTo(route);
   });
 }
 

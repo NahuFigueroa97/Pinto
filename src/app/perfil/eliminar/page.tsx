@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { ArrowLeft, AlertTriangle, Trash2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -57,7 +58,7 @@ export default function EliminarCuentaPage() {
     return (
       <div className="max-w-lg mx-auto px-4 pt-20 text-center">
         <p className="text-gray-500">Iniciá sesión para eliminar tu cuenta</p>
-        <a href="/login" className="text-brand-500 font-medium mt-2 inline-block">Iniciar sesión</a>
+        <Link href="/login" className="text-brand-500 font-medium mt-2 inline-block">Iniciar sesión</Link>
       </div>
     );
   }
