@@ -1,7 +1,7 @@
 # Notificaciones push con Firebase Cloud Messaging
 
-Estado: **implementado**. Este documento describe cómo funciona hoy y qué
-falta configurar por fuera del repo.
+Estado: **implementado y verificado en producción** (backend, 2026-09-11).
+Este documento describe cómo funciona y cómo se pone en marcha.
 
 > La versión anterior de este documento describía un diseño que nunca se
 > llegó a implementar (una columna `profiles.fcm_token` que no existía en
@@ -26,7 +26,9 @@ falta configurar por fuera del repo.
   evento de negocio            triggers de BD
   (mensaje, reserva,     ──►   notify_on_*()  ──► public.notification_queue
    solicitud, chat)                                      │
-                                                         │  pg_cron (cada min)
+                                          on_notification_queued (inmediato)
+                                                         │
+                                       pg_cron */5 (red de seguridad)
                                                          ▼
                                             Edge Function `send-push`
                                                          │
@@ -36,6 +38,10 @@ falta configurar por fuera del repo.
                                                          └─► FCM HTTP v1 ──► 📱
 ```
 
+**Latencia: 1-3 segundos.** El trigger `on_notification_queued` invoca la
+función apenas se encola algo; el cron cada 5 minutos solo reintenta lo que
+haya quedado fallado.
+
 Piezas:
 
 | Pieza | Dónde |
@@ -43,6 +49,7 @@ Piezas:
 | Registro / baja del token | `src/lib/pushNotifications.ts` |
 | Notificación local + polling de respaldo | `src/lib/notifications.ts` |
 | Tabla de tokens y cola | `supabase/migrations/011_push_checkin_blocks.sql` |
+| Disparo inmediato y reintentos | `supabase/migrations/012_push_instantaneo.sql` |
 | Envío a FCM | `supabase/functions/send-push/index.ts` |
 | Icono, color y canal de Android | `android/app/src/main/AndroidManifest.xml` |
 
@@ -70,6 +77,7 @@ En el SQL Editor de Supabase, en orden:
 ```
 supabase/migrations/010_security_fixes.sql
 supabase/migrations/011_push_checkin_blocks.sql
+supabase/migrations/012_push_instantaneo.sql
 ```
 
 ### 2. Cuenta de servicio de Firebase
@@ -94,28 +102,124 @@ supabase functions deploy send-push
 
 ### 4. Programar el envío
 
-Habilitar `pg_cron` y `pg_net` (Dashboard → Database → Extensions) y correr:
+Habilitar `pg_cron` y `pg_net` (Dashboard → Database → Extensions).
+
+La clave con la que el cron invoca la función se guarda en Vault, para que no
+quede en texto plano dentro de la tabla `cron.job`:
 
 ```sql
-select cron.schedule(
-  'send-push',
-  '* * * * *',
-  $$
-  select net.http_post(
-    url     := 'https://<PROJECT_REF>.supabase.co/functions/v1/send-push',
-    headers := jsonb_build_object(
-      'Content-Type', 'application/json',
-      'Authorization', 'Bearer <SERVICE_ROLE_KEY>')
-  );
-  $$
+select vault.create_secret(
+  'PEGAR_ACA_LA_SERVICE_ROLE_KEY',   -- 'sb_secret_...' o el JWT service_role
+  'service_role_key',
+  'Para que el cron invoque send-push'
 );
 ```
 
-Alternativa sin cron: un **Database Webhook** sobre `INSERT` en
-`notification_queue` que llame a la misma función (llega antes, pero hace
-una request por notificación).
+Y la URL del endpoint, que la migración 012 lee de ahí en vez de tener el
+project ref hardcodeado:
+
+```sql
+select vault.create_secret(
+  'https://<PROJECT_REF>.supabase.co/functions/v1/send-push',
+  'edge_function_url',
+  'Endpoint de send-push'
+);
+```
+
+Con eso, la migración `012` deja programado el barrido cada 5 minutos:
+
+```sql
+select cron.schedule('send-push-sweep', '*/5 * * * *',
+  'select public.sweep_notifications();');
+```
+
+La entrega normal **no** pasa por el cron: la hace el trigger
+`on_notification_queued` en el momento. El barrido solo reencola lo que
+quedó en `failed` (hasta 3 intentos, dentro de la hora) y vuelve a invocar
+la función si hay algo pendiente.
+
+> ⚠️ **El error más fácil de cometer acá.** Si el secret de Vault no existe,
+> o está guardado con otro nombre, la subconsulta devuelve `NULL`,
+> `'Bearer ' || NULL` da `NULL`, y pg_net **no manda el header**. La función
+> responde `{"code":"UNAUTHORIZED_NO_AUTH_HEADER"}` y parece un problema de
+> permisos cuando en realidad es un `NULL`. Antes de programar el cron,
+> verificá qué se va a enviar:
+>
+> ```sql
+> select jsonb_build_object(
+>   'Content-Type', 'application/json',
+>   'Authorization', 'Bearer ' || (
+>     select decrypted_secret from vault.decrypted_secrets
+>     where name = 'service_role_key'
+>   )) as headers_que_se_envian;
+> ```
+>
+> Y que la clave guardada sea la correcta y esté sola:
+>
+> ```sql
+> select length(decrypted_secret)                as largo,
+>        left(decrypted_secret, 12)              as empieza_con,
+>        decrypted_secret like '%...%'           as tiene_placeholder,
+>        decrypted_secret like 'sb_publishable%' as es_la_publica
+> from vault.decrypted_secrets where name = 'service_role_key';
+> ```
+>
+> `tiene_placeholder` y `es_la_publica` tienen que dar **false**. La
+> `sb_publishable_` es la clave pública que va dentro del APK; la que va acá
+> es `sb_secret_` (o el JWT `service_role` de *Legacy API Keys*).
 
 ### 5. Verificar
+
+El chequeo clave es en dos etapas, porque **con la cola vacía la función ni
+siquiera habla con Google**: devuelve `{"processed":0}` antes de pedir el token
+OAuth. O sea que un `{"processed":0}` NO prueba que la credencial de Firebase
+sirva.
+
+**Etapa 1 — la función responde.** Invocala a mano:
+
+```sql
+select net.http_post(
+  url     := 'https://<PROJECT_REF>.supabase.co/functions/v1/send-push',
+  headers := jsonb_build_object(
+    'Content-Type', 'application/json',
+    'Authorization', 'Bearer ' || (
+      select decrypted_secret from vault.decrypted_secrets
+      where name = 'service_role_key'
+    ))
+);
+```
+
+pg_net es asíncrono: devuelve un id y la respuesta aparece unos segundos
+después en otra tabla.
+
+```sql
+select status_code, left(content::text, 400)
+from net._http_response order by created desc limit 1;
+```
+
+Esperado: `200` con `{"processed":0}`.
+
+**Etapa 2 — la credencial de Firebase sirve.** Encolá algo para forzar el
+OAuth:
+
+```sql
+select public.enqueue_notification(
+  (select id from public.profiles limit 1),
+  'Prueba', 'Validando credencial de Firebase', '/perfil', '{}'::jsonb
+);
+```
+
+Volvé a invocar la función y mirá la respuesta:
+
+| Respuesta | Qué significa |
+|---|---|
+| `{"processed":1,"sent":0,"skipped":1}` | ✅ **La credencial anda.** `skipped` porque todavía no hay ningún teléfono registrado |
+| `{"processed":1,"sent":1}` | ✅ Y además había un dispositivo y la notificación salió |
+| `{"error":"OAuth de Google falló (400)..."}` | ❌ El JSON de Firebase quedó mal pegado en el secret |
+
+El caso bueno en una instalación nueva es **`skipped`**, no `sent`.
+
+**Monitoreo corriente:**
 
 ```sql
 -- ¿se están registrando tokens?
@@ -127,6 +231,10 @@ select status, count(*) from notification_queue group by status;
 -- ¿por qué falló alguna?
 select title, error, created_at from notification_queue
 where status = 'failed' order by created_at desc limit 10;
+
+-- ¿el cron corre? (ojo: 'succeeded' acá solo dice que encoló la request HTTP)
+select status, return_message, start_time
+from cron.job_run_details order by start_time desc limit 5;
 ```
 
 `status = 'skipped'` significa que el destinatario no tiene ningún

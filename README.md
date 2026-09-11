@@ -24,7 +24,10 @@ npm install
 Crear `.env.local` (no está versionado):
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://ukipynbrluridibtgben.supabase.co
+# El project ref lo ves en la URL del dashboard:
+# supabase.com/dashboard/project/<ESTE_ES_EL_REF>
+# (el README tenía hardcodeado un ref viejo que ya no existe)
+NEXT_PUBLIC_SUPABASE_URL=https://<TU_PROJECT_REF>.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_anon_key_aqui
 # URL pública donde están publicadas las páginas. Obligatoria para que el mail
 # de recuperación de contraseña no apunte a https://localhost dentro del APK.
@@ -81,6 +84,24 @@ la Edge Function y programarla). Paso a paso en
 npm run build:mobile    # Build + sync
 npm run open:android    # Abre Android Studio
 ```
+
+Los dos flujos habituales:
+
+```bash
+npm run android:dev       # build + instalar por USB en el teléfono (loop rápido)
+npm run android:release   # build + generar el .aab para Play Console
+npm run android:logs      # logcat filtrado (Capacitor, consola, FCM)
+```
+
+La versión se toca en **un solo lugar**, `android/gradle.properties`:
+
+```properties
+pintoVersionCode=3      # +1 en cada subida a Play, si no lo rechaza
+pintoVersionName=2.0.1
+```
+
+Guía completa (preparar el teléfono, firma, troubleshooting):
+[docs/BUILD_ANDROID.md](docs/BUILD_ANDROID.md).
 
 Para firmar el release, crear `android/keystore.properties` (no versionado):
 

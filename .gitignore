@@ -34,3 +34,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Credenciales de Firebase / Google Cloud.
+# El JSON de la cuenta de servicio NUNCA va al repo: permite mandarle push a
+# todos los usuarios del proyecto. Va como secret FCM_SERVICE_ACCOUNT en
+# Supabase (Edge Functions > Secrets).
+*service-account*.json
+*serviceaccount*.json
+*-adminsdk-*.json
+firebase-adminsdk*.json
+gcp-key*.json
+
+# CLI de Supabase
+supabase/.temp/
