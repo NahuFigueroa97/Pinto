@@ -1,4 +1,23 @@
 import { PHASE_PRODUCTION_BUILD, PHASE_DEVELOPMENT_SERVER } from 'next/constants.js';
+import { execSync } from 'node:child_process';
+
+/**
+ * Commit con el que se compiló, visible en la app.
+ *
+ * Depurar a ciegas "¿estás probando la última build?" cuesta más que el bug
+ * en sí. Con esto, el pie de /perfil dice exactamente qué se está corriendo.
+ */
+function buildId() {
+  try {
+    const sha = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString().trim();
+    const dirty = execSync('git status --porcelain', { stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString().trim().length > 0;
+    return dirty ? `${sha}+` : sha;
+  } catch {
+    return 'dev';
+  }
+}
 
 /**
  * Validación temprana de las variables de entorno.
@@ -50,6 +69,10 @@ function checkEnv(phase) {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'export',
+  env: {
+    NEXT_PUBLIC_BUILD_ID: buildId(),
+    NEXT_PUBLIC_BUILD_DATE: new Date().toISOString().slice(0, 16).replace('T', ' '),
+  },
   images: {
     unoptimized: true,
   },

@@ -36,8 +36,15 @@ const REQUEST_TIMEOUT_MS = 20_000;
  */
 function isNativeApp(): boolean {
   if (typeof window === 'undefined') return false;
+
   const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
-  return cap?.isNativePlatform?.() === true;
+  if (cap?.isNativePlatform?.() === true) return true;
+
+  // Respaldo por si window.Capacitor todavía no está inyectado cuando se
+  // evalúa este módulo. Capacitor sirve la app desde "https://localhost"
+  // sin puerto (androidScheme: 'https'); `next dev` usa http y con puerto.
+  const { protocol, hostname, port } = window.location;
+  return protocol === 'https:' && hostname === 'localhost' && port === '';
 }
 
 /**
@@ -115,9 +122,18 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     // En web SÍ hace falta: /actualizar-clave recibe el token del mail en el
     // hash de la URL, y sin esto la recuperación de contraseña se rompe.
     detectSessionInUrl: !isNativeApp(),
-    // En web se deja el navigator.locks nativo, que ahí sí hace falta
-    // porque puede haber varias pestañas compartiendo la sesión.
-    ...(isNativeApp() ? { lock: createSerialLock() } : {}),
+    // El lock va SIEMPRE, no solo en nativo.
+    //
+    // Antes esto era condicional a isNativeApp(), pero esa detección corre
+    // al evaluar el módulo y depende de que Capacitor ya haya inyectado
+    // window.Capacitor. Si llegaba tarde, el fix simplemente no se aplicaba
+    // y el bloqueo seguía — sin ninguna señal de que no estaba activo.
+    //
+    // Aplicarlo también en web es un costo mínimo: lo único que se pierde
+    // es la coordinación entre pestañas al refrescar el token, y la parte
+    // web de Pintó es básicamente la pantalla de recuperar contraseña.
+    // A cambio, no hay forma de quedarse esperando un lock para siempre.
+    lock: createSerialLock(),
   },
   global: { fetch: fetchWithTimeout },
 });
