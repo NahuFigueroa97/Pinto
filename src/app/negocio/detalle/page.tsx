@@ -77,10 +77,13 @@ function NegocioDetalleInner() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['favorite', 'business'] }),
   });
 
-  if (!slug || isLoading) return <div className="flex justify-center pt-20"><div className="spinner" /></div>;
-  if (!business) return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] text-gray-400">
-      <p className="text-4xl mb-3">🏪</p><p>Negocio no encontrado</p>
+  // Ver la nota en planes/detalle: sin el slug, la query queda deshabilitada
+  // y `!slug || isLoading` dejaba el spinner girando indefinidamente.
+  if (isLoading) return <div className="flex justify-center pt-20"><div className="spinner" /></div>;
+  if (!slug || !business) return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] text-gray-400 px-6 text-center">
+      <p className="text-4xl mb-3">🏪</p>
+      <p>{!slug ? 'No pudimos abrir el negocio' : 'Negocio no encontrado'}</p>
       <button onClick={() => router.push('/explorar')} className="text-brand-500 font-medium mt-3">Explorar</button>
     </div>
   );

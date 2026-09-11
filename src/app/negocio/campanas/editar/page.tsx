@@ -115,7 +115,16 @@ function EditarCampanaInner() {
     },
   });
 
-  if (!id || isLoadingCampaign) return <div className="flex justify-center pt-20"><Loader2 className="animate-spin text-accent-500" size={28} /></div>;
+  // Ver la nota en planes/detalle: sin el id, la query queda deshabilitada
+  // y `!id || isLoadingCampaign` dejaba el spinner girando indefinidamente.
+  if (isLoadingCampaign) return <div className="flex justify-center pt-20"><Loader2 className="animate-spin text-accent-500" size={28} /></div>;
+  if (!id || !campaign) return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] text-gray-400 px-6 text-center">
+      <p className="text-4xl mb-3">📢</p>
+      <p>{!id ? 'No pudimos abrir la campaña' : 'Campaña no encontrada'}</p>
+      <button onClick={() => router.push('/negocio/campanas')} className="text-brand-500 font-medium mt-3">Ver mis promos</button>
+    </div>
+  );
 
   const inputClass = "w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:border-accent-400 focus:ring-2 focus:ring-accent-100 outline-none transition text-sm";
 

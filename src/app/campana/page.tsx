@@ -103,12 +103,14 @@ function CampaignDetailInner() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my_reservation', id] }),
   });
 
-  if (!id || isLoading) return <div className="flex items-center justify-center min-h-screen"><div className="spinner" /></div>;
+  // Ver la nota en planes/detalle: sin el id, la query queda deshabilitada
+  // y `!id || isLoading` dejaba el spinner girando indefinidamente.
+  if (isLoading) return <div className="flex items-center justify-center min-h-screen"><div className="spinner" /></div>;
 
-  if (!campaign) return (
-    <div className="flex flex-col items-center justify-center min-h-screen text-gray-400">
+  if (!id || !campaign) return (
+    <div className="flex flex-col items-center justify-center min-h-screen text-gray-400 px-6 text-center">
       <p className="text-4xl mb-3">😕</p>
-      <p>Campaña no encontrada</p>
+      <p>{!id ? 'No pudimos abrir la promo' : 'Campaña no encontrada'}</p>
       <button onClick={() => router.push('/')} className="mt-3 text-brand-500 font-medium">Volver</button>
     </div>
   );

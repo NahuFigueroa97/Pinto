@@ -132,10 +132,15 @@ function PlanDetailInner() {
     },
   });
 
-  if (!id || isLoading) return <div className="flex justify-center pt-20"><div className="spinner" /></div>;
-  if (!plan) return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] text-gray-400">
-      <p className="text-4xl mb-3">🤷</p><p>Plan no encontrado</p>
+  // `if (!id || isLoading)` giraba para siempre cuando faltaba el id: la
+  // query está deshabilitada (enabled: !!id), así que isLoading es false y
+  // el spinner no se apagaba nunca. Pasaba al abrir una notificación, porque
+  // la navegación dura sin barra final perdía el query string.
+  if (isLoading) return <div className="flex justify-center pt-20"><div className="spinner" /></div>;
+  if (!id || !plan) return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] text-gray-400 px-6 text-center">
+      <p className="text-4xl mb-3">🤷</p>
+      <p>{!id ? 'No pudimos abrir el plan' : 'Plan no encontrado'}</p>
       <button onClick={() => router.push('/planes')} className="text-brand-500 font-medium mt-3">Ver planes</button>
     </div>
   );
