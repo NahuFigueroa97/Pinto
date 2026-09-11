@@ -2,7 +2,7 @@ import { PushNotifications, type Token } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from './supabase';
 import { PUSH_CHANNEL_ID, setPushActive, showForegroundNotification } from './notifications';
-import { navigateTo } from './navigation';
+import { requestNavigation } from './navigation';
 
 /** Rutas a las que una notificación puede navegar. Nada fuera de esta lista. */
 const ALLOWED_ROUTE_PREFIXES = [
@@ -101,7 +101,7 @@ async function ensureListeners() {
 
   await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
     const route = routeFromData(action.notification.data as Record<string, unknown>);
-    if (route) navigateTo(route);
+    if (route) requestNavigation(route);
   });
 }
 

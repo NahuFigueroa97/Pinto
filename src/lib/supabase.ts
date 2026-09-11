@@ -17,12 +17,60 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
+/**
+ * fetch con límite de tiempo.
+ *
+ * Sin esto, una petición que se cuelga —no que falla— deja a react-query en
+ * `pending` para siempre y el usuario ve un spinner eterno, sin error y sin
+ * forma de reintentar. Pasó en la home ("Buscando planes...") y en el feed.
+ * Con el abort, el cuelgue se convierte en un error normal que react-query
+ * reintenta y la UI puede mostrar.
+ */
+const REQUEST_TIMEOUT_MS = 20_000;
+
+/**
+ * Detecta la app nativa sin importar @capacitor/core, para no arrastrar el
+ * runtime de Capacitor al prerender del export estático. Capacitor inyecta
+ * window.Capacitor antes del bundle de la app; si por lo que sea todavía no
+ * está, devuelve false y se mantiene el comportamiento anterior.
+ */
+function isNativeApp(): boolean {
+  if (typeof window === 'undefined') return false;
+  const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+  return cap?.isNativePlatform?.() === true;
+}
+
+function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  // Si quien llama ya pasó un signal, se respeta y se encadena.
+  init.signal?.addEventListener('abort', () => controller.abort(), { once: true });
+
+  return fetch(input, { ...init, signal: controller.signal })
+    .catch((err) => {
+      if (err?.name === 'AbortError') {
+        throw new Error('La conexión tardó demasiado. Revisá tu internet y probá de nuevo.');
+      }
+      throw err;
+    })
+    .finally(() => clearTimeout(timer));
+}
+
 // NOTE: When you run `supabase gen types typescript` to generate DB types,
 // add the Database generic back: createClient<Database>(...)
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     flowType: 'implicit',
     autoRefreshToken: true,
-    detectSessionInUrl: true,
+    // Solo en web. En la app nativa NO hay sesión en la URL: Capacitor sirve
+    // desde https://localhost y el login es por password, así que supabase-js
+    // tomaba un lock en cada carga de página para inspeccionar una URL que
+    // nunca va a traer tokens.
+    //
+    // En web SÍ hace falta: /actualizar-clave recibe el token del mail en el
+    // hash de la URL, y sin esto la recuperación de contraseña se rompe.
+    detectSessionInUrl: !isNativeApp(),
   },
+  global: { fetch: fetchWithTimeout },
 });

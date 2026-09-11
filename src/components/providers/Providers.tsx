@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { useState, useEffect, type ReactNode } from 'react';
 import { initNotifications, startNotificationPolling, stopNotificationPolling } from '@/lib/notifications';
+import { onNavigationRequest, navigateTo } from '@/lib/navigation';
+import { useRouter } from 'next/navigation';
 
 function NotificationManager() {
   // Se depende de user.id y no del objeto `user`: supabase-js devuelve una
@@ -29,6 +31,31 @@ function NotificationManager() {
   return null;
 }
 
+/**
+ * Ejecuta las navegaciones que piden los listeners de notificación.
+ *
+ * Antes esos listeners hacían window.location.assign(), o sea una petición
+ * real al servidor local de Capacitor. Cuando ese servidor no resolvía la
+ * ruta caía al index.html de la raíz y el usuario terminaba en la home, sin
+ * el parámetro. Con router.push() la navegación es del lado del cliente:
+ * no hay petición, no hay 404 y el query string llega intacto.
+ */
+function NotificationRouter() {
+  const router = useRouter();
+
+  useEffect(() => onNavigationRequest((route) => {
+    try {
+      router.push(route);
+    } catch {
+      // Si el router no está disponible por lo que sea, al menos intentar
+      // la navegación dura con la barra final normalizada.
+      navigateTo(route);
+    }
+  }), [router]);
+
+  return null;
+}
+
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
@@ -45,6 +72,7 @@ export function Providers({ children }: { children: ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <NotificationManager />
+        <NotificationRouter />
         {children}
       </AuthProvider>
     </QueryClientProvider>

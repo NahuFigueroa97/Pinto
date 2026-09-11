@@ -1,7 +1,7 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from './supabase';
-import { navigateTo } from './navigation';
+import { requestNavigation } from './navigation';
 
 /**
  * Notificaciones locales.
@@ -123,7 +123,7 @@ export async function initNotifications() {
       await LocalNotifications.addListener('localNotificationActionPerformed', (action) => {
         const route = action.notification.extra?.route;
         if (typeof route === 'string' && route.startsWith('/') && !route.startsWith('//')) {
-          navigateTo(route);
+          requestNavigation(route);
         }
       });
     }
