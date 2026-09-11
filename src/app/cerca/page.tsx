@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
 import { useUserLocation, sortByDistance } from '@/lib/geolocation';
 import { DistanceBadge } from '@/components/shared/DistanceBadge';
+import { today } from '@/lib/dates';
 
 export default function CercaPage() {
   const { location, loading: geoLoading, error: geoError, requestLocation } = useUserLocation();
@@ -52,7 +53,7 @@ export default function CercaPage() {
       const { data } = await supabase.from('social_plans')
         .select('*, creator:profiles(full_name), members:social_plan_members(id)')
         .eq('status', 'open').eq('visibility', 'public')
-        .gte('plan_date', new Date().toISOString().split('T')[0])
+        .gte('plan_date', today())
         .not('latitude', 'is', null).limit(50);
       return sortByDistance(data ?? [], location.lat, location.lng).filter(p => p.distance <= maxKm);
     },

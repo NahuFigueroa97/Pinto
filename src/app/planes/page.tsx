@@ -10,6 +10,7 @@ import { useUserLocation, haversineDistance } from '@/lib/geolocation';
 import { useBlockedIds, filterBlocked } from '@/lib/blocks';
 import { DistanceBadge } from '@/components/shared/DistanceBadge';
 import type { SocialPlan } from '@/types/database';
+import { today } from '@/lib/dates';
 
 export default function PlanesFeedPage() {
   const { user, role } = useAuth();
@@ -39,13 +40,13 @@ export default function PlanesFeedPage() {
                     members:social_plan_members(id)`)
         .eq('status', 'open')
         .eq('visibility', 'public')
-        .gte('plan_date', new Date().toISOString().split('T')[0])
+        .gte('plan_date', today())
         .order('plan_date')
         .limit(30);
 
       if (catFilter) { query = query.eq('category_id', catFilter); }
       if (filter === 'today') {
-        query = query.eq('plan_date', new Date().toISOString().split('T')[0]);
+        query = query.eq('plan_date', today());
       }
 
       const { data } = await query;

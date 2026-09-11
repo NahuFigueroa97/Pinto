@@ -6,6 +6,7 @@ import { Users, ChevronRight, Shuffle, Sparkles } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { useQuery } from '@tanstack/react-query';
+import { today } from '@/lib/dates';
 
 export default function PintoRandomPage() {
   const { user, role } = useAuth();
@@ -20,7 +21,7 @@ export default function PintoRandomPage() {
                     members:social_plan_members(id),
                     category:plan_categories(name, emoji)`)
         .eq('status', 'open').eq('visibility', 'public')
-        .gte('plan_date', new Date().toISOString().split('T')[0])
+        .gte('plan_date', today())
         .limit(50);
       // Shuffle
       const arr = data ?? [];
