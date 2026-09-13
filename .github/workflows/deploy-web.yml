@@ -38,6 +38,54 @@ jobs:
 
       - run: npm ci
 
+      # El chequeo de next.config.mjs esta pensado para cuando alguien compila
+      # en su maquina: dice "crea un .env.local". Aca eso no sirve de nada y
+      # manda a buscar el problema al lugar equivocado. Este paso corta antes
+      # con el mensaje que corresponde.
+      - name: Verificar que esten los secrets
+        env:
+          URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: |
+          faltan=""
+          [ -z "$URL" ] && faltan="$faltan NEXT_PUBLIC_SUPABASE_URL"
+          [ -z "$KEY" ] && faltan="$faltan NEXT_PUBLIC_SUPABASE_ANON_KEY"
+
+          if [ -n "$faltan" ]; then
+            echo "::error::Faltan secrets del repositorio:$faltan"
+            cat <<'AYUDA'
+
+          ┌──────────────────────────────────────────────────────────────┐
+          │  Faltan los secrets del repositorio                          │
+          └──────────────────────────────────────────────────────────────┘
+
+          Esto NO se arregla con un .env.local: en GitHub los valores salen
+          de los secrets del repo.
+
+            Settings > Secrets and variables > Actions > New repository secret
+
+          Crea estos dos, con el nombre EXACTO:
+
+            NEXT_PUBLIC_SUPABASE_URL       https://<tu-ref>.supabase.co
+            NEXT_PUBLIC_SUPABASE_ANON_KEY  sb_publishable_...  (o la anon)
+
+          Los dos valores estan en:
+            Supabase Dashboard > Project Settings > API Keys
+
+          OJO: va la clave publishable / anon, la que ya viaja adentro del
+          APK. La service_role / sb_secret_ NUNCA: saltea todos los permisos
+          de la base y quedaria publicada.
+
+          Despues de crearlos, volve a esta pagina del Action y toca
+          "Re-run all jobs" (arriba a la derecha). No hace falta pushear
+          de nuevo.
+
+          AYUDA
+            exit 1
+          fi
+
+          echo "Secrets presentes."
+
       - name: Compilar el sitio
         env:
           # La anon key es pública por diseño: viaja adentro del APK igual.
