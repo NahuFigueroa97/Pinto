@@ -172,9 +172,9 @@ function LegalLinks() {
       <Link href="/perfil/eliminar" className="block text-xs text-red-400">Eliminar mi cuenta</Link>
       <p className="text-[0.6rem] text-gray-300 pt-2">Pintó · Catamarca, Argentina</p>
       {/* Sirve para saber qué build está corriendo sin tener que adivinar */}
-      <p className="text-[0.55rem] text-gray-300 font-mono">
+      <Link href="/diagnostico" className="block text-[0.55rem] text-gray-300 font-mono underline">
         build {process.env.NEXT_PUBLIC_BUILD_ID} · {process.env.NEXT_PUBLIC_BUILD_DATE}
-      </p>
+      </Link>
     </div>
   );
 }

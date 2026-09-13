@@ -5,7 +5,6 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { Clock, Users, ChevronRight } from 'lucide-react';
 import { useBlockedIds, filterBlocked } from '@/lib/blocks';
-import { withTimeout } from '@/lib/withTimeout';
 
 const ACTION_LABELS: Record<string, { emoji: string; text: (m: any) => string }> = {
   created_plan: { emoji: '🎉', text: (m) => `creó el plan "${m?.title || ''}"` },
@@ -35,12 +34,15 @@ export default function FeedPage() {
       // El error se descartaba con `data ?? []`, así que un fallo de RLS o
       // de red se veía igual que "no hay actividad". Y sin timeout, una
       // petición colgada dejaba el spinner girando indefinidamente.
-      const { data, error: queryError } = await withTimeout(
-        supabase.from('activity_feed')
-          .select('*, actor:profiles(full_name, avatar_url)')
-          .order('created_at', { ascending: false })
-          .limit(50),
-      );
+      // El timeout ya no va acá: el cliente de Supabase aborta toda petición
+      // a los 20 s (ver src/lib/supabase.ts). Tener dos límites distintos
+      // para lo mismo hacía que el mensaje de error dijera 15 s cuando el
+      // corte real podía ser otro.
+      const { data, error: queryError } = await supabase
+        .from('activity_feed')
+        .select('*, actor:profiles(full_name, avatar_url)')
+        .order('created_at', { ascending: false })
+        .limit(50);
       if (queryError) throw queryError;
       return data ?? [];
     },
