@@ -78,8 +78,8 @@ export default function HomePage() {
         }
       }
 
-      const { data, error } = await query.limit(20);
-      if (error) return [];
+      // `if (error) return []` convertía cualquier fallo en "no hay promos".
+      const data = await sb(query.limit(20));
       return (data ?? []) as (Campaign & { business: any })[];
     },
     enabled: selectedCategory === 'all' || (categories != null && categories.length > 0),

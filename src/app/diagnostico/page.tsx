@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Play, Copy, Check } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
+import { today } from '@/lib/dates';
 
 /**
  * Diagnóstico de conectividad.
@@ -18,6 +19,15 @@ import { useAuth } from '@/lib/auth';
  * Esta pantalla mide cada paso por separado y deja el resultado listo para
  * copiar y pegar.
  */
+
+interface PlanRow {
+  id: string;
+  title: string;
+  plan_date: string;
+  status: string;
+  visibility: string;
+  category_id: string | null;
+}
 
 interface Step {
   name: string;
@@ -48,18 +58,23 @@ export default function DiagnosticoPage() {
   const [steps, setSteps] = useState<Step[]>([]);
   const [running, setRunning] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [plans, setPlans] = useState<PlanRow[]>([]);
 
   const run = async () => {
     setRunning(true);
     setSteps([]);
+    setPlans([]);
     const out: Step[] = [];
     const push = (s: Step) => { out.push(s); setSteps([...out]); };
 
     // 1. ¿Hay internet? Sin esto, todo lo demás va a fallar igual y no
     //    distinguiríamos "sin red" de "Supabase caído".
     push(await timed('Conexión a internet', async () => {
-      const r = await fetch('https://www.gstatic.com/generate_204', { cache: 'no-store' });
-      return `HTTP ${r.status}`;
+      // no-cors: generate_204 no manda cabeceras CORS y el WebView rechaza
+      // la respuesta. Con no-cors la respuesta es opaca (no se puede leer el
+      // status) pero si la promesa resuelve, hay salida a internet.
+      await fetch('https://www.gstatic.com/generate_204', { cache: 'no-store', mode: 'no-cors' });
+      return 'hay salida a internet';
     }));
 
     // 2. ¿Responde el host de Supabase? Va sin auth y sin tocar la base.
@@ -115,6 +130,31 @@ export default function DiagnosticoPage() {
       return `${data?.length ?? 0} fila(s)`;
     }));
 
+    // 8. Planes SIN filtros: si acá aparece y en /planes no, el problema
+    //    son los filtros. Si no aparece ni acá, es RLS.
+    push(await timed('Planes visibles (sin filtros)', async () => {
+      const { data, error } = await supabase
+        .from('social_plans')
+        .select('id, title, plan_date, status, visibility, category_id')
+        .order('created_at', { ascending: false }).limit(10);
+      if (error) throw error;
+      setPlans((data ?? []) as PlanRow[]);
+      return `${data?.length ?? 0} fila(s)`;
+    }));
+
+    // 9. Exactamente la consulta de /planes, con los mismos filtros.
+    push(await timed('Planes con los filtros de /planes', async () => {
+      const { data, error } = await supabase
+        .from('social_plans')
+        .select('id')
+        .eq('status', 'open')
+        .eq('visibility', 'public')
+        .gte('plan_date', today())
+        .order('plan_date').limit(30);
+      if (error) throw error;
+      return `${data?.length ?? 0} fila(s) · hoy = ${today()}`;
+    }));
+
     setRunning(false);
   };
 
@@ -122,6 +162,8 @@ export default function DiagnosticoPage() {
     `build ${process.env.NEXT_PUBLIC_BUILD_ID} · ${process.env.NEXT_PUBLIC_BUILD_DATE}`,
     `sesión: ${user ? 'sí' : 'no'}`,
     ...steps.map(s => `${s.ok ? 'OK  ' : 'FALLA'} ${s.ms.toString().padStart(6)}ms  ${s.name}: ${s.detail}`),
+    ...(plans.length ? ['', `planes (hoy=${today()}):`] : []),
+    ...plans.map(p => `  ${p.plan_date} ${p.status} ${p.visibility} — ${p.title}`),
   ].join('\n');
 
   const copy = async () => {
@@ -172,6 +214,37 @@ export default function DiagnosticoPage() {
                 </div>
               ))}
             </div>
+
+            {/* Por qué cada plan entra o no en el listado */}
+            {plans.length > 0 && (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <p className="px-4 py-2 text-xs font-bold bg-gray-50 border-b border-gray-100">
+                  Planes que ve tu sesión · hoy = {today()}
+                </p>
+                {plans.map(p => {
+                  const okStatus = p.status === 'open';
+                  const okVis = p.visibility === 'public';
+                  const okDate = p.plan_date >= today();
+                  const shown = okStatus && okVis && okDate;
+                  return (
+                    <div key={p.id} className="px-4 py-2 border-b border-gray-50 last:border-0">
+                      <div className="flex items-center gap-2">
+                        <span className={shown ? 'text-green-500' : 'text-red-500'}>{shown ? '●' : '✕'}</span>
+                        <p className="text-sm font-medium truncate flex-1">{p.title}</p>
+                      </div>
+                      <p className="text-[0.65rem] text-gray-400 ml-6">
+                        <span className={okDate ? '' : 'text-red-500 font-bold'}>{p.plan_date}</span>
+                        {' · '}
+                        <span className={okStatus ? '' : 'text-red-500 font-bold'}>{p.status}</span>
+                        {' · '}
+                        <span className={okVis ? '' : 'text-red-500 font-bold'}>{p.visibility}</span>
+                        {!p.category_id && ' · sin categoría'}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             {!running && (
               <button

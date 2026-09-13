@@ -46,7 +46,9 @@ export default function ExplorarPage() {
       if (selectedZone !== 'all') query = query.eq('zone_id', selectedZone);
       if (search) query = query.ilike('name', `%${search}%`);
 
-      const { data } = await query.limit(30);
+      // Mismo caso que en /planes: la cadena se arma en una variable, así
+      // que el rollout de sb() no la tocó y el error seguía descartándose.
+      const data = await sb(query.limit(30));
       return (data ?? []) as Business[];
     },
   });

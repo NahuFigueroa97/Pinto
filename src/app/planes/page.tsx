@@ -50,7 +50,10 @@ export default function PlanesFeedPage() {
         query = query.eq('plan_date', today());
       }
 
-      const { data } = await query;
+      // El rollout de sb() no matcheó este caso porque la cadena se arma
+      // en una variable. Seguía devolviendo [] ante cualquier error, así que
+      // un fallo se veía como "no hay planes disponibles".
+      const data = await sb(query);
       let result = (data ?? []) as any[];
 
       // Add distance if user has location
