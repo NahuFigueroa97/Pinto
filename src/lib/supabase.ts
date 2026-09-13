@@ -93,19 +93,42 @@ function createSerialLock() {
 
 function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   // Si quien llama ya pasó un signal, se respeta y se encadena.
   init.signal?.addEventListener('abort', () => controller.abort(), { once: true });
 
-  return fetch(input, { ...init, signal: controller.signal })
+  const LENTO = new Error('La conexión tardó demasiado. Revisá tu internet y probá de nuevo.');
+
+  let timer: ReturnType<typeof setTimeout>;
+
+  /**
+   * El plazo se corta acá, no en el AbortController.
+   *
+   * La versión anterior solo llamaba a controller.abort() y devolvía la
+   * promesa de fetch. Eso da por sentado que fetch HONRA el abort — y el
+   * WebView de Android, con la red inestable, a veces deja la promesa sin
+   * resolver ni rechazar aunque la aborten. Cuando pasa, react-query se
+   * queda en `pending` para siempre: ni error, ni reintento, ni timeout. Es
+   * el spinner eterno que fue volviendo pantalla por pantalla.
+   *
+   * Con la carrera, el plazo se cumple sí o sí: si fetch no contesta a los
+   * 20 s, el que llamó recibe un error igual y la UI puede reaccionar. El
+   * abort se sigue mandando para liberar la conexión si el WebView colabora.
+   */
+  const plazo = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(LENTO);
+    }, REQUEST_TIMEOUT_MS);
+  });
+
+  const pedido = fetch(input, { ...init, signal: controller.signal })
     .catch((err) => {
-      if (err?.name === 'AbortError') {
-        throw new Error('La conexión tardó demasiado. Revisá tu internet y probá de nuevo.');
-      }
+      if (err?.name === 'AbortError') throw LENTO;
       throw err;
-    })
-    .finally(() => clearTimeout(timer));
+    });
+
+  return Promise.race([pedido, plazo]).finally(() => clearTimeout(timer));
 }
 
 // NOTE: When you run `supabase gen types typescript` to generate DB types,

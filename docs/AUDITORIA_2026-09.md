@@ -414,3 +414,62 @@ función y programarla. Paso a paso en
 | Recursos Android | Parseo XML de manifiesto y `res/` | Bien formados; el `pathData` del icono tiene 2 subpaths cerrados y `fillType="evenOdd"` |
 | Build Android | — | ⚠️ **No ejecutado**: no hay SDK de Android en este entorno |
 | Push en dispositivo | — | ⚠️ **No ejecutado**: requiere el secret de FCM y un teléfono |
+
+---
+
+## Anexo — Spinners sin salida (13/09)
+
+El spinner infinito volvió cinco veces en pantallas distintas. Cada vez se
+arregló esa pantalla; cada vez reapareció en otra. El problema no era
+ninguna de ellas.
+
+### Las tres causas reales
+
+1. **`fetchWithTimeout` confiaba en el `AbortController`.** Llamaba a
+   `controller.abort()` a los 20 s y devolvía la promesa de `fetch` tal
+   cual. Eso da por sentado que `fetch` honra el abort — y el WebView de
+   Android, con la red inestable, a veces deja la promesa sin resolver *ni*
+   rechazar aunque la aborten. Cuando pasa, react-query se queda en
+   `pending` para siempre: ni error, ni reintento, ni timeout. Ahora el
+   plazo es un `Promise.race` contra un temporizador que **rechaza**, así
+   que se cumple colabore o no el WebView.
+
+2. **`onAuthStateChange` sin `try/finally`.** Si `fetchProfile` fallaba, el
+   callback quedaba rechazado y `setLoading(false)` no corría nunca. Toda
+   pantalla que mira `auth.loading` —o sea casi todas— quedaba cargando
+   hasta reiniciar la app. Bastaba un fallo de red al abrirla. Se agregó
+   `finally`, `.catch()` en el `getSession()` de respaldo, y un límite de
+   15 s como último recurso: es mejor arrancar sin sesión que no arrancar.
+
+3. **No había ningún error boundary.** Un error de render desmontaba el
+   árbol entero y dejaba la pantalla en blanco o congelada en el fallback
+   de `<Suspense>`, sin mensaje. En el navegador queda el stack en la
+   consola; en el teléfono de alguien, nada.
+
+### La garantía estructural
+
+Las causas puntuales se arreglan, pero la forma `if (isLoading) return
+<spinner/>` —32 veces en el repo— vuelve a aparecer en la próxima pantalla
+que alguien escriba. Por eso:
+
+- **`<PageSpinner>`**: a los 10 s ofrece reintentar, volver, ir al inicio y
+  abrir el diagnóstico. Reemplaza los 32 spinners crudos y los 13
+  *fallbacks* de `<Suspense>`. No adivina la causa; garantiza que ninguna
+  pantalla sea un callejón sin salida.
+- **`npm run check:spinners`**, dentro de `npm run verify`: falla si
+  aparece una rueda de carga que no pase por `<PageSpinner>` o
+  `<QueryState>`.
+
+### De paso
+
+- `perfil/ver` y `planes/detalle` mostraban "no encontrado" ante un error
+  de red o de RLS. Un fallo y una ausencia no son lo mismo.
+- **Visto del chat**: `mark_chat_read` solo corría al montar y dentro del
+  efecto de auto-scroll condicionado a `atBottom`, que en pleno scroll
+  suave vale `false`. Si abrías el chat y te quedabas adentro, tu marca de
+  lectura quedaba clavada en el momento en que entraste: los mensajes
+  posteriores no contaban como leídos ni siquiera al responderlos, y quien
+  los mandó veía "Todavía no lo vio nadie" para siempre. Ahora se marca con
+  cada mensaje nuevo y al volver del segundo plano, con guarda de
+  `visibilityState` para no mentir, y el error del RPC se muestra en vez de
+  tragarse con `void`.
