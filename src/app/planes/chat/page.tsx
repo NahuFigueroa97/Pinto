@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Send, Check, CheckCheck } from 'lucide-react';
+import { ArrowLeft, Send, Check, CheckCheck, Clock, X } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -58,6 +58,8 @@ function ChatInner() {
   const [error, setError] = useState('');
   const [pending, setPending] = useState<ChatMessage[]>([]);
   const [atBottom, setAtBottom] = useState(true);
+  // Equivalente al "Info del mensaje" de WhatsApp: quién lo leyó y cuándo.
+  const [infoOf, setInfoOf] = useState<ChatMessage | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -267,7 +269,8 @@ function ChatInner() {
 
               <div className={`flex ${isMine ? 'justify-end' : 'justify-start'} ${grouped ? 'mt-0.5' : 'mt-2'}`}>
                 <div
-                  className={`max-w-[78%] px-3.5 py-2 ${
+                  onClick={() => { if (isMine && !m.pending && others > 0) setInfoOf(m); }}
+                  className={`max-w-[78%] px-3.5 py-2 ${isMine && !m.pending && others > 0 ? 'cursor-pointer' : ''} ${
                     isMine
                       ? `bg-brand-500 text-white rounded-2xl ${grouped ? 'rounded-tr-md' : ''} rounded-br-md`
                       : `bg-white text-gray-800 border border-gray-100 rounded-2xl ${grouped ? 'rounded-tl-md' : ''} rounded-bl-md`
@@ -283,12 +286,19 @@ function ChatInner() {
                     <span className="text-[0.55rem]">
                       {new Date(m.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
                     </span>
+                    {/* Mismos estados que WhatsApp: reloj mientras se envía,
+                        una tilde al llegar al servidor, dos grises cuando lo
+                        leyó alguien y dos celestes cuando lo leyeron todos.
+                        Antes se ponía celeste con una sola persona, que es
+                        justo lo contrario de lo que significa ahí. */}
                     {isMine && (
                       m.pending
-                        ? <Check size={11} className="opacity-50" />
-                        : seen.length > 0
-                          ? <CheckCheck size={11} className="text-sky-200" />
-                          : <Check size={11} />
+                        ? <Clock size={10} className="opacity-60" />
+                        : seen.length === 0
+                          ? <Check size={11} />
+                          : seen.length >= others
+                            ? <CheckCheck size={12} className="text-sky-300" />
+                            : <CheckCheck size={12} className="opacity-70" />
                     )}
                   </div>
                 </div>
@@ -296,11 +306,14 @@ function ChatInner() {
 
               {/* El visto detallado solo en el último mensaje propio: en un
                   grupo, repetirlo en cada burbuja es ruido. */}
-              {isLastMine && seen.length > 0 && (
+              {isLastMine && others > 0 && (
                 <p className="text-[0.6rem] text-gray-400 text-right mt-0.5 pr-1">
-                  Visto por {seen.length === others
-                    ? 'todos'
-                    : seen.map(s => (s.full_name ?? '').split(' ')[0]).filter(Boolean).join(', ')}
+                  {seen.length === 0
+                    ? 'Todavía no lo vio nadie'
+                    : seen.length >= others
+                      ? `Visto por todos (${others})`
+                      : `Visto por ${seen.length} de ${others}`}
+                  <span className="text-gray-300"> · tocá para ver quién</span>
                 </p>
               )}
             </div>
@@ -318,6 +331,66 @@ function ChatInner() {
         >
           ↓
         </button>
+      )}
+
+      {/* Detalle de lectura, como el "Info del mensaje" de WhatsApp */}
+      {infoOf && (
+        <div
+          className="fixed inset-0 z-40 bg-black/40 flex items-end"
+          onClick={() => setInfoOf(null)}
+        >
+          <div
+            className="bg-white w-full max-w-lg mx-auto rounded-t-3xl p-5 pb-8"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div className="min-w-0">
+                <p className="text-xs text-gray-400">Info del mensaje</p>
+                <p className="text-sm font-medium truncate">{infoOf.content}</p>
+              </div>
+              <button onClick={() => setInfoOf(null)} className="p-1 text-gray-400 shrink-0">
+                <X size={18} />
+              </button>
+            </div>
+
+            {(() => {
+              const readers = seenBy(infoOf.created_at);
+              const readerIds = new Set(readers.map(r => r.user_id));
+              const pendientes = (reads ?? []).filter(r => !readerIds.has(r.user_id));
+              return (
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-[0.7rem] font-bold text-sky-500 flex items-center gap-1.5 mb-2">
+                      <CheckCheck size={13} /> Leído por {readers.length}
+                    </p>
+                    {readers.length === 0 ? (
+                      <p className="text-xs text-gray-400 pl-5">Todavía nadie</p>
+                    ) : readers.map(r => (
+                      <div key={r.user_id} className="flex items-center justify-between py-1 pl-5">
+                        <span className="text-sm">{r.full_name}</span>
+                        <span className="text-[0.65rem] text-gray-400">
+                          {r.last_read_at && new Date(r.last_read_at).toLocaleTimeString('es-AR',
+                            { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {pendientes.length > 0 && (
+                    <div>
+                      <p className="text-[0.7rem] font-bold text-gray-400 flex items-center gap-1.5 mb-2">
+                        <Check size={13} /> Sin leer {pendientes.length}
+                      </p>
+                      {pendientes.map(r => (
+                        <p key={r.user_id} className="text-sm text-gray-500 py-1 pl-5">{r.full_name}</p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        </div>
       )}
 
       <div className="shrink-0 border-t border-gray-100 bg-white px-3 py-2 safe-bottom">
