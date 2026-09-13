@@ -7,6 +7,7 @@ import { CheckCircle, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import type { Business } from '@/types/database';
 import { parseMoney, formatMoney } from '@/lib/money';
+import { Link2 } from 'lucide-react';
 import { useState } from 'react';
 import { sb } from '@/lib/sb';
 
@@ -49,6 +50,24 @@ export default function NegocioDashboard() {
       };
     },
     enabled: !!business,
+  });
+
+  // Consumo del plan. Los límites los enforza la base (trigger
+  // enforce_campaign_quota); acá solo se muestran para que el negocio
+  // entienda qué le da su plan y por qué le conviene mejorarlo.
+  const { data: limits } = useQuery({
+    queryKey: ['business_limits', business?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('business_limits', { p_business_id: business!.id });
+      if (error) throw error;
+      return data as {
+        plan: { slug: string; name: string; price_monthly: number };
+        campaigns: { used: number; max: number | null };
+        featured: { used: number; max: number | null };
+        can_create: boolean;
+      };
+    },
+    enabled: !!business?.id,
   });
 
   // Pending reservations
@@ -174,6 +193,44 @@ export default function NegocioDashboard() {
         </Link>
       </div>
 
+      {/* Plan y consumo */}
+      {limits && (
+        <div className="px-4 pb-4">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-[0.6rem] text-gray-400 font-bold uppercase tracking-wide">Tu plan</p>
+                <p className="font-display font-bold text-sm">{limits.plan.name}</p>
+              </div>
+              {limits.plan.slug === 'free' && (
+                <Link href="/negocio/plan"
+                  className="text-xs font-bold px-3 py-1.5 rounded-full bg-gradient-to-r from-brand-500 to-accent-500 text-white shadow-sm">
+                  Mejorar
+                </Link>
+              )}
+            </div>
+
+            <QuotaBar
+              label="Promos activas"
+              used={limits.campaigns.used}
+              max={limits.campaigns.max}
+            />
+            <div className="h-2" />
+            <QuotaBar
+              label="Destacadas"
+              used={limits.featured.used}
+              max={limits.featured.max}
+            />
+
+            {!limits.can_create && (
+              <p className="text-[0.7rem] text-yellow-700 bg-yellow-50 rounded-lg px-2.5 py-1.5 mt-3">
+                Llegaste al tope. Pausá una promo o mejorá el plan para publicar más.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Lector de QR para validar reservas en el mostrador */}
       <div className="px-4 pb-4">
         <Link href="/negocio/checkin"
@@ -289,6 +346,30 @@ function PendingReservationCard({
           <XCircle size={14} /> ✖️
         </button>
       </div>
+    </div>
+  );
+}
+
+/** Barra de consumo de un cupo del plan. `max` null = ilimitado. */
+function QuotaBar({ label, used, max }: { label: string; used: number; max: number | null }) {
+  const pct = max ? Math.min(100, (used / max) * 100) : 0;
+  const full = max !== null && used >= max;
+  return (
+    <div>
+      <div className="flex items-center justify-between text-[0.65rem] mb-1">
+        <span className="text-gray-500">{label}</span>
+        <span className={`font-bold ${full ? 'text-yellow-600' : 'text-gray-600'}`}>
+          {used}{max === null ? ' · ilimitadas' : ` / ${max}`}
+        </span>
+      </div>
+      {max !== null && (
+        <div className="w-full bg-gray-100 rounded-full h-1.5">
+          <div
+            className={`h-1.5 rounded-full transition-all ${full ? 'bg-yellow-400' : 'bg-accent-500'}`}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      )}
     </div>
   );
 }

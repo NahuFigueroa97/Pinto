@@ -7,6 +7,8 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ProfileCard } from '@/components/shared/ProfileCard';
+import { useCampaignTiers } from '@/lib/offers';
+import { OfferLadder } from '@/components/shared/OfferLadder';
 import Link from 'next/link';
 import { sb } from '@/lib/sb';
 
@@ -73,6 +75,10 @@ function PlanDetailInner() {
     },
     enabled: !!id && !!user,
   });
+
+  // Si el plan nació de una promo, el beneficio depende de cuánta gente
+  // haya en el grupo AHORA. Es el gancho: sumar uno más mejora el descuento.
+  const { data: campaignTiers } = useCampaignTiers(plan?.campaign_id);
 
   const isMember = members?.some((m: any) => m.user_id === user?.id);
   const isCreator = plan?.creator_id === user?.id;
@@ -175,6 +181,11 @@ function PlanDetailInner() {
             <p className="font-semibold text-sm mt-0.5">{plan.campaign.title}</p>
             <p className="text-xs text-gray-500">{plan.campaign.business?.name}</p>
           </Link>
+        )}
+
+        {/* Cuánto beneficio tiene desbloqueado el grupo tal como está hoy */}
+        {campaignTiers && campaignTiers.length > 0 && (
+          <OfferLadder tiers={campaignTiers} partySize={members?.length ?? 1} compact />
         )}
 
         {plan.description && <p className="text-sm text-gray-600 leading-relaxed">{plan.description}</p>}

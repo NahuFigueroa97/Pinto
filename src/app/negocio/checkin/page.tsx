@@ -29,6 +29,13 @@ interface CheckinResult {
   party_size?: number;
   reservation_id?: string;
   stamps?: { stamp_id: string; current: number; required: number; reward: string; ready: boolean } | null;
+  /** Lo devuelve campaign_offer() dentro de redeem_reservation (migración 014). */
+  offer?: {
+    ok: boolean;
+    reasons: string[];
+    tier: { label: string; min_people: number } | null;
+    next_tier: { label: string; people_missing: number } | null;
+  } | null;
 }
 
 // BarcodeDetector todavía no está en los tipos del DOM
@@ -59,6 +66,9 @@ export default function CheckinPage() {
   const [result, setResult] = useState<CheckinResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [lastStampId, setLastStampId] = useState<string | null>(null);
+  // Lo que define el descuento es el grupo que se PRESENTÓ, no el que
+  // reservó. El mostrador tiene que poder corregirlo.
+  const [partySize, setPartySize] = useState('');
 
   const stopCamera = useCallback(() => {
     if (scanLoopRef.current !== null) {
@@ -81,7 +91,10 @@ export default function CheckinPage() {
     busyRef.current = true;
     setSubmitting(true);
     try {
-      const { data, error } = await supabase.rpc('redeem_reservation', { p_code: code });
+      const { data, error } = await supabase.rpc('redeem_reservation', {
+        p_code: code,
+        p_party_size: partySize ? parseInt(partySize) : null,
+      });
       if (error) throw error;
       const res = data as CheckinResult;
       setResult(res);
@@ -193,6 +206,25 @@ export default function CheckinPage() {
                   {result.user_name}
                   {result.party_size ? ` · ${result.party_size} ${result.party_size === 1 ? 'persona' : 'personas'}` : ''}
                 </p>
+
+                {/* El beneficio que corresponde a este grupo, a esta hora */}
+                {result.offer?.ok && result.offer.tier && (
+                  <div className="mt-3 bg-white rounded-xl p-3 border border-green-100 text-center">
+                    <p className="text-[0.65rem] text-gray-400 uppercase tracking-wide">Aplicar</p>
+                    <p className="text-2xl font-black text-brand-600 mt-0.5">{result.offer.tier.label}</p>
+                  </div>
+                )}
+                {result.offer && !result.offer.ok && (
+                  <div className="mt-3 bg-yellow-50 rounded-xl p-3 border border-yellow-200">
+                    <p className="text-xs font-medium text-yellow-800">Sin descuento</p>
+                    <ul className="text-[0.7rem] text-yellow-700 mt-1 space-y-0.5">
+                      {result.offer.reasons?.map((r, i) => <li key={i}>• {r}</li>)}
+                      {result.offer.next_tier && (
+                        <li>• Faltan {result.offer.next_tier.people_missing} para {result.offer.next_tier.label}</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
                 {result.stamps && (
                   <div className="mt-3 bg-white rounded-xl p-3 border border-green-100">
                     <p className="text-xs font-medium text-gray-700">
@@ -256,6 +288,17 @@ export default function CheckinPage() {
           <p className="text-xs text-gray-400 mb-3">
             Si la cámara no anda, pedile al cliente los 8 caracteres que figuran debajo de su QR.
           </p>
+          <div className="flex items-center gap-2 mb-2">
+            <label className="text-xs text-gray-500 shrink-0">¿Cuántos vinieron?</label>
+            <input
+              type="number" min={1} max={50} inputMode="numeric"
+              value={partySize}
+              onChange={e => setPartySize(e.target.value)}
+              placeholder="auto"
+              className="w-20 px-2.5 py-1.5 rounded-lg border border-gray-200 text-sm text-center outline-none focus:border-accent-400"
+            />
+            <span className="text-[0.65rem] text-gray-400">vacío = lo reservado</span>
+          </div>
           <div className="flex gap-2">
             <input
               value={manualCode}

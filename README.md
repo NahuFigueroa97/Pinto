@@ -189,6 +189,14 @@ supabase/
 - [ ] Algoritmo de recomendaciones
 - [ ] Soporte de iOS (falta `GoogleService-Info.plist` y la clave APNs)
 
+## Ofertas comerciales y monetización
+
+El negocio publica promos **condicionadas** (escalera de descuento por tamaño
+de grupo, días, franja horaria, cupo) y los planes sociales se arman para
+desbloquearlas. Los límites por plan de suscripción se enforzan en la base.
+
+Diseño, modelo de datos e ideas: [docs/MONETIZACION.md](docs/MONETIZACION.md).
+
 ## Antes de publicar en Google Play
 
 Leer [docs/AUDITORIA_2026-09.md](docs/AUDITORIA_2026-09.md): tiene el detalle de

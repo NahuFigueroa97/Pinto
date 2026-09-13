@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { CampaignType } from '@/types/database';
+import { OfferEditor, emptyOffer, type OfferDraft } from '@/components/shared/OfferEditor';
 import { sb } from '@/lib/sb';
 
 const TYPES: { value: CampaignType; label: string; desc: string }[] = [
@@ -28,6 +29,8 @@ export default function NuevaCampanaPage() {
     price_text: '', is_free: false, requires_reservation: false,
   });
 
+  const [offer, setOffer] = useState<OfferDraft>(emptyOffer);
+
   const { data: business } = useQuery({
     queryKey: ['business', 'me'],
     queryFn: async () => {
@@ -38,6 +41,25 @@ export default function NuevaCampanaPage() {
     enabled: !!user,
   });
 
+  // Los límites del plan los decide la base (business_limits), no el cliente:
+  // acá solo se muestran para que el negocio entienda por qué no puede crear
+  // otra promo. El trigger enforce_campaign_quota es el que realmente corta.
+  const { data: limits } = useQuery({
+    queryKey: ['business_limits', business?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('business_limits', { p_business_id: business!.id });
+      if (error) throw error;
+      return data as {
+        plan: { slug: string; name: string };
+        campaigns: { used: number; max: number | null };
+        can_create: boolean;
+        max_tiers: number;
+      };
+    },
+    enabled: !!business?.id,
+  });
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title || !form.starts_at || !form.ends_at) { setError('Título, fecha inicio y fin son obligatorios'); return; }
@@ -45,7 +67,12 @@ export default function NuevaCampanaPage() {
     setLoading(true);
     setError('');
     try {
-      const { error: insertError } = await supabase.from('campaigns').insert({
+      // El escalón más chico define el mínimo del grupo: son la misma idea
+      // expresada dos veces, y si discrepan la ficha muestra una cosa y el
+      // check-in valida otra.
+      const minPeople = Math.min(...offer.tiers.map(t => t.min_people));
+
+      const { data: created, error: insertError } = await supabase.from('campaigns').insert({
         business_id: business.id,
         title: form.title,
         short_description: form.short_description,
@@ -54,13 +81,31 @@ export default function NuevaCampanaPage() {
         starts_at: new Date(form.starts_at).toISOString(),
         ends_at: new Date(form.ends_at).toISOString(),
         max_capacity: form.max_capacity ? parseInt(form.max_capacity) : null,
-        min_group_size: form.min_group_size ? parseInt(form.min_group_size) : null,
+        min_group_size: minPeople > 1 ? minPeople : null,
         price_text: form.price_text || null,
         is_free: form.is_free,
         requires_reservation: form.requires_reservation,
         status: 'active',
-      });
+        // Condiciones estructuradas: antes esto vivía en price_text como
+        // texto libre y ningún código podía interpretarlo.
+        valid_weekdays: offer.valid_weekdays,
+        valid_from_time: offer.valid_from_time || null,
+        valid_until_time: offer.valid_until_time || null,
+        max_redemptions_total: offer.max_redemptions_total
+          ? parseInt(offer.max_redemptions_total) : null,
+        terms: offer.terms || null,
+      }).select('id').single();
       if (insertError) throw insertError;
+
+      const { error: tiersError } = await supabase.from('campaign_tiers').insert(
+        offer.tiers.map(t => ({
+          campaign_id: created.id,
+          min_people: t.min_people,
+          discount_type: t.discount_type,
+          discount_value: t.discount_value,
+        })),
+      );
+      if (tiersError) throw tiersError;
 
       // Invalidate campaign list and stats
       await queryClient.invalidateQueries({ queryKey: ['my_campaigns'] });
@@ -85,6 +130,18 @@ export default function NuevaCampanaPage() {
 
       <form onSubmit={handleSubmit} className="px-4 space-y-4">
         {error && <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100">{error}</div>}
+
+        {limits && !limits.can_create && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3">
+            <p className="text-sm font-medium text-yellow-800">
+              Llegaste al límite de tu plan {limits.plan.name}
+            </p>
+            <p className="text-xs text-yellow-700 mt-0.5">
+              {limits.campaigns.used} de {limits.campaigns.max} promos activas.
+              Pausá una desde &quot;Mis promos&quot; o mejorá el plan para publicar más.
+            </p>
+          </div>
+        )}
 
         {/* Type */}
         <div>
@@ -158,6 +215,25 @@ export default function NuevaCampanaPage() {
             Requiere reserva
           </label>
         </div>
+
+        {/* Oferta condicionada: escalones por grupo, días y franja horaria */}
+
+        <div className="pt-2 border-t border-gray-100">
+
+          <OfferEditor
+
+            value={offer}
+
+            onChange={setOffer}
+
+            maxTiers={limits?.max_tiers ?? 1}
+
+            planName={limits?.plan?.name}
+
+          />
+
+        </div>
+
 
         <button type="submit" disabled={loading} className="w-full py-3 bg-accent-500 text-white font-semibold rounded-xl disabled:opacity-50 shadow-md shadow-accent-500/20">
           {loading ? 'Creando...' : 'Publicar campaña'}

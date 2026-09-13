@@ -8,6 +8,8 @@ import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Campaign, Reservation } from '@/types/database';
 import { moderateContent } from '@/lib/moderation';
+import { useCampaignTiers } from '@/lib/offers';
+import { OfferLadder } from '@/components/shared/OfferLadder';
 import Link from 'next/link';
 import { sb } from '@/lib/sb';
 
@@ -25,6 +27,7 @@ function CampaignDetailInner() {
   const { user, role } = useAuth();
   const queryClient = useQueryClient();
   const [partySize, setPartySize] = useState(1);
+  const { data: tiers } = useCampaignTiers(id);
   const [showMsgBox, setShowMsgBox] = useState(false);
   const [msgText, setMsgText] = useState('');
   const [msgError, setMsgError] = useState('');
@@ -165,6 +168,21 @@ function CampaignDetailInner() {
           )}
         </div>
 
+        {/* La oferta con sus condiciones. El tamaño del grupo que el usuario
+            elija abajo mueve el escalón resaltado en tiempo real. */}
+        {tiers && tiers.length > 0 && (
+          <OfferLadder
+            tiers={tiers}
+            partySize={partySize}
+            conditions={{
+              valid_weekdays: (campaign as any).valid_weekdays,
+              valid_from_time: (campaign as any).valid_from_time,
+              valid_until_time: (campaign as any).valid_until_time,
+              terms: (campaign as any).terms,
+            }}
+          />
+        )}
+
         {campaign.business && (
           <button
             onClick={() => router.push(`/negocio/detalle?slug=${campaign.business.slug}`)}
@@ -244,7 +262,10 @@ function CampaignDetailInner() {
             </div>
           ) : campaign.requires_reservation && role !== 'business' ? (
             <div className="flex items-center gap-3">
-              {campaign.min_group_size && campaign.min_group_size > 1 && (
+              {/* Antes el contador solo aparecía con min_group_size. Con la
+                  escalera de descuentos el grupo importa siempre: es lo que
+                  determina qué beneficio se desbloquea. */}
+              {((tiers?.length ?? 0) > 1 || (campaign.min_group_size ?? 0) > 1) && (
                 <div className="flex items-center bg-gray-100 rounded-xl">
                   <button onClick={() => setPartySize(Math.max(1, partySize - 1))} className="px-3 py-2 text-lg">-</button>
                   <span className="px-2 text-sm font-medium">{partySize}</span>

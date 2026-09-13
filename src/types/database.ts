@@ -130,6 +130,15 @@ export interface Campaign {
   requires_reservation: boolean;
   requires_checkin: boolean;
   banner_image_url: string | null;
+  // Condiciones de la oferta (migración 014). Antes todo esto vivía en
+  // price_text como texto libre, que ningún código podía interpretar.
+  valid_weekdays: number[] | null;
+  valid_from_time: string | null;
+  valid_until_time: string | null;
+  max_redemptions_total: number | null;
+  max_redemptions_per_user: number;
+  redemptions_count: number;
+  terms: string | null;
   created_at: string;
   updated_at: string;
   business?: Business;
@@ -430,4 +439,64 @@ export interface CheckinResult {
     reward: string;
     ready: boolean;
   } | null;
+}
+
+// ============================================================
+// Ofertas comerciales (migración 014)
+// ============================================================
+
+export type DiscountType = 'percent' | 'fixed' | 'free_item' | 'two_for_one';
+
+/** Un escalón de la escalera de descuentos por tamaño de grupo. */
+export interface CampaignTier {
+  id: string;
+  campaign_id: string;
+  min_people: number;
+  discount_type: DiscountType;
+  discount_value: number | null;
+  label: string | null;
+  created_at: string;
+}
+
+/** Plan de suscripción del negocio. Los límites los enforza la base. */
+export interface PricingPlan {
+  id: string;
+  name: string;
+  slug: 'free' | 'starter' | 'pro';
+  price_monthly: number;
+  max_campaigns: number | null;
+  max_featured: number | null;
+  features: Record<string, unknown> | null;
+  is_active: boolean;
+}
+
+export interface BusinessSubscription {
+  id: string;
+  business_id: string;
+  plan_id: string;
+  status: string;
+  starts_at: string;
+  ends_at: string | null;
+  created_at: string;
+}
+
+/** Resultado de public.business_limits(). */
+export interface BusinessLimits {
+  plan: { slug: string; name: string; price_monthly: number; features: Record<string, unknown> | null };
+  campaigns: { used: number; max: number | null };
+  featured: { used: number; max: number | null };
+  can_create: boolean;
+  max_tiers: number;
+}
+
+/** Resultado de public.campaign_funnel(). */
+export interface CampaignFunnel {
+  views: number;
+  plans_created: number;
+  reservations: number;
+  people_reserved: number;
+  checkins: number;
+  redemptions: number;
+  conversion_view_to_reservation: number | null;
+  conversion_reservation_to_checkin: number | null;
 }
