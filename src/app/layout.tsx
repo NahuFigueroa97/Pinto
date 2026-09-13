@@ -3,6 +3,7 @@ import { Inter, Outfit } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/providers/Providers';
 import { BottomNav } from '@/components/layout/BottomNav';
+import { SCRIPT_ANTI_PARPADEO } from '@/lib/theme';
 
 // Self-hosted: next/font descarga las fuentes en build time y las empaqueta
 // en el APK. Sin esto no hay tipografía de marca offline.
@@ -31,12 +32,24 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover',
+  // La barra de estado de Android acompaña el tema en vez de quedar de un
+  // color que no pega con ninguno de los dos.
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#F9FAFB' },
+    { media: '(prefers-color-scheme: dark)', color: '#0B0F14' },
+  ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={`${inter.variable} ${outfit.variable}`}>
-      <body className="font-sans bg-gray-50 text-gray-900 antialiased">
+      <body className="font-sans bg-canvas text-ink antialiased">
+        {/*
+          Antes de que React hidrate: si no, la app pinta en claro y recién
+          después se pone oscura. Un fogonazo blanco en cada arranque, que
+          de noche encandila.
+        */}
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_ANTI_PARPADEO }} />
         <Providers>
           <main className="min-h-screen pb-16">
             {children}

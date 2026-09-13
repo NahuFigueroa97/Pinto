@@ -15,7 +15,7 @@ export function DistanceBadge({ distance, className = '' }: DistanceBadgeProps) 
     ? 'text-green-600 bg-green-50'
     : distance < 5
       ? 'text-blue-600 bg-blue-50'
-      : 'text-gray-500 bg-gray-50';
+      : 'text-muted bg-canvas';
 
   return (
     <span className={`inline-flex items-center gap-0.5 text-[0.65rem] font-medium px-2 py-0.5 rounded-full ${color} ${className}`}>

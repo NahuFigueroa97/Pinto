@@ -25,7 +25,7 @@ const ALLOWED_ROUTE_PREFIXES = [
  * URL arbitraria sería una redirección abierta dentro del WebView. Solo se
  * aceptan rutas internas conocidas.
  */
-function safeRoute(raw: unknown): string | null {
+export function safeRoute(raw: unknown): string | null {
   if (typeof raw !== 'string' || raw.length === 0) return null;
   // Nada de esquemas ni de "//host" (protocol-relative)
   if (!raw.startsWith('/') || raw.startsWith('//')) return null;

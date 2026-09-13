@@ -20,6 +20,7 @@ export function QueryState({
   onRetry,
   isRetrying,
   loadingText,
+  skeleton,
   emptyIcon = '🫙',
   emptyTitle = 'No hay nada por acá',
   emptyText,
@@ -31,6 +32,8 @@ export function QueryState({
   onRetry?: () => void;
   isRetrying?: boolean;
   loadingText?: string;
+  /** Esqueleto en lugar de rueda mientras carga. */
+  skeleton?: ReactNode;
   emptyIcon?: ReactNode;
   emptyTitle?: string;
   emptyText?: string;
@@ -39,15 +42,15 @@ export function QueryState({
   // La rama de carga pasa por PageSpinner para que herede la salida de
   // emergencia: sin eso, una consulta que no resuelve dejaba a QueryState
   // mostrando la rueda igual que antes, con error y vacío inalcanzables.
-  if (isLoading) return <PageSpinner fullScreen={false} text={loadingText} onRetry={onRetry} />;
+  if (isLoading) return <PageSpinner fullScreen={false} text={loadingText} onRetry={onRetry} skeleton={skeleton} />;
 
   if (error) {
     const message = error instanceof Error ? error.message : 'Algo salió mal';
     return (
       <div className="text-center py-16 px-6">
         <p className="text-4xl mb-3">😕</p>
-        <p className="text-gray-700 font-medium">No se pudo cargar</p>
-        <p className="text-xs text-gray-400 mt-1 break-words">{message}</p>
+        <p className="text-ink-soft font-medium">No se pudo cargar</p>
+        <p className="text-xs text-faint mt-1 break-words">{message}</p>
         {onRetry && (
           <button
             onClick={onRetry}
@@ -64,9 +67,9 @@ export function QueryState({
 
   if (isEmpty) {
     return (
-      <div className="text-center py-16 text-gray-400 px-6">
+      <div className="text-center py-16 text-faint px-6">
         <p className="text-4xl mb-3">{emptyIcon}</p>
-        <p className="font-medium text-gray-500">{emptyTitle}</p>
+        <p className="font-medium text-muted">{emptyTitle}</p>
         {emptyText && <p className="text-sm mt-1">{emptyText}</p>}
       </div>
     );

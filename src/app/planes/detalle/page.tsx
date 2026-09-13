@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Calendar, MapPin, Users, Clock, MessageCircle, Check, X, UserPlus } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Users, Clock, MessageCircle, Check, X, UserPlus, Share2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -13,6 +13,9 @@ import Link from 'next/link';
 import { sb } from '@/lib/sb';
 import { PageSpinner } from '@/components/shared/PageSpinner';
 import { QueryState } from '@/components/shared/QueryState';
+import { tap } from '@/lib/haptics';
+import { compartirPlan } from '@/lib/compartir';
+import { exito } from '@/lib/haptics';
 
 function PlanDetailInner() {
   const searchParams = useSearchParams();
@@ -93,6 +96,7 @@ function PlanDetailInner() {
   // Quien no es del plan recibe la lista vacía por RLS, así que el conteo no
   // puede salir de ahí: sale de social_plans.members_count, que el trigger
   // mantiene y no filtra quiénes son.
+  const [shareError, setShareError] = useState('');
   const soyDelPlan = Boolean(isMember || isCreator);
   const memberCount = (plan as { members_count?: number } | undefined)?.members_count ?? members?.length ?? 0;
   const isPast = plan?.plan_date ? new Date(plan.plan_date + 'T23:59:59') < new Date() : false;
@@ -117,6 +121,7 @@ function PlanDetailInner() {
     onSuccess: () => {
       setShowJoinForm(false);
       setJoinError('');
+      void exito();
       queryClient.invalidateQueries({ queryKey: ['my_plan_request', id] });
     },
     onError: (err: any) => setJoinError(err?.message ?? 'No se pudo enviar la solicitud'),
@@ -146,6 +151,7 @@ function PlanDetailInner() {
       }
     },
     onSuccess: () => {
+      void exito();
       queryClient.invalidateQueries({ queryKey: ['plan_requests', id] });
       queryClient.invalidateQueries({ queryKey: ['plan_members', id] });
       queryClient.invalidateQueries({ queryKey: ['plan', id] });
@@ -166,7 +172,7 @@ function PlanDetailInner() {
   );
 
   if (!id || !plan) return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] text-gray-400 px-6 text-center">
+    <div className="flex flex-col items-center justify-center min-h-[60vh] text-faint px-6 text-center">
       <p className="text-4xl mb-3">🤷</p>
       <p>{!id ? 'No pudimos abrir el plan' : 'Plan no encontrado'}</p>
       <button onClick={() => router.push('/planes')} className="text-brand-500 font-medium mt-3">Ver planes</button>
@@ -174,16 +180,16 @@ function PlanDetailInner() {
   );
 
   const statusBadge: Record<string, string> = {
-    open: 'bg-green-50 text-green-700',
-    full: 'bg-yellow-50 text-yellow-700',
-    closed: 'bg-gray-100 text-gray-600',
-    cancelled: 'bg-red-50 text-red-500',
+    open: 'bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-300',
+    full: 'bg-yellow-50 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-300',
+    closed: 'bg-subtle text-muted',
+    cancelled: 'bg-red-50 text-red-500 dark:bg-red-500/15 dark:text-red-300',
   };
 
   return (
     <div className="max-w-lg mx-auto pb-24">
       <div className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 glass">
-        <button onClick={() => router.back()} className="p-1.5 rounded-full bg-white/50"><ArrowLeft size={20} /></button>
+        <button onClick={() => router.back()} className="rounded-full bg-surface/50 min-w-[44px] min-h-[44px] flex items-center justify-center"><ArrowLeft size={20} /></button>
         <h2 className="font-display font-bold truncate">{plan.title}</h2>
       </div>
 
@@ -191,7 +197,7 @@ function PlanDetailInner() {
         {/* Status + Campaign */}
         <div className="flex flex-wrap gap-2">
           <span className={`text-xs font-semibold px-3 py-1 rounded-full ${statusBadge[plan.status]}`}>{plan.status}</span>
-          {plan.visibility === 'private' && <span className="text-xs font-semibold px-3 py-1 rounded-full bg-gray-100 text-gray-600">🔒 Privado</span>}
+          {plan.visibility === 'private' && <span className="text-xs font-semibold px-3 py-1 rounded-full bg-subtle text-muted">🔒 Privado</span>}
           {plan.category && <span className="text-xs font-semibold px-3 py-1 rounded-full bg-brand-50 text-brand-600">{(plan as any).category.emoji} {(plan as any).category.name}</span>}
         </div>
 
@@ -200,7 +206,7 @@ function PlanDetailInner() {
           <Link href={`/campana?id=${plan.campaign.id}`} className="block bg-accent-50 rounded-xl p-3 border border-accent-100">
             <p className="text-xs text-accent-600 font-medium">📢 Basado en promo:</p>
             <p className="font-semibold text-sm mt-0.5">{plan.campaign.title}</p>
-            <p className="text-xs text-gray-500">{plan.campaign.business?.name}</p>
+            <p className="text-xs text-muted">{plan.campaign.business?.name}</p>
           </Link>
         )}
 
@@ -209,28 +215,47 @@ function PlanDetailInner() {
           <OfferLadder tiers={campaignTiers} partySize={memberCount || 1} compact />
         )}
 
-        {plan.description && <p className="text-sm text-gray-600 leading-relaxed">{plan.description}</p>}
+        {plan.description && <p className="text-sm text-muted leading-relaxed">{plan.description}</p>}
 
         {/* Info */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-gray-50 rounded-xl p-3">
-            <div className="flex items-center gap-1 text-xs text-gray-400 mb-0.5"><Calendar size={12} /> Cuándo</div>
+          <div className="bg-canvas rounded-xl p-3">
+            <div className="flex items-center gap-1 text-xs text-faint mb-0.5"><Calendar size={12} /> Cuándo</div>
             <p className="text-sm font-medium">
               {new Date(plan.plan_date + 'T00:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
             </p>
-            {plan.plan_time && <p className="text-xs text-gray-500">{plan.plan_time.slice(0, 5)} hs</p>}
+            {plan.plan_time && <p className="text-xs text-muted">{plan.plan_time.slice(0, 5)} hs</p>}
           </div>
-          <div className="bg-gray-50 rounded-xl p-3">
-            <div className="flex items-center gap-1 text-xs text-gray-400 mb-0.5"><Users size={12} /> Grupo</div>
+          <div className="bg-canvas rounded-xl p-3">
+            <div className="flex items-center gap-1 text-xs text-faint mb-0.5"><Users size={12} /> Grupo</div>
             <p className="text-sm font-medium">{memberCount} / {plan.max_members}</p>
           </div>
           {plan.meeting_point && (
-            <div className="bg-gray-50 rounded-xl p-3 col-span-2">
-              <div className="flex items-center gap-1 text-xs text-gray-400 mb-0.5"><MapPin size={12} /> Punto de encuentro</div>
+            <div className="bg-canvas rounded-xl p-3 col-span-2">
+              <div className="flex items-center gap-1 text-xs text-faint mb-0.5"><MapPin size={12} /> Punto de encuentro</div>
               <p className="text-sm font-medium">{plan.meeting_point}</p>
             </div>
           )}
         </div>
+
+        {/*
+          Invitar. Es lo que hace crecer la app: un plan con lugares libres
+          y nadie a quien avisarle no sirve de nada. Va arriba de todo
+          porque el momento de invitar es apenas se crea el plan.
+        */}
+        {plan.visibility === 'public' && memberCount < plan.max_members && (
+          <button
+            onClick={async () => {
+              void tap();
+              const r = await compartirPlan(plan as never);
+              if (r === 'sin-link') setShareError('Falta configurar el dominio para compartir.');
+            }}
+            className="w-full flex items-center justify-center gap-2 min-h-[48px] py-3 bg-brand-500 text-white font-bold rounded-xl text-sm active:scale-95 transition shadow-md shadow-brand-500/20"
+          >
+            <Share2 size={16} /> Invitar gente a este plan
+          </button>
+        )}
+        {shareError && <p className="text-xs text-amber-600 -mt-2">{shareError}</p>}
 
         {/* Creator */}
         <div>
@@ -251,14 +276,14 @@ function PlanDetailInner() {
             Miembros ({memberCount})
           </h3>
           {!soyDelPlan ? (
-            <p className="text-xs text-gray-400 bg-gray-50 rounded-xl px-3 py-2.5">
+            <p className="text-xs text-faint bg-canvas rounded-xl px-3 py-2.5">
               🔒 Quiénes van se ve al entrar al plan.
             </p>
           ) : (
           <div className="flex flex-wrap gap-2">
             {members?.map((m: any) => (
               <Link key={m.id} href={`/perfil/ver?id=${m.user_id}`}
-                className="flex items-center gap-1.5 bg-white border border-gray-100 rounded-full px-3 py-1.5 text-sm">
+                className="flex items-center gap-1.5 bg-surface border border-line rounded-full px-3 py-1.5 text-sm">
                 <span className="w-6 h-6 rounded-full bg-brand-100 flex items-center justify-center text-[0.55rem] font-bold text-brand-600">
                   {m.user?.full_name?.[0]?.toUpperCase() ?? '?'}
                 </span>
@@ -292,7 +317,7 @@ function PlanDetailInner() {
         {isMember && (
           <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-100">
             <h3 className="font-bold text-sm mb-1">🛡️ Juntada segura</h3>
-            <p className="text-xs text-gray-500 mb-3">¿Vas a una juntada con gente que no conocés? Mandále tu ubicación a alguien de confianza (tu pareja, un amigo, familiar) para que sepa dónde estás.</p>
+            <p className="text-xs text-muted mb-3">¿Vas a una juntada con gente que no conocés? Mandále tu ubicación a alguien de confianza (tu pareja, un amigo, familiar) para que sepa dónde estás.</p>
             <button
               onClick={async () => {
                 let locationUrl = '';
@@ -345,9 +370,9 @@ function PlanDetailInner() {
                 <span className="text-[0.6rem] font-medium text-yellow-700">Valorar</span>
               </Link>
             ) : (
-              <div className="flex flex-col items-center gap-1 p-3 bg-gray-50 rounded-xl text-center opacity-50">
+              <div className="flex flex-col items-center gap-1 p-3 bg-canvas rounded-xl text-center opacity-50">
                 <span className="text-xl">⭐</span>
-                <span className="text-[0.6rem] font-medium text-gray-500">Valorar</span>
+                <span className="text-[0.6rem] font-medium text-muted">Valorar</span>
               </div>
             )}
           </div>
@@ -368,7 +393,7 @@ function PlanDetailInner() {
             await supabase.from('social_plans').update({ status: 'cancelled' }).eq('id', id);
             queryClient.invalidateQueries({ queryKey: ['plan', id] });
           }}
-            className="w-full py-2.5 bg-red-50 text-red-500 font-medium rounded-xl text-sm border border-red-100 active:scale-95 transition">
+            className="w-full py-2.5 bg-red-50 text-red-500 dark:bg-red-500/15 dark:text-red-300 font-medium rounded-xl text-sm border border-red-100 active:scale-95 transition">
             ❌ Cancelar este plan
           </button>
         )}
@@ -381,7 +406,7 @@ function PlanDetailInner() {
             queryClient.invalidateQueries({ queryKey: ['plan_members', id] });
             queryClient.invalidateQueries({ queryKey: ['plan', id] });
           }}
-            className="w-full py-2.5 bg-gray-50 text-gray-500 font-medium rounded-xl text-sm border border-gray-200 active:scale-95 transition">
+            className="w-full py-2.5 bg-canvas text-muted font-medium rounded-xl text-sm border border-line-strong active:scale-95 transition">
             🚪 Salir del plan
           </button>
         )}
@@ -389,11 +414,11 @@ function PlanDetailInner() {
         {/* Denunciar el plan, o ir al perfil del organizador para bloquearlo */}
         {user && !isCreator && (
           <div className="flex items-center justify-center gap-4 py-2">
-            <Link href={`/reportar?type=plan&id=${id}`} className="text-xs text-gray-400">
+            <Link href={`/reportar?type=plan&id=${id}`} className="text-xs text-faint">
               🚩 Reportar este plan
             </Link>
             {plan.creator_id && (
-              <Link href={`/perfil/ver?id=${plan.creator_id}`} className="text-xs text-gray-400">
+              <Link href={`/perfil/ver?id=${plan.creator_id}`} className="text-xs text-faint">
                 🚫 Bloquear al organizador
               </Link>
             )}
@@ -403,20 +428,20 @@ function PlanDetailInner() {
 
       {/* Bottom Action */}
       {!isCreator && plan.status === 'open' && (
-        <div className="fixed bottom-16 inset-x-0 p-4 glass border-t border-gray-100">
+        <div className="fixed bottom-16 inset-x-0 p-4 glass border-t border-line">
           <div className="max-w-lg mx-auto">
             {role === 'business' ? (
-              <div className="bg-gray-50 text-gray-500 px-4 py-3 rounded-xl text-center text-sm">
+              <div className="bg-canvas text-muted px-4 py-3 rounded-xl text-center text-sm">
                 Solo usuarios pueden participar en planes sociales
               </div>
             ) : isMember ? (
-              <div className="bg-green-50 text-green-700 px-4 py-3 rounded-xl text-center text-sm font-medium">
+              <div className="bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-300 px-4 py-3 rounded-xl text-center text-sm font-medium">
                 ✅ Ya sos parte de este plan
               </div>
             ) : myRequest ? (
               <div className={`px-4 py-3 rounded-xl text-center text-sm font-medium ${
-                myRequest.status === 'pending' ? 'bg-yellow-50 text-yellow-700' :
-                myRequest.status === 'rejected' ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-700'
+                myRequest.status === 'pending' ? 'bg-yellow-50 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-300' :
+                myRequest.status === 'rejected' ? 'bg-red-50 text-red-500 dark:bg-red-500/15 dark:text-red-300' : 'bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-300'
               }`}>
                 {myRequest.status === 'pending' && '⏳ Tu solicitud está pendiente'}
                 {myRequest.status === 'rejected' && '❌ Tu solicitud fue rechazada'}
@@ -430,7 +455,7 @@ function PlanDetailInner() {
                   value={joinMsg}
                   onChange={e => { setJoinMsg(e.target.value); setJoinError(''); }}
                   placeholder="Mensaje para el organizador (opcional)"
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:border-brand-400"
+                  className="w-full px-4 py-2.5 rounded-xl border border-line-strong text-sm outline-none focus:border-brand-400"
                 />
                 <button
                   onClick={() => requestJoin.mutate()}

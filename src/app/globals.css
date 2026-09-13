@@ -21,6 +21,45 @@
   :root {
     --sat: env(safe-area-inset-top, 0px);
     --sab: env(safe-area-inset-bottom, 0px);
+
+    /*
+      Paleta clara. Tripletes RGB sueltos para que Tailwind componga
+      opacidad (bg-surface/80). Ver los tokens en tailwind.config.js.
+    */
+    --c-canvas:      249 250 251;   /* fondo de la página */
+    --c-surface:     255 255 255;   /* tarjetas, barras */
+    --c-subtle:      243 244 246;   /* chips, avatares vacíos */
+    --c-line:        243 244 246;   /* bordes suaves */
+    --c-line-strong: 229 231 235;   /* bordes marcados */
+    --c-ink:          17  24  39;   /* texto principal */
+    --c-ink-soft:     55  65  81;   /* texto de párrafo */
+    --c-muted:       107 114 128;   /* texto secundario */
+    --c-faint:       156 163 175;   /* metadatos, marcas de tiempo */
+
+    --c-spinner-track: 226 232 240;
+    color-scheme: light;
+  }
+
+  /*
+    Oscuro. No es "gris invertido": los grises puros sobre OLED vibran y
+    cansan, así que el fondo lleva una pizca de azul y las superficies suben
+    en escalones cortos. La jerarquía se mantiene —canvas por debajo de
+    surface— así que un panel embutido adentro de una tarjeta se sigue
+    leyendo como hundido, igual que en claro.
+  */
+  .dark {
+    --c-canvas:       11  15  20;
+    --c-surface:      21  26  33;
+    --c-subtle:       31  38  47;
+    --c-line:         35  43  53;
+    --c-line-strong:  46  55  66;
+    --c-ink:         243 245 247;
+    --c-ink-soft:    211 217 224;
+    --c-muted:       152 162 176;
+    --c-faint:       107 118 133;
+
+    --c-spinner-track: 46 55 66;
+    color-scheme: dark;
   }
 
   html {
@@ -47,7 +86,7 @@
   }
 
   .glass {
-    @apply bg-white/80 backdrop-blur-xl border border-white/20;
+    @apply bg-surface/80 backdrop-blur-xl border border-line/40;
   }
 
   .safe-bottom {
@@ -62,11 +101,22 @@
 /* Keyboard open state */
 body.keyboard-open .bottom-nav { display: none; }
 
+/* Skeleton: la forma de lo que viene, en vez de una rueda sin información */
+@keyframes pulso {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+.skeleton {
+  background: rgb(var(--c-subtle));
+  border-radius: 0.5rem;
+  animation: pulso 1.4s ease-in-out infinite;
+}
+
 /* Spinner */
 .spinner {
   width: 2rem;
   height: 2rem;
-  border: 3px solid #e2e8f0;
+  border: 3px solid rgb(var(--c-spinner-track));
   border-top-color: #FF6B4A;
   border-radius: 50%;
   animation: spin 0.6s linear infinite;

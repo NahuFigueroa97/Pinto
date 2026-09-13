@@ -83,7 +83,7 @@ function NegocioDetalleInner() {
   // y `!slug || isLoading` dejaba el spinner girando indefinidamente.
   if (isLoading) return <PageSpinner />;
   if (!slug || !business) return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] text-gray-400 px-6 text-center">
+    <div className="flex flex-col items-center justify-center min-h-[60vh] text-faint px-6 text-center">
       <p className="text-4xl mb-3">🏪</p>
       <p>{!slug ? 'No pudimos abrir el negocio' : 'Negocio no encontrado'}</p>
       <button onClick={() => router.push('/explorar')} className="text-brand-500 font-medium mt-3">Explorar</button>
@@ -93,14 +93,14 @@ function NegocioDetalleInner() {
   return (
     <div className="max-w-lg mx-auto pb-6">
       <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 glass">
-        <button onClick={() => router.back()} className="p-1.5 rounded-full bg-white/50"><ArrowLeft size={20} /></button>
-        <button onClick={() => toggleFav.mutate()} className="p-1.5 rounded-full bg-white/50">
-          <Heart size={20} className={isFavorited ? 'fill-red-500 text-red-500' : 'text-gray-600'} />
+        <button onClick={() => router.back()} className="rounded-full bg-surface/50 min-w-[44px] min-h-[44px] flex items-center justify-center"><ArrowLeft size={20} /></button>
+        <button onClick={() => toggleFav.mutate()} className="rounded-full bg-surface/50 min-w-[44px] min-h-[44px] flex items-center justify-center">
+          <Heart size={20} className={isFavorited ? 'fill-red-500 text-red-500' : 'text-muted'} />
         </button>
       </div>
 
       {business.cover_image_url ? (
-        <div className="h-44 bg-gray-100"><img src={business.cover_image_url} alt="" className="w-full h-full object-cover" /></div>
+        <div className="h-44 bg-subtle"><img src={business.cover_image_url} alt="" className="w-full h-full object-cover" /></div>
       ) : (
         <div className="h-32 bg-gradient-to-br from-accent-100 to-brand-100 flex items-center justify-center text-5xl">
           {(business.category as any)?.icon || '🏪'}
@@ -113,14 +113,14 @@ function NegocioDetalleInner() {
             <h1 className="text-xl font-display font-bold">{business.name}</h1>
             {business.is_verified && <span className="text-blue-500 text-sm">✔</span>}
           </div>
-          <p className="text-sm text-gray-500">{(business.category as any)?.name} · {(business.zone as any)?.name ?? (business.city as any)?.name}</p>
+          <p className="text-sm text-muted">{(business.category as any)?.name} · {(business.zone as any)?.name ?? (business.city as any)?.name}</p>
         </div>
 
-        {business.description && <p className="text-sm text-gray-600 leading-relaxed">{business.description}</p>}
+        {business.description && <p className="text-sm text-muted leading-relaxed">{business.description}</p>}
 
         <div className="flex flex-wrap gap-2">
-          {business.address && <span className="flex items-center gap-1 text-xs text-gray-500 bg-gray-50 px-3 py-1.5 rounded-full"><MapPin size={12} /> {business.address}</span>}
-          {business.phone && <a href={`tel:${business.phone}`} className="flex items-center gap-1 text-xs text-gray-500 bg-gray-50 px-3 py-1.5 rounded-full"><Phone size={12} /> {business.phone}</a>}
+          {business.address && <span className="flex items-center gap-1 text-xs text-muted bg-canvas px-3 py-1.5 rounded-full"><MapPin size={12} /> {business.address}</span>}
+          {business.phone && <a href={`tel:${business.phone}`} className="flex items-center gap-1 text-xs text-muted bg-canvas px-3 py-1.5 rounded-full"><Phone size={12} /> {business.phone}</a>}
           {business.whatsapp && <a href={`https://wa.me/549${business.whatsapp.replace(/\D/g, '')}`} target="_blank" className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-3 py-1.5 rounded-full"><MessageCircle size={12} /> WhatsApp</a>}
           {business.instagram && <a href={`https://instagram.com/${business.instagram.replace('@', '')}`} target="_blank" className="flex items-center gap-1 text-xs text-pink-600 bg-pink-50 px-3 py-1.5 rounded-full"><Instagram size={12} /> {business.instagram}</a>}
         </div>
@@ -132,7 +132,7 @@ function NegocioDetalleInner() {
               {DAYS.map((day, i) => {
                 const h = hours.find((x: any) => x.weekday === i);
                 return (
-                  <div key={i} className={`text-center text-xs py-1.5 rounded-lg ${h?.is_closed ? 'bg-red-50 text-red-400' : 'bg-gray-50 text-gray-600'}`}>
+                  <div key={i} className={`text-center text-xs py-1.5 rounded-lg ${h?.is_closed ? 'bg-red-50 text-red-400 dark:bg-red-500/15 dark:text-red-300' : 'bg-canvas text-muted'}`}>
                     <p className="font-medium">{day}</p>
                     <p className="text-[0.6rem]">{h?.is_closed ? 'Cerr.' : h ? `${h.opens_at?.slice(0,5)}` : '-'}</p>
                   </div>
@@ -145,17 +145,17 @@ function NegocioDetalleInner() {
         <div>
           <h2 className="font-semibold text-sm mb-2">Campañas activas</h2>
           {!campaigns?.length ? (
-            <p className="text-sm text-gray-400">No hay campañas activas</p>
+            <p className="text-sm text-faint">No hay campañas activas</p>
           ) : (
             <div className="space-y-2">
               {campaigns.map((c: any) => (
-                <Link key={c.id} href={`/campana?id=${c.id}`} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
+                <Link key={c.id} href={`/campana?id=${c.id}`} className="flex items-center gap-3 p-3 bg-surface rounded-xl border border-line shadow-sm">
                   <div className="flex-1 min-w-0">
                     <h3 className="font-medium text-sm truncate">{c.title}</h3>
-                    <p className="text-xs text-gray-500 truncate">{c.short_description}</p>
+                    <p className="text-xs text-muted truncate">{c.short_description}</p>
                   </div>
                   {c.is_featured && <Star size={14} className="text-yellow-500 fill-yellow-500 shrink-0" />}
-                  <ChevronRight size={14} className="text-gray-300 shrink-0" />
+                  <ChevronRight size={14} className="text-faint shrink-0" />
                 </Link>
               ))}
             </div>

@@ -120,20 +120,20 @@ function EditarCampanaInner() {
   // y `!id || isLoadingCampaign` dejaba el spinner girando indefinidamente.
   if (isLoadingCampaign) return <PageSpinner />;
   if (!id || !campaign) return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] text-gray-400 px-6 text-center">
+    <div className="flex flex-col items-center justify-center min-h-[60vh] text-faint px-6 text-center">
       <p className="text-4xl mb-3">📢</p>
       <p>{!id ? 'No pudimos abrir la campaña' : 'Campaña no encontrada'}</p>
       <button onClick={() => router.push('/negocio/campanas')} className="text-brand-500 font-medium mt-3">Ver mis promos</button>
     </div>
   );
 
-  const inputClass = "w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:border-accent-400 focus:ring-2 focus:ring-accent-100 outline-none transition text-sm";
+  const inputClass = "w-full px-4 py-3 rounded-xl border border-line-strong bg-surface focus:border-accent-400 focus:ring-2 focus:ring-accent-100 outline-none transition text-sm";
 
   return (
     <div className="max-w-lg mx-auto pb-8">
-      <header className="flex items-center justify-between px-4 pt-6 pb-4 sticky top-0 bg-white z-10 border-b border-gray-50">
+      <header className="flex items-center justify-between px-4 pt-6 pb-4 sticky top-0 bg-surface z-10 border-b border-gray-50">
         <div className="flex items-center gap-3">
-          <button onClick={() => router.back()} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-full transition"><ArrowLeft size={20} /></button>
+          <button onClick={() => router.back()} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-faint hover:bg-subtle rounded-full transition"><ArrowLeft size={20} /></button>
           <h1 className="text-lg font-display font-bold">Gestionar campaña</h1>
         </div>
         <button onClick={() => { if (confirm('¿Eliminar esta campaña?')) deleteMutation.mutate(); }} className="p-2 text-red-400 hover:bg-red-50 rounded-xl transition">
@@ -142,69 +142,69 @@ function EditarCampanaInner() {
       </header>
 
       <form onSubmit={(e) => { e.preventDefault(); updateMutation.mutate(); }} className="px-4 pt-4 space-y-4">
-        {error && <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100 flex items-center gap-2"><AlertCircle size={16} />{error}</div>}
-        {success && <div className="bg-green-50 text-green-700 text-sm px-4 py-3 rounded-xl border border-green-100">✅ Cambios guardados</div>}
+        {error && <div className="bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-300 text-sm px-4 py-3 rounded-xl border border-red-100 flex items-center gap-2"><AlertCircle size={16} />{error}</div>}
+        {success && <div className="bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-300 text-sm px-4 py-3 rounded-xl border border-green-100">✅ Cambios guardados</div>}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de campaña *</label>
+          <label className="block text-sm font-medium text-ink-soft mb-2">Tipo de campaña *</label>
           <div className="grid grid-cols-2 gap-2">
             {TYPES.map(t => (
               <button key={t.value} type="button" onClick={() => setForm({ ...form, type: t.value })}
-                className={`p-3 rounded-xl border-2 text-left transition ${form.type === t.value ? 'border-accent-500 bg-accent-50' : 'border-gray-200 bg-white'}`}>
+                className={`p-3 rounded-xl border-2 text-left transition ${form.type === t.value ? 'border-accent-500 bg-accent-50' : 'border-line-strong bg-surface'}`}>
                 <p className="text-sm font-medium">{t.label}</p>
-                <p className="text-[0.65rem] text-gray-400">{t.desc}</p>
+                <p className="text-[0.65rem] text-faint">{t.desc}</p>
               </button>
             ))}
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Título *</label>
+          <label className="block text-sm font-medium text-ink-soft mb-1">Título *</label>
           <input type="text" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className={inputClass} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Descripción corta *</label>
+          <label className="block text-sm font-medium text-ink-soft mb-1">Descripción corta *</label>
           <input type="text" value={form.short_description} onChange={e => setForm({ ...form, short_description: e.target.value })} className={inputClass} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Descripción completa</label>
+          <label className="block text-sm font-medium text-ink-soft mb-1">Descripción completa</label>
           <textarea value={form.full_description} onChange={e => setForm({ ...form, full_description: e.target.value })} className={inputClass} rows={3} />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Inicio *</label>
+            <label className="block text-sm font-medium text-ink-soft mb-1">Inicio *</label>
             <input type="datetime-local" value={form.starts_at} onChange={e => setForm({ ...form, starts_at: e.target.value })} className={inputClass} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Fin *</label>
+            <label className="block text-sm font-medium text-ink-soft mb-1">Fin *</label>
             <input type="datetime-local" value={form.ends_at} onChange={e => setForm({ ...form, ends_at: e.target.value })} className={inputClass} />
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Capacidad máxima</label>
+            <label className="block text-sm font-medium text-ink-soft mb-1">Capacidad máxima</label>
             <input type="number" value={form.max_capacity} onChange={e => setForm({ ...form, max_capacity: e.target.value })} className={inputClass} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Grupo mínimo</label>
+            <label className="block text-sm font-medium text-ink-soft mb-1">Grupo mínimo</label>
             <input type="number" value={form.min_group_size} onChange={e => setForm({ ...form, min_group_size: e.target.value })} className={inputClass} />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Precio / condiciones</label>
+          <label className="block text-sm font-medium text-ink-soft mb-1">Precio / condiciones</label>
           <input type="text" value={form.price_text} onChange={e => setForm({ ...form, price_text: e.target.value })} className={inputClass} />
         </div>
 
         <div className="flex items-center gap-6 p-1">
           <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input type="checkbox" checked={form.is_free} onChange={e => setForm({ ...form, is_free: e.target.checked })} className="rounded border-gray-300 text-accent-500 w-4 h-4" />
+            <input type="checkbox" checked={form.is_free} onChange={e => setForm({ ...form, is_free: e.target.checked })} className="rounded border-line-strong text-accent-500 w-4 h-4" />
             Gratis
           </label>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input type="checkbox" checked={form.requires_reservation} onChange={e => setForm({ ...form, requires_reservation: e.target.checked })} className="rounded border-gray-300 text-accent-500 w-4 h-4" />
+            <input type="checkbox" checked={form.requires_reservation} onChange={e => setForm({ ...form, requires_reservation: e.target.checked })} className="rounded border-line-strong text-accent-500 w-4 h-4" />
             Requiere reserva
           </label>
         </div>

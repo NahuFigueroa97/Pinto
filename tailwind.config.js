@@ -1,5 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  // 'class' y no 'media': el usuario puede elegir claro u oscuro aunque el
+  // sistema diga otra cosa. El valor por defecto sigue el sistema; ver el
+  // script anti-parpadeo en src/app/layout.tsx.
+  darkMode: 'class',
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -8,6 +12,32 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        /*
+          Colores semánticos, no literales.
+
+          El modo oscuro estaba hecho a mano en cero lugares y la app tenía
+          unas 870 clases de color fijas: bg-white, text-gray-400,
+          border-gray-100... Agregarle `dark:` a cada una es imposible de
+          mantener y se desincroniza a la primera pantalla nueva.
+
+          Con estos tokens la pantalla dice QUÉ es cada cosa —superficie,
+          texto principal, texto secundario, línea— y el tema decide de qué
+          color. Una pantalla nueva sale bien en los dos modos sin escribir
+          nada extra.
+
+          Los valores son tripletes RGB sueltos (globals.css) para que
+          Tailwind pueda componer opacidad: bg-surface/80 funciona igual.
+        */
+        canvas:       'rgb(var(--c-canvas) / <alpha-value>)',
+        surface:      'rgb(var(--c-surface) / <alpha-value>)',
+        subtle:       'rgb(var(--c-subtle) / <alpha-value>)',
+        line:         'rgb(var(--c-line) / <alpha-value>)',
+        'line-strong':'rgb(var(--c-line-strong) / <alpha-value>)',
+        ink:          'rgb(var(--c-ink) / <alpha-value>)',
+        'ink-soft':   'rgb(var(--c-ink-soft) / <alpha-value>)',
+        muted:        'rgb(var(--c-muted) / <alpha-value>)',
+        faint:        'rgb(var(--c-faint) / <alpha-value>)',
+
         brand: {
           50: '#FFF5F2',
           100: '#FFE8E3',

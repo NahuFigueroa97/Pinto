@@ -88,10 +88,10 @@ export default function PlanNegocioPage() {
   return (
     <div className="max-w-lg mx-auto pb-10">
       <header className="flex items-center gap-3 px-4 pt-6 pb-4">
-        <button onClick={() => router.back()} className="p-1.5 text-gray-400"><ArrowLeft size={20} /></button>
+        <button onClick={() => router.back()} className="-m-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-faint"><ArrowLeft size={20} /></button>
         <div>
           <h1 className="text-lg font-display font-bold">Planes</h1>
-          <p className="text-xs text-gray-500">Más promos, más escalones, más alcance</p>
+          <p className="text-xs text-muted">Más promos, más escalones, más alcance</p>
         </div>
       </header>
 
@@ -101,8 +101,8 @@ export default function PlanNegocioPage() {
         ) : error ? (
           <div className="text-center py-16">
             <p className="text-4xl mb-3">😕</p>
-            <p className="text-gray-700 font-medium">No se pudieron cargar los planes</p>
-            <p className="text-xs text-gray-400 mt-1">{(error as Error).message}</p>
+            <p className="text-ink-soft font-medium">No se pudieron cargar los planes</p>
+            <p className="text-xs text-faint mt-1">{(error as Error).message}</p>
             <button onClick={() => refetch()} disabled={isFetching}
               className="mt-4 px-5 py-2.5 bg-brand-500 text-white rounded-xl font-medium text-sm disabled:opacity-50">
               {isFetching ? 'Reintentando...' : 'Reintentar'}
@@ -116,8 +116,8 @@ export default function PlanNegocioPage() {
               <div key={plan.id}
                 className={`rounded-2xl border p-4 ${
                   isCurrent ? 'border-accent-400 bg-accent-50/40'
-                  : highlight ? 'border-brand-300 bg-white shadow-md'
-                  : 'border-gray-100 bg-white shadow-sm'
+                  : highlight ? 'border-brand-300 bg-surface shadow-md'
+                  : 'border-line bg-surface shadow-sm'
                 }`}>
                 <div className="flex items-start justify-between mb-2">
                   <div>
@@ -131,7 +131,7 @@ export default function PlanNegocioPage() {
                     </div>
                     <p className="text-xl font-black mt-0.5">
                       {plan.price_monthly === 0 ? 'Gratis' : formatMoney(Number(plan.price_monthly))}
-                      {plan.price_monthly > 0 && <span className="text-xs font-normal text-gray-400"> /mes</span>}
+                      {plan.price_monthly > 0 && <span className="text-xs font-normal text-faint"> /mes</span>}
                     </p>
                   </div>
                   {isCurrent && (
@@ -143,7 +143,7 @@ export default function PlanNegocioPage() {
 
                 <ul className="space-y-1.5 mt-3">
                   {(BENEFITS[plan.slug] ?? []).map(b => (
-                    <li key={b} className="flex items-start gap-2 text-sm text-gray-600">
+                    <li key={b} className="flex items-start gap-2 text-sm text-muted">
                       <Check size={14} className="text-green-500 mt-0.5 shrink-0" />
                       {b}
                     </li>
@@ -165,7 +165,7 @@ export default function PlanNegocioPage() {
           })
         )}
 
-        <p className="text-[0.7rem] text-gray-400 text-center pt-2 px-4">
+        <p className="text-[0.7rem] text-faint text-center pt-2 px-4">
           Todavía no hay pago automático. Al tocar &quot;Quiero este plan&quot; nos
           escribís y lo activamos a mano en el día.
         </p>

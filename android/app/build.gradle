@@ -18,6 +18,12 @@ if (hasReleaseKeystore) {
 def pintoVersionCodeValue = Integer.parseInt(
     (project.findProperty('pintoVersionCode') ?: '1').toString().trim())
 def pintoVersionNameValue = (project.findProperty('pintoVersionName') ?: '1.0').toString().trim()
+// Host de los App Links. Vacio = sin dominio configurado todavia; se usa un
+// placeholder que no resuelve para que el intent-filter no capture nada.
+def pintoAppLinkHostValue = (project.findProperty('pintoAppLinkHost') ?: '').toString().trim()
+if (pintoAppLinkHostValue.isEmpty()) {
+    pintoAppLinkHostValue = 'app-link-sin-configurar.invalid'
+}
 
 android {
     namespace "com.pinto.social"
@@ -29,6 +35,7 @@ android {
         // Definidos arriba desde android/gradle.properties.
         versionCode pintoVersionCodeValue
         versionName pintoVersionNameValue
+        manifestPlaceholders = [appLinkHost: pintoAppLinkHostValue]
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

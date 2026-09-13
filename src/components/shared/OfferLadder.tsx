@@ -35,7 +35,7 @@ export function OfferLadder({
   const cond = conditions ? describeConditions(conditions) : [];
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div className="bg-surface rounded-2xl border border-line shadow-sm overflow-hidden">
       <div className="px-4 py-3 bg-gradient-to-r from-brand-500 to-accent-500 text-white">
         <div className="flex items-center gap-2">
           <Ticket size={16} />
@@ -53,7 +53,7 @@ export function OfferLadder({
         )}
       </div>
 
-      <div className="divide-y divide-gray-50">
+      <div className="divide-y divide-line">
         {sorted.map(tier => {
           const isReached = tier.min_people <= partySize;
           const isCurrent = current?.min_people === tier.min_people;
@@ -64,16 +64,16 @@ export function OfferLadder({
             >
               <div
                 className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
-                  isReached ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-400'
+                  isReached ? 'bg-brand-500 text-white' : 'bg-subtle text-faint'
                 }`}
               >
                 {isReached ? <Check size={14} /> : <Users size={13} />}
               </div>
-              <p className={`text-sm flex-1 ${isReached ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
+              <p className={`text-sm flex-1 ${isReached ? 'text-ink font-medium' : 'text-faint'}`}>
                 {tier.min_people === 1 ? 'Viniendo solo' : `${tier.min_people} o más personas`}
               </p>
               <span
-                className={`text-sm font-bold ${isReached ? 'text-brand-600' : 'text-gray-300'}`}
+                className={`text-sm font-bold ${isReached ? 'text-brand-600' : 'text-faint'}`}
               >
                 {tier.label || tierLabel(tier.discount_type, tier.discount_value)}
               </span>
@@ -83,15 +83,15 @@ export function OfferLadder({
       </div>
 
       {!compact && (cond.length > 0 || conditions?.terms) && (
-        <div className="px-4 py-2.5 bg-gray-50/70 border-t border-gray-100">
+        <div className="px-4 py-2.5 bg-canvas/70 border-t border-line">
           {cond.length > 0 && (
-            <p className="text-[0.7rem] text-gray-500 flex items-start gap-1.5">
+            <p className="text-[0.7rem] text-muted flex items-start gap-1.5">
               <Clock size={11} className="mt-0.5 shrink-0" />
               <span>Válido {cond.join(', ')}</span>
             </p>
           )}
           {conditions?.terms && (
-            <p className="text-[0.65rem] text-gray-400 mt-1">{conditions.terms}</p>
+            <p className="text-[0.65rem] text-faint mt-1">{conditions.terms}</p>
           )}
         </div>
       )}

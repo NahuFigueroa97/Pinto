@@ -46,16 +46,16 @@ export default function MisPlanesPage() {
   if (!user) return (
     <div className="max-w-lg mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
       <Users size={48} className="text-gray-200 mb-4" />
-      <p className="text-gray-500 mb-3">Iniciá sesión para ver tus planes</p>
+      <p className="text-muted mb-3">Iniciá sesión para ver tus planes</p>
       <Link href="/login" className="text-brand-500 font-medium">Iniciar sesión</Link>
     </div>
   );
 
   const statusBadge: Record<string, string> = {
-    open: 'bg-green-50 text-green-700',
-    full: 'bg-yellow-50 text-yellow-700',
-    closed: 'bg-gray-100 text-gray-600',
-    cancelled: 'bg-red-50 text-red-500',
+    open: 'bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-300',
+    full: 'bg-yellow-50 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-300',
+    closed: 'bg-subtle text-muted',
+    cancelled: 'bg-red-50 text-red-500 dark:bg-red-500/15 dark:text-red-300',
   };
 
   return (
@@ -67,11 +67,11 @@ export default function MisPlanesPage() {
 
       <div className="flex gap-1 px-4 pb-3">
         <button onClick={() => setTab('created')}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition ${tab === 'created' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600'}`}>
+          className={`px-4 py-2 rounded-full text-sm font-medium transition ${tab === 'created' ? 'bg-gray-900 text-white' : 'bg-subtle text-muted'}`}>
           Creados
         </button>
         <button onClick={() => setTab('joined')}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition ${tab === 'joined' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600'}`}>
+          className={`px-4 py-2 rounded-full text-sm font-medium transition ${tab === 'joined' ? 'bg-gray-900 text-white' : 'bg-subtle text-muted'}`}>
           Unidos
         </button>
       </div>
@@ -80,20 +80,20 @@ export default function MisPlanesPage() {
         {isLoading ? (
           <PageSpinner fullScreen={false} />
         ) : !plans?.length ? (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16 text-faint">
             <Users size={40} className="mx-auto mb-3 text-gray-200" />
             <p>No tenés planes {tab === 'created' ? 'creados' : 'unidos'}</p>
           </div>
         ) : (
           plans.map((p: any) => (
             <Link key={p.id} href={`/planes/detalle?id=${p.id}`}
-              className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+              className="flex items-center gap-3 p-4 bg-surface rounded-xl border border-line shadow-sm">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold text-sm truncate">{p.title}</h3>
                   <span className={`text-[0.6rem] font-medium px-2 py-0.5 rounded-full shrink-0 ${statusBadge[p.status]}`}>{p.status}</span>
                 </div>
-                <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
+                <div className="flex items-center gap-3 mt-1 text-xs text-faint">
                   <span className="flex items-center gap-0.5"><Calendar size={11} />
                     {new Date(p.plan_date + 'T00:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}
                   </span>
@@ -101,7 +101,7 @@ export default function MisPlanesPage() {
                   {p.campaign && <span className="text-accent-500 truncate">📢 {p.campaign.title}</span>}
                 </div>
               </div>
-              <ChevronRight size={16} className="text-gray-300 shrink-0" />
+              <ChevronRight size={16} className="text-faint shrink-0" />
             </Link>
           ))
         )}

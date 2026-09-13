@@ -130,12 +130,12 @@ export default function NegocioDashboard() {
       <div className="max-w-lg mx-auto flex flex-col items-center justify-center min-h-[70vh] text-center px-6">
         <p className="text-6xl mb-4">🏪</p>
         <h2 className="text-xl font-display font-bold mb-2">¡Sumá tu negocio a Pintó!</h2>
-        <p className="text-gray-500 text-sm mb-8">Creá tu perfil, publicá promos y conectá con gente que quiere pasarla bien 🎉</p>
+        <p className="text-muted text-sm mb-8">Creá tu perfil, publicá promos y conectá con gente que quiere pasarla bien 🎉</p>
         <Link href="/negocio/nuevo" className="w-full py-3.5 bg-accent-500 text-white rounded-xl font-semibold shadow-md text-center text-lg">
           🚀 Crear mi negocio
         </Link>
         <button onClick={async () => { await refreshProfile(); queryClient.invalidateQueries({ queryKey: ['business', 'me'] }); }}
-          className="mt-3 text-gray-400 text-xs">¿Ya lo creaste? Reintentar</button>
+          className="mt-3 text-faint text-xs">¿Ya lo creaste? Reintentar</button>
       </div>
     );
   }
@@ -144,7 +144,7 @@ export default function NegocioDashboard() {
     <div className="max-w-lg mx-auto pb-20">
       {/* Header */}
       <header className="px-4 pt-6 pb-2">
-        <p className="text-sm text-gray-400">{(business.category as any)?.icon} {(business.category as any)?.name}</p>
+        <p className="text-sm text-faint">{(business.category as any)?.icon} {(business.category as any)?.name}</p>
         <h1 className="text-xl font-display font-bold">{business.name} ✨</h1>
       </header>
 
@@ -171,25 +171,25 @@ export default function NegocioDashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-2 px-4 pb-4">
-        <div className="bg-white rounded-2xl border border-gray-100 p-2.5 text-center shadow-sm">
+        <div className="bg-surface rounded-2xl border border-line p-2.5 text-center shadow-sm">
           <p className="text-lg mb-0.5">👀</p>
           <p className="text-base font-black">{stats?.views ?? 0}</p>
-          <p className="text-[0.5rem] text-gray-400 font-bold uppercase">Vistas</p>
+          <p className="text-[0.5rem] text-faint font-bold uppercase">Vistas</p>
         </div>
-        <div className="bg-white rounded-2xl border border-gray-100 p-2.5 text-center shadow-sm">
+        <div className="bg-surface rounded-2xl border border-line p-2.5 text-center shadow-sm">
           <p className="text-lg mb-0.5">🙋</p>
           <p className="text-base font-black">{stats?.reservations ?? 0}</p>
-          <p className="text-[0.5rem] text-gray-400 font-bold uppercase">Reservas</p>
+          <p className="text-[0.5rem] text-faint font-bold uppercase">Reservas</p>
         </div>
-        <div className="bg-white rounded-2xl border border-gray-100 p-2.5 text-center shadow-sm">
+        <div className="bg-surface rounded-2xl border border-line p-2.5 text-center shadow-sm">
           <p className="text-lg mb-0.5">📢</p>
           <p className="text-base font-black">{stats?.campaigns ?? 0}</p>
-          <p className="text-[0.5rem] text-gray-400 font-bold uppercase">Promos</p>
+          <p className="text-[0.5rem] text-faint font-bold uppercase">Promos</p>
         </div>
-        <Link href="/negocio/mensajes" className="bg-white rounded-2xl border border-gray-100 p-2.5 text-center shadow-sm relative">
+        <Link href="/negocio/mensajes" className="bg-surface rounded-2xl border border-line p-2.5 text-center shadow-sm relative">
           <p className="text-lg mb-0.5">💬</p>
           <p className="text-base font-black">{stats?.unreadMsgs ?? 0}</p>
-          <p className="text-[0.5rem] text-gray-400 font-bold uppercase">Mensajes</p>
+          <p className="text-[0.5rem] text-faint font-bold uppercase">Mensajes</p>
           {(stats?.unreadMsgs ?? 0) > 0 && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full" />}
         </Link>
       </div>
@@ -197,10 +197,10 @@ export default function NegocioDashboard() {
       {/* Plan y consumo */}
       {limits && (
         <div className="px-4 pb-4">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <div className="bg-surface rounded-2xl border border-line shadow-sm p-4">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <p className="text-[0.6rem] text-gray-400 font-bold uppercase tracking-wide">Tu plan</p>
+                <p className="text-[0.6rem] text-faint font-bold uppercase tracking-wide">Tu plan</p>
                 <p className="font-display font-bold text-sm">{limits.plan.name}</p>
               </div>
               {limits.plan.slug === 'free' && (
@@ -234,6 +234,16 @@ export default function NegocioDashboard() {
 
       {/* Lector de QR para validar reservas en el mostrador */}
       <div className="px-4 pb-4">
+        {/* Finanzas salió de la barra inferior (cuatro pestañas, no cinco):
+            su lugar natural es el panel, que es de donde se mira el negocio. */}
+        <Link
+          href="/negocio/finanzas"
+          className="flex items-center justify-between gap-2 w-full min-h-[52px] px-4 py-3 bg-surface border border-line rounded-2xl shadow-sm mb-3"
+        >
+          <span className="flex items-center gap-2 text-sm font-medium text-ink">💰 Finanzas</span>
+          <span className="text-xs text-faint">Ver ›</span>
+        </Link>
+
         <Link href="/negocio/checkin"
           className="flex items-center gap-3 p-3.5 bg-gradient-to-br from-accent-500 to-brand-500 text-white rounded-2xl shadow-md active:scale-[0.98] transition">
           <span className="text-2xl">📷</span>
@@ -249,9 +259,9 @@ export default function NegocioDashboard() {
       <div className="px-4 pb-4">
         <h2 className="font-display font-bold text-sm mb-2">🔔 Reservas por aprobar</h2>
         {!pendingReservations?.length ? (
-          <div className="text-center py-8 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
+          <div className="text-center py-8 bg-canvas/50 rounded-2xl border border-dashed border-line-strong">
             <p className="text-3xl mb-1">✅</p>
-            <p className="text-sm text-gray-400">Todo al día, no hay reservas pendientes</p>
+            <p className="text-sm text-faint">Todo al día, no hay reservas pendientes</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -276,7 +286,7 @@ export default function NegocioDashboard() {
       <div className="px-4">
         <div className="bg-gradient-to-br from-accent-50 to-brand-50 rounded-2xl p-4 border border-accent-100">
           <p className="text-sm font-bold mb-1">💡 Tip del día</p>
-          <p className="text-xs text-gray-600">Cuando un cliente reserva y paga, aprobalo acá arriba y el ingreso se registra automáticamente en 💰 Finanzas.</p>
+          <p className="text-xs text-muted">Cuando un cliente reserva y paga, aprobalo acá arriba y el ingreso se registra automáticamente en 💰 Finanzas.</p>
         </div>
       </div>
     </div>
@@ -305,28 +315,28 @@ function PendingReservationCard({
   const total = parsed * (r.party_size ?? 1);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3">
+    <div className="bg-surface rounded-2xl border border-line shadow-sm p-3">
       <div className="flex items-start justify-between mb-2">
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold truncate">🧑 {r.user?.full_name ?? 'Usuario'}</p>
-          <p className="text-[0.65rem] text-gray-400">
+          <p className="text-[0.65rem] text-faint">
             🎫 {r.campaign?.title ?? 'Campaña'} · 👥 {r.party_size} pers.
           </p>
           {r.campaign?.price_text && (
-            <p className="text-[0.6rem] text-gray-400 mt-0.5">Precio publicado: {r.campaign.price_text}</p>
+            <p className="text-[0.6rem] text-faint mt-0.5">Precio publicado: {r.campaign.price_text}</p>
           )}
         </div>
       </div>
 
       <div className="flex items-center gap-2 mb-2">
-        <label className="text-[0.65rem] text-gray-500 shrink-0">$ por persona</label>
+        <label className="text-[0.65rem] text-muted shrink-0">$ por persona</label>
         <input
           type="text"
           inputMode="decimal"
           value={amount}
           onChange={e => setAmount(e.target.value)}
           placeholder="0"
-          className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs outline-none focus:border-accent-400"
+          className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg border border-line-strong text-xs outline-none focus:border-accent-400"
         />
         {total > 0 && (
           <span className="text-[0.65rem] font-bold text-green-600 shrink-0">{formatMoney(total)}</span>
@@ -342,7 +352,7 @@ function PendingReservationCard({
         </button>
         <button
           onClick={onReject}
-          className="flex items-center justify-center gap-1.5 px-4 py-2 bg-red-50 text-red-500 rounded-xl text-xs font-bold active:scale-95 transition"
+          className="flex items-center justify-center gap-1.5 px-4 py-2 bg-red-50 text-red-500 dark:bg-red-500/15 dark:text-red-300 rounded-xl text-xs font-bold active:scale-95 transition"
         >
           <XCircle size={14} /> ✖️
         </button>
@@ -358,13 +368,13 @@ function QuotaBar({ label, used, max }: { label: string; used: number; max: numb
   return (
     <div>
       <div className="flex items-center justify-between text-[0.65rem] mb-1">
-        <span className="text-gray-500">{label}</span>
-        <span className={`font-bold ${full ? 'text-yellow-600' : 'text-gray-600'}`}>
+        <span className="text-muted">{label}</span>
+        <span className={`font-bold ${full ? 'text-yellow-600' : 'text-muted'}`}>
           {used}{max === null ? ' · ilimitadas' : ` / ${max}`}
         </span>
       </div>
       {max !== null && (
-        <div className="w-full bg-gray-100 rounded-full h-1.5">
+        <div className="w-full bg-subtle rounded-full h-1.5">
           <div
             className={`h-1.5 rounded-full transition-all ${full ? 'bg-yellow-400' : 'bg-accent-500'}`}
             style={{ width: `${pct}%` }}

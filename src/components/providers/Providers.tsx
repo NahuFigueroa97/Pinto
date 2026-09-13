@@ -4,9 +4,11 @@ import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/reac
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { useState, useEffect, type ReactNode } from 'react';
 import { initNotifications, startNotificationPolling, stopNotificationPolling } from '@/lib/notifications';
+import { initDeepLinks } from '@/lib/deepLinks';
 import { onNavigationRequest, navigateTo } from '@/lib/navigation';
 import { useRouter, usePathname } from 'next/navigation';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
+import { TemaProvider } from '@/lib/theme';
 
 function NotificationManager() {
   // Se depende de user.id y no del objeto `user`: supabase-js devuelve una
@@ -23,6 +25,8 @@ function NotificationManager() {
     initNotifications().then(() => {
       if (!cancelled) startNotificationPolling(userId);
     });
+    // Los links compartidos tienen que rutear igual que un push.
+    void initDeepLinks();
     return () => {
       cancelled = true;
       stopNotificationPolling();
@@ -94,11 +98,13 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <TemaProvider>
       <AuthProvider>
         <NotificationManager />
         <NotificationRouter />
         <RouteErrorBoundary>{children}</RouteErrorBoundary>
       </AuthProvider>
+      </TemaProvider>
     </QueryClientProvider>
   );
 }

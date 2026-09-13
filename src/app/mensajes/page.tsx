@@ -116,7 +116,7 @@ function MensajesUsuarioInner() {
     return (
       <div className="max-w-lg mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
         <MessageCircle size={48} className="text-gray-200 mb-4" />
-        <p className="text-gray-500 mb-3">Iniciá sesión para ver tus mensajes</p>
+        <p className="text-muted mb-3">Iniciá sesión para ver tus mensajes</p>
         <Link href="/login" className="text-brand-500 font-medium">Iniciar sesión</Link>
       </div>
     );
@@ -126,10 +126,10 @@ function MensajesUsuarioInner() {
     const current = conversations?.find((c: any) => c.business_id === selectedBusiness);
     return (
       <div className="max-w-lg mx-auto flex flex-col h-[calc(100vh-60px)]">
-        <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 bg-white sticky top-0 z-10">
+        <header className="flex items-center gap-3 px-4 py-3 border-b border-line bg-surface sticky top-0 z-10">
           <button
             onClick={() => { setSelectedBusiness(null); router.replace('/mensajes'); }}
-            className="p-1 text-gray-400"
+            className="-m-1 min-w-[44px] min-h-[44px] flex items-center justify-center text-faint"
           ><ArrowLeft size={20} /></button>
           <div className="w-8 h-8 rounded-full bg-accent-100 flex items-center justify-center text-sm">🏪</div>
           <h1 className="font-bold text-sm truncate">{(current?.business as any)?.name ?? 'Negocio'}</h1>
@@ -141,10 +141,10 @@ function MensajesUsuarioInner() {
               <div className={`max-w-[75%] px-3.5 py-2 rounded-2xl text-sm ${
                 msg.sender_role === 'user'
                   ? 'bg-brand-500 text-white rounded-br-md'
-                  : 'bg-gray-100 text-gray-800 rounded-bl-md'
+                  : 'bg-subtle text-ink rounded-bl-md'
               }`}>
                 <p>{msg.message}</p>
-                <p className={`text-[0.5rem] mt-0.5 ${msg.sender_role === 'user' ? 'text-white/70' : 'text-gray-400'}`}>
+                <p className={`text-[0.5rem] mt-0.5 ${msg.sender_role === 'user' ? 'text-white/70' : 'text-faint'}`}>
                   {new Date(msg.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
@@ -153,7 +153,7 @@ function MensajesUsuarioInner() {
           <div ref={chatEndRef} />
         </div>
 
-        <div className="px-4 py-3 border-t border-gray-100 bg-white safe-bottom">
+        <div className="px-4 py-3 border-t border-line bg-surface safe-bottom">
           {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
           <div className="flex items-center gap-1">
             <EmojiPicker onPick={e => setMessage(m => m + e)} />
@@ -161,7 +161,7 @@ function MensajesUsuarioInner() {
               type="text" value={message} onChange={e => { setMessage(e.target.value); setError(''); }}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) send.mutate(); }}
               placeholder="Escribí tu consulta..."
-              className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-brand-400 outline-none"
+              className="flex-1 px-4 py-2.5 rounded-xl border border-line-strong text-sm focus:border-brand-400 outline-none"
             />
             <button onClick={() => send.mutate()} disabled={!message.trim() || send.isPending}
               className="p-2.5 bg-brand-500 text-white rounded-xl disabled:opacity-40 active:scale-95 transition">
@@ -176,10 +176,10 @@ function MensajesUsuarioInner() {
   return (
     <div className="max-w-lg mx-auto pb-20">
       <header className="flex items-center gap-3 px-4 pt-6 pb-3">
-        <button onClick={() => router.back()} className="p-1.5 text-gray-400"><ArrowLeft size={20} /></button>
+        <button onClick={() => router.back()} className="-m-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-faint"><ArrowLeft size={20} /></button>
         <div>
           <h1 className="text-xl font-display font-bold">💬 Mis mensajes</h1>
-          <p className="text-sm text-gray-400">Tus consultas a los negocios</p>
+          <p className="text-sm text-faint">Tus consultas a los negocios</p>
         </div>
       </header>
 
@@ -188,8 +188,8 @@ function MensajesUsuarioInner() {
       ) : !conversations?.length ? (
         <div className="text-center py-16 px-4">
           <p className="text-5xl mb-3">📭</p>
-          <p className="text-gray-500 font-medium">Todavía no escribiste a ningún negocio</p>
-          <p className="text-sm text-gray-400 mt-1">Desde la ficha de una promo podés consultarle al local</p>
+          <p className="text-muted font-medium">Todavía no escribiste a ningún negocio</p>
+          <p className="text-sm text-faint mt-1">Desde la ficha de una promo podés consultarle al local</p>
         </div>
       ) : (
         <div className="px-4 space-y-2">
@@ -197,17 +197,17 @@ function MensajesUsuarioInner() {
             <button
               key={conv.business_id}
               onClick={() => setSelectedBusiness(conv.business_id)}
-              className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm w-full text-left hover:shadow-md transition"
+              className="flex items-center gap-3 p-4 bg-surface rounded-2xl border border-line shadow-sm w-full text-left hover:shadow-md transition"
             >
               <div className="w-10 h-10 rounded-full bg-accent-100 flex items-center justify-center shrink-0">🏪</div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <p className="font-bold text-sm truncate">{(conv.business as any)?.name ?? 'Negocio'}</p>
-                  <p className="text-[0.55rem] text-gray-400 shrink-0 ml-2">
+                  <p className="text-[0.55rem] text-faint shrink-0 ml-2">
                     {new Date(conv.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}
                   </p>
                 </div>
-                <p className="text-xs text-gray-400 truncate mt-0.5">{conv.message}</p>
+                <p className="text-xs text-faint truncate mt-0.5">{conv.message}</p>
               </div>
               {conv.unread > 0 && (
                 <span className="bg-red-500 text-white text-[0.55rem] font-black rounded-full w-5 h-5 flex items-center justify-center shrink-0">

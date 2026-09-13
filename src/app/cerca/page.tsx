@@ -162,14 +162,14 @@ export default function CercaPage() {
   if (geoLoading) return (
     <div className="max-w-lg mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
       <Navigation size={40} className="text-brand-300 mb-4 animate-pulse" />
-      <p className="text-gray-500">Obteniendo tu ubicación...</p>
+      <p className="text-muted">Obteniendo tu ubicación...</p>
     </div>
   );
 
   if (!location) return (
     <div className="max-w-lg mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
       <MapPin size={48} className="text-gray-200 mb-4" />
-      <p className="text-gray-500 mb-2">{geoError || 'Necesitamos tu ubicación para mostrar resultados cercanos'}</p>
+      <p className="text-muted mb-2">{geoError || 'Necesitamos tu ubicación para mostrar resultados cercanos'}</p>
       <button onClick={requestLocation} className="text-brand-500 font-medium flex items-center gap-1">
         <RefreshCw size={14} /> Intentar de nuevo
       </button>
@@ -183,20 +183,20 @@ export default function CercaPage() {
           <h1 className="text-xl font-display font-bold flex items-center gap-2">
             <Navigation size={20} className="text-brand-500" /> Cerca mío
           </h1>
-          <p className="text-sm text-gray-500">Descubrí qué hay cerca tuyo</p>
+          <p className="text-sm text-muted">Descubrí qué hay cerca tuyo</p>
         </div>
         <button onClick={() => setViewMode(v => v === 'list' ? 'map' : 'list')}
-          className="p-2 bg-gray-100 rounded-xl text-gray-600">
+          className="p-2 bg-subtle rounded-xl text-muted">
           {viewMode === 'list' ? <Map size={18} /> : <List size={18} />}
         </button>
       </header>
 
       {/* Distance filter */}
       <div className="px-4 pb-3 flex items-center gap-2 shrink-0">
-        <span className="text-xs text-gray-500">Radio:</span>
+        <span className="text-xs text-muted">Radio:</span>
         {[2, 5, 10, 25].map(km => (
           <button key={km} onClick={() => setMaxKm(km)}
-            className={`text-xs px-3 py-1.5 rounded-full font-medium transition ${maxKm === km ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-600'}`}>
+            className={`text-xs px-3 py-1.5 rounded-full font-medium transition ${maxKm === km ? 'bg-brand-500 text-white' : 'bg-subtle text-muted'}`}>
             {km} km
           </button>
         ))}
@@ -210,7 +210,7 @@ export default function CercaPage() {
           { key: 'plans', label: '👥 Planes', count: nearbyPlans?.length },
         ].map(t => (
           <button key={t.key} onClick={() => setTab(t.key as any)}
-            className={`px-3 py-2 rounded-full text-sm font-medium transition ${tab === t.key ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600'}`}>
+            className={`px-3 py-2 rounded-full text-sm font-medium transition ${tab === t.key ? 'bg-gray-900 text-white' : 'bg-subtle text-muted'}`}>
             {t.label} {t.count !== undefined ? `(${t.count})` : ''}
           </button>
         ))}
@@ -218,54 +218,54 @@ export default function CercaPage() {
 
       <div className="flex-1 overflow-y-auto px-4 space-y-3 relative">
         {viewMode === 'map' ? (
-          <div ref={mapRef} className="absolute inset-0 z-0 bg-gray-100" />
+          <div ref={mapRef} className="absolute inset-0 z-0 bg-subtle" />
         ) : (
           <div className="space-y-3 py-1">
             {tab === 'campaigns' && (
               !nearbyCampaigns?.length ? (
-                <p className="text-center py-10 text-gray-400 text-sm">No hay promos cerca a {maxKm} km</p>
+                <p className="text-center py-10 text-faint text-sm">No hay promos cerca a {maxKm} km</p>
               ) : nearbyCampaigns.map((c: any) => (
-                <Link key={c.id} href={`/campana?id=${c.id}`} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
+                <Link key={c.id} href={`/campana?id=${c.id}`} className="flex items-center gap-3 p-3 bg-surface rounded-xl border border-line shadow-sm">
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-sm truncate">{c.title}</h3>
-                    <p className="text-xs text-gray-500">{c.business?.name}</p>
+                    <p className="text-xs text-muted">{c.business?.name}</p>
                   </div>
                   <DistanceBadge distance={c.distance} />
-                  <ChevronRight size={14} className="text-gray-300" />
+                  <ChevronRight size={14} className="text-faint" />
                 </Link>
               ))
             )}
 
             {tab === 'businesses' && (
               !nearbyBusinesses?.length ? (
-                <p className="text-center py-10 text-gray-400 text-sm">No hay negocios cerca a {maxKm} km</p>
+                <p className="text-center py-10 text-faint text-sm">No hay negocios cerca a {maxKm} km</p>
               ) : nearbyBusinesses.map((b: any) => (
-                <Link key={b.id} href={`/negocio/detalle?slug=${b.slug}`} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
-                  <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-lg">{b.category?.icon || '🏪'}</div>
+                <Link key={b.id} href={`/negocio/detalle?slug=${b.slug}`} className="flex items-center gap-3 p-3 bg-surface rounded-xl border border-line shadow-sm">
+                  <div className="w-10 h-10 rounded-xl bg-subtle flex items-center justify-center text-lg">{b.category?.icon || '🏪'}</div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-sm truncate">{b.name}</h3>
-                    <p className="text-xs text-gray-500 truncate">{b.address}</p>
+                    <p className="text-xs text-muted truncate">{b.address}</p>
                   </div>
                   <DistanceBadge distance={b.distance} />
-                  <ChevronRight size={14} className="text-gray-300" />
+                  <ChevronRight size={14} className="text-faint" />
                 </Link>
               ))
             )}
 
             {tab === 'plans' && (
               !nearbyPlans?.length ? (
-                <p className="text-center py-10 text-gray-400 text-sm">No hay planes cerca a {maxKm} km</p>
+                <p className="text-center py-10 text-faint text-sm">No hay planes cerca a {maxKm} km</p>
               ) : nearbyPlans.map((p: any) => (
-                <Link key={p.id} href={`/planes/detalle?id=${p.id}`} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
+                <Link key={p.id} href={`/planes/detalle?id=${p.id}`} className="flex items-center gap-3 p-3 bg-surface rounded-xl border border-line shadow-sm">
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-sm truncate">{p.title}</h3>
-                    <div className="flex items-center gap-2 text-xs text-gray-400 mt-0.5">
+                    <div className="flex items-center gap-2 text-xs text-faint mt-0.5">
                       <span>{p.creator?.full_name}</span>
                       <span><Users size={10} className="inline" /> {p.members_count ?? 0}/{p.max_members}</span>
                     </div>
                   </div>
                   <DistanceBadge distance={p.distance} />
-                  <ChevronRight size={14} className="text-gray-300" />
+                  <ChevronRight size={14} className="text-faint" />
                 </Link>
               ))
             )}

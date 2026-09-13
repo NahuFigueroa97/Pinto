@@ -34,7 +34,7 @@ export function ProfileCard({ profile, compact, showActions, onAccept, onReject,
   const ageRange = profile.show_age ? getAge(profile.birth_year) : null;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div className="bg-surface rounded-2xl border border-line shadow-sm overflow-hidden">
       <Link href={`/perfil/ver?id=${profile.id}`} className="block p-4">
         <div className="flex items-start gap-3">
           {/* Avatar */}
@@ -50,11 +50,11 @@ export function ProfileCard({ profile, compact, showActions, onAccept, onReject,
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <h3 className="font-semibold text-sm truncate">{profile.full_name}</h3>
-              {ageRange && <span className="text-xs text-gray-400">{ageRange}</span>}
+              {ageRange && <span className="text-xs text-faint">{ageRange}</span>}
             </div>
 
             {profile.bio && !compact && (
-              <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{profile.bio}</p>
+              <p className="text-xs text-muted mt-0.5 line-clamp-2">{profile.bio}</p>
             )}
 
             <div className="flex flex-wrap items-center gap-2 mt-1.5">
@@ -65,20 +65,20 @@ export function ProfileCard({ profile, compact, showActions, onAccept, onReject,
 
               {/* Zone */}
               {(profile.zone as any)?.name && (
-                <span className="flex items-center gap-0.5 text-[0.65rem] text-gray-400">
+                <span className="flex items-center gap-0.5 text-[0.65rem] text-faint">
                   <MapPin size={10} /> {(profile.zone as any).name}
                 </span>
               )}
 
               {/* Stats */}
-              <span className="flex items-center gap-0.5 text-[0.65rem] text-gray-400">
+              <span className="flex items-center gap-0.5 text-[0.65rem] text-faint">
                 <Calendar size={10} /> {profile.plans_created_count} creados · {profile.plans_joined_count} unidos
               </span>
             </div>
 
             {/* Interests */}
             {profile.interests_text && !compact && (
-              <p className="text-[0.65rem] text-gray-400 mt-1 truncate">🏷 {profile.interests_text}</p>
+              <p className="text-[0.65rem] text-faint mt-1 truncate">🏷 {profile.interests_text}</p>
             )}
           </div>
         </div>
@@ -87,20 +87,20 @@ export function ProfileCard({ profile, compact, showActions, onAccept, onReject,
       {/* Message from applicant */}
       {message && (
         <div className="px-4 pb-2">
-          <p className="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2 italic">&ldquo;{message}&rdquo;</p>
+          <p className="text-xs text-muted bg-canvas rounded-lg px-3 py-2 italic">&ldquo;{message}&rdquo;</p>
         </div>
       )}
 
       {/* Actions */}
       {showActions && (
-        <div className="flex border-t border-gray-100">
+        <div className="flex border-t border-line">
           <button
             onClick={onReject}
             className="flex-1 py-3 text-sm font-medium text-red-500 hover:bg-red-50 transition"
           >
             Rechazar
           </button>
-          <div className="w-px bg-gray-100" />
+          <div className="w-px bg-subtle" />
           <button
             onClick={onAccept}
             className="flex-1 py-3 text-sm font-medium text-green-600 hover:bg-green-50 transition"

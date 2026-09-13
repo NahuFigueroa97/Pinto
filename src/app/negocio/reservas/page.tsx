@@ -48,16 +48,16 @@ export default function NegocioReservasPage() {
   });
 
   const statusColors: Record<string, string> = {
-    confirmed: 'bg-green-50 text-green-700',
-    cancelled: 'bg-red-50 text-red-500',
-    completed: 'bg-blue-50 text-blue-600',
-    no_show: 'bg-gray-100 text-gray-500',
+    confirmed: 'bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-300',
+    cancelled: 'bg-red-50 text-red-500 dark:bg-red-500/15 dark:text-red-300',
+    completed: 'bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300',
+    no_show: 'bg-subtle text-muted',
   };
 
   return (
     <div className="max-w-lg mx-auto pb-6">
       <header className="flex items-center gap-3 px-4 pt-6 pb-4">
-        <button onClick={() => router.push('/negocio')} className="p-1.5 text-gray-400"><ArrowLeft size={20} /></button>
+        <button onClick={() => router.push('/negocio')} className="-m-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-faint"><ArrowLeft size={20} /></button>
         <h1 className="text-lg font-display font-bold">Reservas recibidas</h1>
       </header>
 
@@ -67,8 +67,8 @@ export default function NegocioReservasPage() {
         ) : queryError ? (
           <div className="text-center py-16 px-6">
             <p className="text-4xl mb-3">😕</p>
-            <p className="text-gray-700 font-medium">No se pudo cargar</p>
-            <p className="text-xs text-gray-400 mt-1 break-words">
+            <p className="text-ink-soft font-medium">No se pudo cargar</p>
+            <p className="text-xs text-faint mt-1 break-words">
               {queryError instanceof Error ? queryError.message : 'Algo salió mal'}
             </p>
             <button onClick={() => refetch()} disabled={isFetching}
@@ -77,18 +77,18 @@ export default function NegocioReservasPage() {
             </button>
           </div>
         ) : !reservations?.length ? (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16 text-faint">
             <p className="text-4xl mb-3">📋</p>
             <p>No hay reservas todavía</p>
           </div>
         ) : (
           reservations.map((r: any) => (
-            <div key={r.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+            <div key={r.id} className="bg-surface rounded-xl border border-line shadow-sm p-4">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="font-semibold text-sm">{r.profile?.full_name ?? 'Usuario'}</p>
-                  <p className="text-xs text-gray-500">{r.campaign?.title}</p>
-                  <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
+                  <p className="text-xs text-muted">{r.campaign?.title}</p>
+                  <div className="flex items-center gap-3 mt-1 text-xs text-faint">
                     <span className="flex items-center gap-0.5"><Users size={11} /> {r.party_size} pers.</span>
                     <span className="flex items-center gap-0.5"><Clock size={11} /> {new Date(r.reserved_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
@@ -97,10 +97,10 @@ export default function NegocioReservasPage() {
               </div>
               {r.status === 'confirmed' && (
                 <div className="flex gap-2 mt-3">
-                  <button onClick={() => updateStatus.mutate({ id: r.id, status: 'completed' })} className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full bg-green-50 text-green-700">
+                  <button onClick={() => updateStatus.mutate({ id: r.id, status: 'completed' })} className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-300">
                     <Check size={12} /> Completar
                   </button>
-                  <button onClick={() => updateStatus.mutate({ id: r.id, status: 'no_show' })} className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full bg-gray-100 text-gray-600">
+                  <button onClick={() => updateStatus.mutate({ id: r.id, status: 'no_show' })} className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full bg-subtle text-muted">
                     <X size={12} /> No asistió
                   </button>
                 </div>

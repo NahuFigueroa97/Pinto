@@ -6,6 +6,8 @@ import { supabase } from '@/lib/supabase';
 import { Clock, ChevronRight, RefreshCw } from 'lucide-react';
 import { useBlockedIds, filterBlocked } from '@/lib/blocks';
 import { PageSpinner } from '@/components/shared/PageSpinner';
+import { SkeletonLista } from '@/components/shared/Skeleton';
+import { PullToRefresh } from '@/components/shared/PullToRefresh';
 
 // `joined_plan` se saco a proposito (ver 017_privacidad_social.sql): sumarse
 // a un plan no es un acto publico y se publicaba con nombre y titulo para
@@ -76,18 +78,19 @@ export default function FeedPage() {
   const visibleFeed = filterBlocked<any>(data?.pages.flat(), blockedSet, item => item.actor_id);
 
   return (
+    <PullToRefresh onRefresh={() => refetch()}>
     <div className="max-w-lg mx-auto pb-6">
       <header className="px-4 pt-6 pb-3 flex items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-display font-bold">📣 Actividad</h1>
-          <p className="text-sm text-gray-500">Lo que está pasando en Pintó</p>
+          <p className="text-sm text-muted">Lo que está pasando en Pintó</p>
         </div>
         {/* Sin sondeo automático, el refresco tiene que ser explícito. */}
         <button
           onClick={() => void refetch()}
           disabled={isFetching}
           aria-label="Actualizar"
-          className="p-2 -mr-1 text-gray-400 disabled:opacity-40"
+          className="p-2 -mr-1 text-faint disabled:opacity-40"
         >
           <RefreshCw size={17} className={isFetching ? 'animate-spin' : ''} />
         </button>
@@ -95,12 +98,12 @@ export default function FeedPage() {
 
       <div className="px-4 space-y-2">
         {isLoading ? (
-          <PageSpinner fullScreen={false} />
+          <PageSpinner fullScreen={false} onRetry={() => void refetch()} skeleton={<SkeletonLista cuantos={5} variante="fila" />} />
         ) : error ? (
           <div className="text-center py-16">
             <p className="text-4xl mb-3">😕</p>
-            <p className="text-gray-600 font-medium">No se pudo cargar la actividad</p>
-            <p className="text-xs text-gray-400 mt-1 px-6">{(error as Error).message}</p>
+            <p className="text-muted font-medium">No se pudo cargar la actividad</p>
+            <p className="text-xs text-faint mt-1 px-6">{(error as Error).message}</p>
             <button
               onClick={() => refetch()}
               disabled={isFetching}
@@ -110,9 +113,19 @@ export default function FeedPage() {
             </button>
           </div>
         ) : !visibleFeed.length ? (
-          <div className="text-center py-16 text-gray-400">
-            <p className="text-4xl mb-3">📣</p>
-            <p>Todavía no hay actividad</p>
+          <div className="text-center py-14 px-6">
+            <p className="text-5xl mb-4">📣</p>
+            <p className="font-semibold text-ink">Todavía no pasó nada</p>
+            <p className="text-sm text-muted mt-1 leading-relaxed">
+              Acá vas a ver los planes que va armando la gente de Catamarca.
+              Si arrancás vos, aparece el tuyo.
+            </p>
+            <Link
+              href="/planes/crear"
+              className="mt-5 inline-flex items-center justify-center min-h-[48px] px-6 py-3 bg-brand-500 text-white font-bold rounded-2xl text-sm active:scale-95 transition shadow-lg shadow-brand-500/20"
+            >
+              Armar un plan
+            </Link>
           </div>
         ) : (
           visibleFeed.map((item: any) => {
@@ -120,18 +133,18 @@ export default function FeedPage() {
             return (
               <Link key={item.id}
                 href={item.target_type === 'plan' ? `/planes/detalle?id=${item.target_id}` : '#'}
-                className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
+                className="flex items-center gap-3 p-3 bg-surface rounded-xl border border-line shadow-sm">
                 <span className="text-xl">{action.emoji}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm">
                     <span className="font-semibold">{item.actor?.full_name}</span>{' '}
-                    <span className="text-gray-600">{action.text(item.metadata)}</span>
+                    <span className="text-muted">{action.text(item.metadata)}</span>
                   </p>
-                  <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+                  <p className="text-xs text-faint mt-0.5 flex items-center gap-1">
                     <Clock size={10} /> {timeAgo(item.created_at)}
                   </p>
                 </div>
-                <ChevronRight size={14} className="text-gray-300 shrink-0" />
+                <ChevronRight size={14} className="text-faint shrink-0" />
               </Link>
             );
           })
@@ -141,12 +154,13 @@ export default function FeedPage() {
           <button
             onClick={() => void fetchNextPage()}
             disabled={isFetchingNextPage}
-            className="w-full py-3 text-sm font-medium text-gray-500 bg-white border border-gray-100 rounded-xl disabled:opacity-50"
+            className="w-full py-3 text-sm font-medium text-muted bg-surface border border-line rounded-xl disabled:opacity-50"
           >
             {isFetchingNextPage ? 'Cargando...' : 'Ver más actividad'}
           </button>
         )}
       </div>
     </div>
+    </PullToRefresh>
   );
 }

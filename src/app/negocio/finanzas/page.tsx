@@ -81,8 +81,8 @@ export default function FinanzasPage() {
   if (!business) return (
     <div className="max-w-lg mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
       <p className="text-5xl mb-3">💰</p>
-      <p className="text-gray-500 font-medium mb-1">Todavía no creaste tu negocio</p>
-      <p className="text-sm text-gray-400 mb-6">Las finanzas se habilitan cuando tengas uno</p>
+      <p className="text-muted font-medium mb-1">Todavía no creaste tu negocio</p>
+      <p className="text-sm text-faint mb-6">Las finanzas se habilitan cuando tengas uno</p>
       <button onClick={() => router.push('/negocio/nuevo')}
         className="px-6 py-2.5 bg-accent-500 text-white rounded-xl font-medium shadow-md">Crear mi negocio</button>
     </div>
@@ -92,22 +92,22 @@ export default function FinanzasPage() {
   const expense = transactions?.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0) ?? 0;
   const balance = income - expense;
 
-  const inputClass = "w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-white text-sm focus:border-accent-400 outline-none";
+  const inputClass = "w-full px-3 py-2.5 rounded-xl border border-line-strong bg-surface text-sm focus:border-accent-400 outline-none";
 
   return (
     <div className="max-w-lg mx-auto pb-20">
       <header className="px-4 pt-6 pb-3">
         <h1 className="text-xl font-display font-bold">💰 Finanzas</h1>
-        <p className="text-sm text-gray-400">Controlá tu flujo de plata</p>
+        <p className="text-sm text-faint">Controlá tu flujo de plata</p>
       </header>
 
       <div className="px-4">
         {/* Period Selector */}
-        <div className="flex bg-gray-100 rounded-xl p-1 mb-4">
+        <div className="flex bg-subtle rounded-xl p-1 mb-4">
           {(['day', 'week', 'month'] as Period[]).map(p => (
             <button key={p} onClick={() => setPeriod(p)}
               className={`flex-1 py-2 text-xs font-black rounded-lg transition
-                ${period === p ? 'bg-white text-accent-600 shadow-sm' : 'text-gray-400'}`}>
+                ${period === p ? 'bg-surface text-accent-600 shadow-sm' : 'text-faint'}`}>
               {p === 'day' ? '📅 Hoy' : p === 'week' ? '📆 Semana' : '🗓️ Mes'}
             </button>
           ))}
@@ -135,12 +135,12 @@ export default function FinanzasPage() {
 
         {/* Add Expense */}
         <button onClick={() => setShowAddExpense(!showAddExpense)}
-          className="w-full flex items-center justify-center gap-2 py-2.5 mb-3 bg-white border-2 border-dashed border-gray-200 text-gray-500 font-bold rounded-xl text-sm hover:border-red-300 hover:text-red-400 transition">
+          className="w-full flex items-center justify-center gap-2 py-2.5 mb-3 bg-surface border-2 border-dashed border-line-strong text-muted font-bold rounded-xl text-sm hover:border-red-300 hover:text-red-400 transition">
           📝 Registrar gasto
         </button>
 
         {showAddExpense && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-4 mb-4 space-y-3">
+          <div className="bg-surface rounded-2xl border border-line shadow-lg p-4 mb-4 space-y-3">
             {expenseError && (
               <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">⚠️ {expenseError}</p>
             )}
@@ -169,24 +169,24 @@ export default function FinanzasPage() {
 
         {/* Transactions */}
         <div className="space-y-2">
-          <p className="text-[0.6rem] font-black text-gray-300 uppercase tracking-widest">
+          <p className="text-[0.6rem] font-black text-faint uppercase tracking-widest">
             {period === 'day' ? 'Movimientos de hoy' : period === 'week' ? 'Movimientos de la semana' : 'Movimientos del mes'}
           </p>
           {!transactions?.length ? (
             <div className="text-center py-10">
               <p className="text-4xl mb-2">🤷</p>
-              <p className="text-sm text-gray-300">Sin movimientos</p>
-              <p className="text-xs text-gray-300 mt-1">Los ingresos se registran automáticamente al aprobar reservas ✅</p>
+              <p className="text-sm text-faint">Sin movimientos</p>
+              <p className="text-xs text-faint mt-1">Los ingresos se registran automáticamente al aprobar reservas ✅</p>
             </div>
           ) : (
             transactions.map(tx => (
-              <div key={tx.id} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-50">
+              <div key={tx.id} className="flex items-center gap-3 p-3 bg-surface rounded-xl border border-gray-50">
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center text-lg ${tx.type === 'income' ? 'bg-green-50' : 'bg-red-50'}`}>
                   {tx.type === 'income' ? '💰' : '💸'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-800 truncate">{tx.description}</p>
-                  <p className="text-[0.55rem] text-gray-400 font-medium">{tx.category} · {new Date(tx.transaction_date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+                  <p className="text-sm font-semibold text-ink truncate">{tx.description}</p>
+                  <p className="text-[0.55rem] text-faint font-medium">{tx.category} · {new Date(tx.transaction_date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
                 </div>
                 <p className={`text-sm font-black ${tx.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>
                   {tx.type === 'income' ? '+' : '-'}${Number(tx.amount).toLocaleString('es-AR')}

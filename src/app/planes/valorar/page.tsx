@@ -60,10 +60,10 @@ function ValorarInner() {
   return (
     <div className="max-w-lg mx-auto pb-8">
       <header className="flex items-center gap-3 px-4 pt-6 pb-4">
-        <button onClick={() => router.back()} className="p-1.5 text-gray-400"><ArrowLeft size={20} /></button>
+        <button onClick={() => router.back()} className="-m-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-faint"><ArrowLeft size={20} /></button>
         <div>
           <h1 className="text-lg font-display font-bold">⭐ Valorar participantes</h1>
-          <p className="text-xs text-gray-500">Tu opinión ayuda a la comunidad</p>
+          <p className="text-xs text-muted">Tu opinión ayuda a la comunidad</p>
         </div>
       </header>
 
@@ -72,14 +72,14 @@ function ValorarInner() {
           const alreadyReviewed = existingReviews?.has(m.user_id);
           const r = ratings[m.user_id] || { rating: 0, comment: '' };
           return (
-            <div key={m.id} className={`bg-white p-4 rounded-2xl border border-gray-100 shadow-sm ${alreadyReviewed ? 'opacity-50' : ''}`}>
+            <div key={m.id} className={`bg-surface p-4 rounded-2xl border border-line shadow-sm ${alreadyReviewed ? 'opacity-50' : ''}`}>
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-sm font-bold text-brand-600">
                   {m.user?.full_name?.[0]?.toUpperCase() ?? '?'}
                 </div>
                 <div>
                   <p className="font-semibold text-sm">{m.user?.full_name}</p>
-                  <p className="text-xs text-gray-400">{alreadyReviewed ? '✅ Ya valorado' : 'Sin valorar'}</p>
+                  <p className="text-xs text-faint">{alreadyReviewed ? '✅ Ya valorado' : 'Sin valorar'}</p>
                 </div>
               </div>
               {!alreadyReviewed && (
@@ -96,7 +96,7 @@ function ValorarInner() {
                     value={r.comment}
                     onChange={e => setRatings({ ...ratings, [m.user_id]: { ...r, comment: e.target.value } })}
                     placeholder="Comentario opcional..."
-                    className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:border-brand-400"
+                    className="w-full px-3 py-2 rounded-xl border border-line-strong text-sm outline-none focus:border-brand-400"
                   />
                 </>
               )}

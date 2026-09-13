@@ -49,7 +49,7 @@ export default function PintoRandomPage() {
   if (!plans?.length) return (
     <div className="max-w-lg mx-auto flex flex-col items-center justify-center min-h-[70vh] text-center px-6">
       <p className="text-5xl mb-4">🎲</p>
-      <p className="text-gray-500">No hay planes disponibles para random</p>
+      <p className="text-muted">No hay planes disponibles para random</p>
     </div>
   );
 
@@ -57,43 +57,43 @@ export default function PintoRandomPage() {
     <div className="max-w-lg mx-auto pb-6">
       <header className="px-4 pt-6 pb-4 text-center">
         <h1 className="text-2xl font-display font-bold">🎲 Pintó Random</h1>
-        <p className="text-sm text-gray-500">Descubrí tu próxima juntada al azar</p>
+        <p className="text-sm text-muted">Descubrí tu próxima juntada al azar</p>
       </header>
 
       <div className="px-4">
-        <div className={`bg-white rounded-3xl border border-gray-100 shadow-lg overflow-hidden transition-all duration-300 ${
+        <div className={`bg-surface rounded-3xl border border-line shadow-lg overflow-hidden transition-all duration-300 ${
           direction === 'left' ? '-translate-x-full opacity-0 rotate-[-10deg]' :
           direction === 'right' ? 'translate-x-full opacity-0 rotate-[10deg]' : ''
         }`}>
           <div className="bg-gradient-to-br from-brand-50 to-accent-50 p-6 text-center">
             <p className="text-4xl mb-2">{(plan as any)?.category?.emoji || '🎉'}</p>
             <h2 className="text-xl font-bold">{plan?.title}</h2>
-            {(plan as any)?.category && <span className="text-xs bg-white/80 px-2 py-0.5 rounded-full mt-1 inline-block">{(plan as any).category.name}</span>}
+            {(plan as any)?.category && <span className="text-xs bg-surface/80 px-2 py-0.5 rounded-full mt-1 inline-block">{(plan as any).category.name}</span>}
           </div>
 
           <div className="p-5 space-y-3">
-            {plan?.description && <p className="text-sm text-gray-600">{plan.description}</p>}
+            {plan?.description && <p className="text-sm text-muted">{plan.description}</p>}
 
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="bg-gray-50 rounded-xl p-3">
-                <p className="text-xs text-gray-400">📅 Cuándo</p>
+              <div className="bg-canvas rounded-xl p-3">
+                <p className="text-xs text-faint">📅 Cuándo</p>
                 <p className="font-medium">{new Date(plan!.plan_date + 'T00:00:00').toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
-                {plan?.plan_time && <p className="text-xs text-gray-500">{plan.plan_time.slice(0, 5)} hs</p>}
+                {plan?.plan_time && <p className="text-xs text-muted">{plan.plan_time.slice(0, 5)} hs</p>}
               </div>
-              <div className="bg-gray-50 rounded-xl p-3">
-                <p className="text-xs text-gray-400">👥 Grupo</p>
+              <div className="bg-canvas rounded-xl p-3">
+                <p className="text-xs text-faint">👥 Grupo</p>
                 <p className="font-medium">{(plan as any).members_count ?? 0} / {plan?.max_members}</p>
               </div>
             </div>
 
             {plan?.meeting_point && (
-              <div className="bg-gray-50 rounded-xl p-3 text-sm">
-                <p className="text-xs text-gray-400">📍 Dónde</p>
+              <div className="bg-canvas rounded-xl p-3 text-sm">
+                <p className="text-xs text-faint">📍 Dónde</p>
                 <p className="font-medium">{plan.meeting_point}</p>
               </div>
             )}
 
-            <div className="flex items-center gap-2 text-sm text-gray-500">
+            <div className="flex items-center gap-2 text-sm text-muted">
               <span className="w-7 h-7 rounded-full bg-brand-100 flex items-center justify-center text-xs font-bold text-brand-600">
                 {(plan as any).creator?.full_name?.[0]?.toUpperCase() ?? '?'}
               </span>
@@ -118,7 +118,7 @@ export default function PintoRandomPage() {
           </button>
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-3">{currentIdx + 1} / {plans?.length} planes</p>
+        <p className="text-center text-xs text-faint mt-3">{currentIdx + 1} / {plans?.length} planes</p>
       </div>
     </div>
   );

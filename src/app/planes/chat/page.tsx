@@ -11,6 +11,7 @@ import { useBlockedIds, filterBlocked } from '@/lib/blocks';
 import { moderateContent } from '@/lib/moderation';
 import { EmojiPicker } from '@/components/shared/EmojiPicker';
 import { PageSpinner } from '@/components/shared/PageSpinner';
+import { golpe, error as hapticoError } from '@/lib/haptics';
 
 /** Cuánto se puede alejar del fondo y seguir considerándose "abajo". */
 const NEAR_BOTTOM_PX = 120;
@@ -318,6 +319,7 @@ function ChatInner() {
     setSending(false);
 
     if (insertErr || !inserted) {
+      void hapticoError();
       setPending(p => p.filter(x => x.id !== optimistic.id));
       setMsg(text);            // no se pierde lo escrito
       setError('No se pudo enviar. Probá de nuevo.');
@@ -330,6 +332,10 @@ function ChatInner() {
       return [...list, inserted as ChatMessage];
     });
     setPending(p => p.filter(x => x.id !== optimistic.id));
+    // El golpecito al confirmar es lo que hace que un envío se sienta
+    // enviado. Va después del insert, no al tocar: si falla, la mano no
+    // tiene que haber dicho que salió bien.
+    void golpe();
   };
 
   const insertEmoji = (emoji: string) => {
@@ -344,12 +350,12 @@ function ChatInner() {
   const others = reads?.length ?? 0;
 
   return (
-    <div className="flex flex-col h-[100dvh] max-w-lg mx-auto bg-gray-50">
-      <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 bg-white shrink-0">
-        <button onClick={() => router.back()} className="p-1 text-gray-400"><ArrowLeft size={20} /></button>
+    <div className="flex flex-col h-[100dvh] max-w-lg mx-auto bg-canvas">
+      <header className="flex items-center gap-3 px-4 py-3 border-b border-line bg-surface shrink-0">
+        <button onClick={() => router.back()} className="-m-1 min-w-[44px] min-h-[44px] flex items-center justify-center text-faint"><ArrowLeft size={20} /></button>
         <div className="min-w-0">
           <h1 className="text-sm font-bold truncate">💬 {plan?.title || 'Chat del grupo'}</h1>
-          <p className="text-[0.65rem] text-gray-400">
+          <p className="text-[0.65rem] text-faint">
             {others + 1} {others + 1 === 1 ? 'participante' : 'participantes'}
           </p>
         </div>
@@ -362,7 +368,7 @@ function ChatInner() {
             <button
               onClick={() => void cargarAnteriores()}
               disabled={cargandoViejos}
-              className="text-[0.7rem] text-gray-500 bg-white border border-gray-200 rounded-full px-4 py-1.5 disabled:opacity-50"
+              className="text-[0.7rem] text-muted bg-surface border border-line-strong rounded-full px-4 py-1.5 disabled:opacity-50"
             >
               {cargandoViejos ? 'Cargando...' : 'Ver mensajes anteriores'}
             </button>
@@ -370,7 +376,7 @@ function ChatInner() {
         )}
 
         {all.length === 0 && (
-          <div className="text-center py-10 text-gray-400 text-sm">
+          <div className="text-center py-10 text-faint text-sm">
             <p className="text-3xl mb-2">💬</p>
             <p>¡Arrancá la conversación!</p>
           </div>
@@ -392,7 +398,7 @@ function ChatInner() {
             <div key={m.id}>
               {newDay && (
                 <div className="flex justify-center my-3">
-                  <span className="text-[0.6rem] text-gray-400 bg-white px-3 py-1 rounded-full border border-gray-100">
+                  <span className="text-[0.6rem] text-faint bg-surface px-3 py-1 rounded-full border border-line">
                     {dayLabel(m.created_at)}
                   </span>
                 </div>
@@ -404,7 +410,7 @@ function ChatInner() {
                   className={`max-w-[78%] px-3.5 py-2 ${isMine && !m.pending && others > 0 ? 'cursor-pointer' : ''} ${
                     isMine
                       ? `bg-brand-500 text-white rounded-2xl ${grouped ? 'rounded-tr-md' : ''} rounded-br-md`
-                      : `bg-white text-gray-800 border border-gray-100 rounded-2xl ${grouped ? 'rounded-tl-md' : ''} rounded-bl-md`
+                      : `bg-surface text-ink border border-line rounded-2xl ${grouped ? 'rounded-tl-md' : ''} rounded-bl-md`
                   } ${m.pending ? 'opacity-60' : ''}`}
                 >
                   {!isMine && !grouped && (
@@ -413,7 +419,7 @@ function ChatInner() {
                   {/* whitespace-pre-wrap conserva los saltos de línea y
                       break-words evita que un enlace largo rompa el layout */}
                   <p className="text-[0.95rem] whitespace-pre-wrap break-words leading-snug">{m.content}</p>
-                  <div className={`flex items-center gap-1 justify-end mt-0.5 ${isMine ? 'text-white/60' : 'text-gray-400'}`}>
+                  <div className={`flex items-center gap-1 justify-end mt-0.5 ${isMine ? 'text-white/60' : 'text-faint'}`}>
                     <span className="text-[0.55rem]">
                       {new Date(m.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
                     </span>
@@ -438,13 +444,13 @@ function ChatInner() {
               {/* El visto detallado solo en el último mensaje propio: en un
                   grupo, repetirlo en cada burbuja es ruido. */}
               {isLastMine && others > 0 && (
-                <p className="text-[0.6rem] text-gray-400 text-right mt-0.5 pr-1">
+                <p className="text-[0.6rem] text-faint text-right mt-0.5 pr-1">
                   {seen.length === 0
                     ? 'Todavía no lo vio nadie'
                     : seen.length >= others
                       ? `Visto por todos (${others})`
                       : `Visto por ${seen.length} de ${others}`}
-                  <span className="text-gray-300"> · tocá para ver quién</span>
+                  <span className="text-faint"> · tocá para ver quién</span>
                 </p>
               )}
             </div>
@@ -457,7 +463,7 @@ function ChatInner() {
       {!atBottom && (
         <button
           onClick={() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); void markRead(); }}
-          className="absolute bottom-24 right-5 w-10 h-10 rounded-full bg-white border border-gray-200 shadow-lg flex items-center justify-center text-gray-500"
+          className="absolute bottom-24 right-5 w-10 h-10 rounded-full bg-surface border border-line-strong shadow-lg flex items-center justify-center text-muted"
           aria-label="Ir al último mensaje"
         >
           ↓
@@ -480,12 +486,12 @@ function ChatInner() {
           onClick={() => setInfoOf(null)}
         >
           <div
-            className="bg-white w-full max-w-lg mx-auto rounded-t-3xl p-5 pb-8 max-h-[80vh] overflow-y-auto"
+            className="bg-surface w-full max-w-lg mx-auto rounded-t-3xl p-5 pb-8 max-h-[80vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3 mb-1">
-              <p className="text-xs font-bold text-gray-400">Info del mensaje</p>
-              <button onClick={() => setInfoOf(null)} className="p-1 -mt-1 text-gray-400 shrink-0">
+              <p className="text-xs font-bold text-faint">Info del mensaje</p>
+              <button onClick={() => setInfoOf(null)} className="-mt-2 -mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-faint shrink-0">
                 <X size={18} />
               </button>
             </div>
@@ -494,7 +500,7 @@ function ChatInner() {
                 de un mensaje largo no se veía casi nada. */}
             <div className="bg-brand-50 border border-brand-100 rounded-xl px-3 py-2 mb-4">
               <p className="text-sm whitespace-pre-wrap break-words leading-snug">{infoOf.content}</p>
-              <p className="text-[0.6rem] text-gray-400 mt-1">
+              <p className="text-[0.6rem] text-faint mt-1">
                 Enviado {dayLabel(infoOf.created_at).toLowerCase()} a las{' '}
                 {new Date(infoOf.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
               </p>
@@ -507,14 +513,14 @@ function ChatInner() {
 
               const fila = (r: ReadState, leido: boolean) => (
                 <div key={r.user_id} className="flex items-center gap-2.5 py-1.5">
-                  <span className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-[0.6rem] font-bold text-gray-500 shrink-0 overflow-hidden">
+                  <span className="w-7 h-7 rounded-full bg-subtle flex items-center justify-center text-[0.6rem] font-bold text-muted shrink-0 overflow-hidden">
                     {r.avatar_url
                       ? <img src={r.avatar_url} alt="" className="w-full h-full object-cover" />
                       : (r.full_name?.[0]?.toUpperCase() ?? '?')}
                   </span>
                   <span className="text-sm flex-1 min-w-0 truncate">{r.full_name ?? 'Alguien del grupo'}</span>
                   {leido && r.last_read_at && (
-                    <span className="text-[0.6rem] text-gray-400 shrink-0">
+                    <span className="text-[0.6rem] text-faint shrink-0">
                       leyó {new Date(r.last_read_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   )}
@@ -528,20 +534,20 @@ function ChatInner() {
                       <CheckCheck size={13} /> Leído por {leyeron.length} de {reads?.length ?? 0}
                     </p>
                     {leyeron.length === 0
-                      ? <p className="text-xs text-gray-400 py-1.5">Todavía nadie.</p>
+                      ? <p className="text-xs text-faint py-1.5">Todavía nadie.</p>
                       : leyeron.map(r => fila(r, true))}
                   </div>
 
                   {pendientes.length > 0 && (
                     <div>
-                      <p className="text-[0.7rem] font-bold text-gray-400 flex items-center gap-1.5 mb-1">
+                      <p className="text-[0.7rem] font-bold text-faint flex items-center gap-1.5 mb-1">
                         <Check size={13} /> Sin leer {pendientes.length}
                       </p>
                       {pendientes.map(r => fila(r, false))}
                     </div>
                   )}
 
-                  <p className="text-[0.6rem] text-gray-400 leading-relaxed border-t border-gray-100 pt-3">
+                  <p className="text-[0.6rem] text-faint leading-relaxed border-t border-line pt-3">
                     La hora es la de la última vez que esa persona abrió el chat,
                     no la de este mensaje en particular.
                   </p>
@@ -552,7 +558,7 @@ function ChatInner() {
         </div>
       )}
 
-      <div className="shrink-0 border-t border-gray-100 bg-white px-3 py-2 safe-bottom">
+      <div className="shrink-0 border-t border-line bg-surface px-3 py-2 safe-bottom">
         {error && <p className="text-xs text-red-500 mb-2 px-1">{error}</p>}
         {/* El visto es silencioso por naturaleza: si el RPC falla, la única
             señal sería que nadie ve nunca los tildes celestes. */}
@@ -574,7 +580,7 @@ function ChatInner() {
               if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void sendMessage(); }
             }}
             placeholder="Escribí un mensaje..."
-            className="flex-1 px-3.5 py-2.5 rounded-2xl border border-gray-200 text-[0.95rem] outline-none focus:border-brand-400 resize-none leading-snug"
+            className="flex-1 px-3.5 py-2.5 rounded-2xl border border-line-strong text-[0.95rem] outline-none focus:border-brand-400 resize-none leading-snug"
           />
           <button
             onClick={() => void sendMessage()}

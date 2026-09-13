@@ -9,6 +9,7 @@ import Link from 'next/link';
 import type { UserInterest } from '@/types/database';
 import { sb } from '@/lib/sb';
 import { PageSpinner } from '@/components/shared/PageSpinner';
+import { SelectorTema } from '@/components/shared/SelectorTema';
 
 function getAge(birthYear: number | null): string | null {
   if (!birthYear) return null;
@@ -23,7 +24,7 @@ function getRepLabel(score: number): { label: string; color: string; emoji: stri
   if (score >= 80) return { label: 'Muy confiable', color: 'text-green-600 bg-green-50', emoji: '🌟' };
   if (score >= 60) return { label: 'Confiable', color: 'text-blue-600 bg-blue-50', emoji: '⭐' };
   if (score >= 40) return { label: 'En camino', color: 'text-yellow-600 bg-yellow-50', emoji: '🚀' };
-  return { label: 'Nuevo', color: 'text-gray-500 bg-gray-100', emoji: '🆕' };
+  return { label: 'Nuevo', color: 'text-muted bg-subtle', emoji: '🆕' };
 }
 
 // ─── USER PROFILE ───
@@ -58,38 +59,38 @@ function UserProfile() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <h1 className="text-lg font-display font-bold truncate">{profile?.full_name || 'Usuario'}</h1>
-              <Link href="/perfil/editar" className="p-1 text-gray-400"><Edit size={14} /></Link>
+              <Link href="/perfil/editar" className="-m-1 min-w-[44px] min-h-[44px] flex items-center justify-center text-faint"><Edit size={14} /></Link>
             </div>
-            <p className="text-xs text-gray-500">{user!.email}</p>
+            <p className="text-xs text-muted">{user!.email}</p>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-brand-50 text-brand-600">🧑 Usuario</span>
-              {(profile as any)?.is_verified && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">✅ Verificado</span>}
-              {ageRange && <span className="text-xs text-gray-400">{ageRange}</span>}
+              {(profile as any)?.is_verified && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">✅ Verificado</span>}
+              {ageRange && <span className="text-xs text-faint">{ageRange}</span>}
               {(profile?.zone as any)?.name && (
-                <span className="flex items-center gap-0.5 text-xs text-gray-400"><MapPin size={10} /> {(profile?.zone as any)?.name}</span>
+                <span className="flex items-center gap-0.5 text-xs text-faint"><MapPin size={10} /> {(profile?.zone as any)?.name}</span>
               )}
             </div>
           </div>
         </div>
-        {profile?.bio && <p className="text-sm text-gray-600 mt-3 leading-relaxed">{profile.bio}</p>}
+        {profile?.bio && <p className="text-sm text-muted mt-3 leading-relaxed">{profile.bio}</p>}
       </header>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 px-4 pb-4">
-        <div className="bg-white rounded-2xl border border-gray-100 p-3 text-center shadow-sm">
+        <div className="bg-surface rounded-2xl border border-line p-3 text-center shadow-sm">
           <p className="text-xl">{rep.emoji}</p>
           <p className="text-lg font-black">{profile?.reputation_score ?? 50}</p>
           <p className={`text-[0.55rem] font-bold px-1.5 py-0.5 rounded-full mx-auto w-fit ${rep.color}`}>{rep.label}</p>
         </div>
-        <div className="bg-white rounded-2xl border border-gray-100 p-3 text-center shadow-sm">
+        <div className="bg-surface rounded-2xl border border-line p-3 text-center shadow-sm">
           <p className="text-xl">🎯</p>
           <p className="text-lg font-black">{profile?.plans_created_count ?? 0}</p>
-          <p className="text-[0.55rem] text-gray-400 font-bold">Creados</p>
+          <p className="text-[0.55rem] text-faint font-bold">Creados</p>
         </div>
-        <div className="bg-white rounded-2xl border border-gray-100 p-3 text-center shadow-sm">
+        <div className="bg-surface rounded-2xl border border-line p-3 text-center shadow-sm">
           <p className="text-xl">🤝</p>
           <p className="text-lg font-black">{profile?.plans_joined_count ?? 0}</p>
-          <p className="text-[0.55rem] text-gray-400 font-bold">Unidos</p>
+          <p className="text-[0.55rem] text-faint font-bold">Unidos</p>
         </div>
       </div>
 
@@ -108,47 +109,47 @@ function UserProfile() {
 
       {/* Menu */}
       <div className="px-4 space-y-2">
-        <Link href="/perfil/editar" className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+        <Link href="/perfil/editar" className="flex items-center gap-3 p-4 bg-surface rounded-xl border border-line shadow-sm">
           <span className="text-xl">✏️</span>
           <span className="font-medium text-sm">Editar perfil</span>
-          <ChevronRight size={16} className="ml-auto text-gray-300" />
+          <ChevronRight size={16} className="ml-auto text-faint" />
         </Link>
-        <Link href="/reservas" className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+        <Link href="/reservas" className="flex items-center gap-3 p-4 bg-surface rounded-xl border border-line shadow-sm">
           <span className="text-xl">🎫</span>
           <span className="font-medium text-sm">Mis reservas</span>
-          <ChevronRight size={16} className="ml-auto text-gray-300" />
+          <ChevronRight size={16} className="ml-auto text-faint" />
         </Link>
-        <Link href="/favoritos" className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+        <Link href="/favoritos" className="flex items-center gap-3 p-4 bg-surface rounded-xl border border-line shadow-sm">
           <span className="text-xl">❤️</span>
           <span className="font-medium text-sm">Favoritos</span>
-          <ChevronRight size={16} className="ml-auto text-gray-300" />
+          <ChevronRight size={16} className="ml-auto text-faint" />
         </Link>
-        <Link href="/fidelidad" className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+        <Link href="/fidelidad" className="flex items-center gap-3 p-4 bg-surface rounded-xl border border-line shadow-sm">
           <span className="text-xl">🎯</span>
           <span className="font-medium text-sm">Mis tarjetas de fidelidad</span>
-          <ChevronRight size={16} className="ml-auto text-gray-300" />
+          <ChevronRight size={16} className="ml-auto text-faint" />
         </Link>
-        <Link href="/mensajes" className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+        <Link href="/mensajes" className="flex items-center gap-3 p-4 bg-surface rounded-xl border border-line shadow-sm">
           <span className="text-xl">💬</span>
           <span className="font-medium text-sm">Mis mensajes</span>
-          <ChevronRight size={16} className="ml-auto text-gray-300" />
+          <ChevronRight size={16} className="ml-auto text-faint" />
         </Link>
-        <Link href="/feed" className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+        <Link href="/feed" className="flex items-center gap-3 p-4 bg-surface rounded-xl border border-line shadow-sm">
           <span className="text-xl">📣</span>
           <span className="font-medium text-sm">Actividad</span>
-          <ChevronRight size={16} className="ml-auto text-gray-300" />
+          <ChevronRight size={16} className="ml-auto text-faint" />
         </Link>
         {role === 'admin' && (
-          <Link href="/admin" className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+          <Link href="/admin" className="flex items-center gap-3 p-4 bg-surface rounded-xl border border-line shadow-sm">
             <Shield size={20} className="text-red-500" />
             <span className="font-medium text-sm">Panel de admin</span>
-            <ChevronRight size={16} className="ml-auto text-gray-300" />
+            <ChevronRight size={16} className="ml-auto text-faint" />
           </Link>
         )}
         <button onClick={async () => { await signOut(); router.push('/'); }}
-          className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-sm w-full text-left">
+          className="flex items-center gap-3 p-4 bg-surface rounded-xl border border-line shadow-sm w-full text-left">
           <span className="text-xl">👋</span>
-          <span className="font-medium text-sm text-gray-600">Cerrar sesión</span>
+          <span className="font-medium text-sm text-muted">Cerrar sesión</span>
         </button>
       </div>
 
@@ -167,13 +168,13 @@ function LegalLinks() {
   return (
     <div className="px-4 pt-8 pb-4 text-center space-y-2">
       <div className="flex items-center justify-center gap-4 flex-wrap">
-        <Link href="/privacidad" className="text-xs text-gray-400 underline">Política de privacidad</Link>
-        <Link href="/seguridad-infantil" className="text-xs text-gray-400 underline">Seguridad infantil</Link>
+        <Link href="/privacidad" className="text-xs text-faint underline">Política de privacidad</Link>
+        <Link href="/seguridad-infantil" className="text-xs text-faint underline">Seguridad infantil</Link>
       </div>
       <Link href="/perfil/eliminar" className="block text-xs text-red-400">Eliminar mi cuenta</Link>
-      <p className="text-[0.6rem] text-gray-300 pt-2">Pintó · Catamarca, Argentina</p>
+      <p className="text-[0.6rem] text-faint pt-2">Pintó · Catamarca, Argentina</p>
       {/* Sirve para saber qué build está corriendo sin tener que adivinar */}
-      <Link href="/diagnostico" className="block text-[0.55rem] text-gray-300 font-mono underline">
+      <Link href="/diagnostico" className="block text-[0.55rem] text-faint font-mono underline">
         build {process.env.NEXT_PUBLIC_BUILD_ID} · {process.env.NEXT_PUBLIC_BUILD_DATE}
       </Link>
     </div>
@@ -194,7 +195,7 @@ function BusinessProfile() {
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-lg font-display font-bold truncate">{profile?.full_name || 'Mi Negocio'}</h1>
-            <p className="text-xs text-gray-500">{user!.email}</p>
+            <p className="text-xs text-muted">{user!.email}</p>
             <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-accent-50 text-accent-600 mt-1">
               💼 Cuenta Comercial
             </span>
@@ -203,56 +204,58 @@ function BusinessProfile() {
       </header>
 
       <div className="px-4 space-y-2">
-        <Link href="/negocio" className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+        <Link href="/negocio" className="flex items-center gap-3 p-4 bg-surface rounded-xl border border-line shadow-sm">
           <span className="text-xl">📊</span>
           <div>
             <span className="font-medium text-sm block">Panel de control</span>
-            <span className="text-[0.6rem] text-gray-400">Métricas, reservas y finanzas</span>
+            <span className="text-[0.6rem] text-faint">Métricas, reservas y finanzas</span>
           </div>
-          <ChevronRight size={16} className="ml-auto text-gray-300" />
+          <ChevronRight size={16} className="ml-auto text-faint" />
         </Link>
-        <Link href="/negocio/campanas" className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+        <Link href="/negocio/campanas" className="flex items-center gap-3 p-4 bg-surface rounded-xl border border-line shadow-sm">
           <span className="text-xl">📢</span>
           <div>
             <span className="font-medium text-sm block">Mis promos</span>
-            <span className="text-[0.6rem] text-gray-400">Crear y gestionar campañas</span>
+            <span className="text-[0.6rem] text-faint">Crear y gestionar campañas</span>
           </div>
-          <ChevronRight size={16} className="ml-auto text-gray-300" />
+          <ChevronRight size={16} className="ml-auto text-faint" />
         </Link>
-        <Link href="/negocio/mensajes" className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+        <Link href="/negocio/mensajes" className="flex items-center gap-3 p-4 bg-surface rounded-xl border border-line shadow-sm">
           <span className="text-xl">💬</span>
           <div>
             <span className="font-medium text-sm block">Mensajes</span>
-            <span className="text-[0.6rem] text-gray-400">Consultas de clientes</span>
+            <span className="text-[0.6rem] text-faint">Consultas de clientes</span>
           </div>
-          <ChevronRight size={16} className="ml-auto text-gray-300" />
+          <ChevronRight size={16} className="ml-auto text-faint" />
         </Link>
-        <Link href="/negocio/fidelidad" className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+        <Link href="/negocio/fidelidad" className="flex items-center gap-3 p-4 bg-surface rounded-xl border border-line shadow-sm">
           <span className="text-xl">🎯</span>
           <div>
             <span className="font-medium text-sm block">Fidelidad</span>
-            <span className="text-[0.6rem] text-gray-400">Programa de fidelidad</span>
+            <span className="text-[0.6rem] text-faint">Programa de fidelidad</span>
           </div>
-          <ChevronRight size={16} className="ml-auto text-gray-300" />
+          <ChevronRight size={16} className="ml-auto text-faint" />
         </Link>
-        <Link href="/perfil/editar" className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+        <Link href="/perfil/editar" className="flex items-center gap-3 p-4 bg-surface rounded-xl border border-line shadow-sm">
           <span className="text-xl">⚙️</span>
           <span className="font-medium text-sm">Configuración de cuenta</span>
-          <ChevronRight size={16} className="ml-auto text-gray-300" />
+          <ChevronRight size={16} className="ml-auto text-faint" />
         </Link>
 
-        <Link href="/negocio/checkin" className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+        <SelectorTema />
+
+        <Link href="/negocio/checkin" className="flex items-center gap-3 p-4 bg-surface rounded-xl border border-line shadow-sm">
           <span className="text-xl">📷</span>
           <div>
             <span className="font-medium text-sm block">Validar reservas</span>
-            <span className="text-[0.6rem] text-gray-400">Escanear el QR del cliente</span>
+            <span className="text-[0.6rem] text-faint">Escanear el QR del cliente</span>
           </div>
-          <ChevronRight size={16} className="ml-auto text-gray-300" />
+          <ChevronRight size={16} className="ml-auto text-faint" />
         </Link>
 
         <div className="pt-2" />
         <button onClick={async () => { await signOut(); router.push('/'); }}
-          className="flex items-center gap-3 p-4 bg-white rounded-xl border border-red-100 shadow-sm w-full text-left">
+          className="flex items-center gap-3 p-4 bg-surface rounded-xl border border-red-100 shadow-sm w-full text-left">
           <span className="text-xl">👋</span>
           <span className="font-medium text-sm text-red-500">Cerrar sesión</span>
         </button>
@@ -273,10 +276,10 @@ export default function PerfilPage() {
     <div className="max-w-lg mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
       <p className="text-6xl mb-4">🙈</p>
       <h2 className="text-lg font-display font-bold mb-1">¡Hola! 👋</h2>
-      <p className="text-gray-500 text-sm mb-6">Iniciá sesión para ver tu perfil y sumarte a planes</p>
+      <p className="text-muted text-sm mb-6">Iniciá sesión para ver tu perfil y sumarte a planes</p>
       <div className="flex gap-3">
         <Link href="/login" className="px-6 py-2.5 bg-brand-500 text-white rounded-xl font-medium shadow-md">🚀 Entrar</Link>
-        <Link href="/registro" className="px-6 py-2.5 border border-gray-200 rounded-xl font-medium text-gray-600">Registrarse</Link>
+        <Link href="/registro" className="px-6 py-2.5 border border-line-strong rounded-xl font-medium text-muted">Registrarse</Link>
       </div>
     </div>
   );

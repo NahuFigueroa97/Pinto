@@ -44,12 +44,12 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex flex-col justify-center px-6 py-8">
-      <button onClick={() => router.back()} className="absolute top-6 left-4 p-2 text-gray-400"><ArrowLeft size={22} /></button>
+      <button onClick={() => router.back()} className="absolute top-6 left-4 p-2 text-faint"><ArrowLeft size={22} /></button>
 
       <div className="max-w-sm mx-auto w-full">
         <div className="text-center mb-6">
           <h1 className="text-3xl font-display font-bold text-gradient">Pintó</h1>
-          <p className="text-gray-500 mt-1">Creá tu cuenta</p>
+          <p className="text-muted mt-1">Creá tu cuenta</p>
         </div>
 
         {/* Role Selector */}
@@ -58,76 +58,76 @@ export default function RegisterPage() {
             type="button"
             onClick={() => setRole('user')}
             className={`flex flex-col items-center gap-1.5 p-4 rounded-2xl border-2 transition-all ${
-              role === 'user' ? 'border-brand-500 bg-brand-50 shadow-md shadow-brand-500/10' : 'border-gray-200 bg-white'
+              role === 'user' ? 'border-brand-500 bg-brand-50 shadow-md shadow-brand-500/10' : 'border-line-strong bg-surface'
             }`}
           >
-            <User size={24} className={role === 'user' ? 'text-brand-500' : 'text-gray-400'} />
-            <span className={`text-sm font-medium ${role === 'user' ? 'text-brand-600' : 'text-gray-500'}`}>Soy usuario</span>
-            <span className="text-[0.65rem] text-gray-400">Descubrí planes</span>
+            <User size={24} className={role === 'user' ? 'text-brand-500' : 'text-faint'} />
+            <span className={`text-sm font-medium ${role === 'user' ? 'text-brand-600' : 'text-muted'}`}>Soy usuario</span>
+            <span className="text-[0.65rem] text-faint">Descubrí planes</span>
           </button>
           <button
             type="button"
             onClick={() => setRole('business')}
             className={`flex flex-col items-center gap-1.5 p-4 rounded-2xl border-2 transition-all ${
-              role === 'business' ? 'border-accent-500 bg-accent-50 shadow-md shadow-accent-500/10' : 'border-gray-200 bg-white'
+              role === 'business' ? 'border-accent-500 bg-accent-50 shadow-md shadow-accent-500/10' : 'border-line-strong bg-surface'
             }`}
           >
-            <Store size={24} className={role === 'business' ? 'text-accent-500' : 'text-gray-400'} />
-            <span className={`text-sm font-medium ${role === 'business' ? 'text-accent-600' : 'text-gray-500'}`}>Soy negocio</span>
-            <span className="text-[0.65rem] text-gray-400">Activá clientes</span>
+            <Store size={24} className={role === 'business' ? 'text-accent-500' : 'text-faint'} />
+            <span className={`text-sm font-medium ${role === 'business' ? 'text-accent-600' : 'text-muted'}`}>Soy negocio</span>
+            <span className="text-[0.65rem] text-faint">Activá clientes</span>
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100">{error}</div>
+            <div className="bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-300 text-sm px-4 py-3 rounded-xl border border-red-100">{error}</div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
+            <label className="block text-sm font-medium text-ink-soft mb-1">Nombre completo</label>
             <input
               type="text"
               value={fullName}
               onChange={e => setFullName(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none transition text-sm"
+              className="w-full px-4 py-3 rounded-xl border border-line-strong bg-surface focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none transition text-sm"
               placeholder="Tu nombre"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-ink-soft mb-1">Email</label>
             <input
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none transition text-sm"
+              className="w-full px-4 py-3 rounded-xl border border-line-strong bg-surface focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none transition text-sm"
               placeholder="tu@email.com"
               autoComplete="email"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+            <label className="block text-sm font-medium text-ink-soft mb-1">Contraseña</label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none transition text-sm pr-12"
+                className="w-full px-4 py-3 rounded-xl border border-line-strong bg-surface focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none transition text-sm pr-12"
                 placeholder="Mínimo 6 caracteres"
               />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-gray-400">
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-faint">
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
 
-          <label className="flex items-start gap-2.5 text-xs text-gray-600 leading-relaxed cursor-pointer">
+          <label className="flex items-start gap-2.5 text-xs text-muted leading-relaxed cursor-pointer">
             <input
               type="checkbox"
               checked={acceptedTerms}
               onChange={e => { setAcceptedTerms(e.target.checked); setError(''); }}
-              className="mt-0.5 rounded border-gray-300 shrink-0"
+              className="mt-0.5 rounded border-line-strong shrink-0"
             />
             <span>
               Tengo 13 años o más y acepto la{' '}
@@ -151,7 +151,7 @@ export default function RegisterPage() {
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <p className="text-center text-sm text-muted mt-6">
           ¿Ya tenés cuenta?{' '}
           <Link href="/login" className="text-brand-500 font-medium">Iniciá sesión</Link>
         </p>

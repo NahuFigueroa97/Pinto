@@ -47,19 +47,19 @@ function QRInner() {
   return (
     <div className="max-w-lg mx-auto pb-8">
       <header className="flex items-center gap-3 px-4 pt-6 pb-4">
-        <button onClick={() => router.back()} className="p-1.5 text-gray-400"><ArrowLeft size={20} /></button>
+        <button onClick={() => router.back()} className="-m-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-faint"><ArrowLeft size={20} /></button>
         <h1 className="text-lg font-display font-bold">📱 Mi QR de reserva</h1>
       </header>
 
       <div className="px-4 flex flex-col items-center">
-        <div className="bg-white rounded-3xl border border-gray-100 shadow-lg p-8 text-center w-full">
+        <div className="bg-surface rounded-3xl border border-line shadow-lg p-8 text-center w-full">
           {isLoading ? (
             <PageSpinner fullScreen={false} />
           ) : !reservation ? (
-            <p className="py-16 text-gray-400 text-sm">No encontramos esta reserva.</p>
+            <p className="py-16 text-faint text-sm">No encontramos esta reserva.</p>
           ) : (
             <>
-              <p className="text-sm text-gray-500 mb-1">Mostrá este código en el local</p>
+              <p className="text-sm text-muted mb-1">Mostrá este código en el local</p>
               <h2 className="text-lg font-bold mb-4">{reservation.campaign?.title ?? 'Tu reserva'}</h2>
 
               {cancelled ? (
@@ -75,20 +75,20 @@ function QRInner() {
               ) : (
                 <>
                   <div
-                    className="bg-white p-4 rounded-2xl border border-gray-200 inline-block mx-auto"
+                    className="bg-surface p-4 rounded-2xl border border-line-strong inline-block mx-auto"
                     // El SVG lo genera la librería qrcode a partir del código,
                     // no lleva nada escrito por usuarios.
                     dangerouslySetInnerHTML={{ __html: qrSvg }}
                   />
 
                   <div className="mt-4">
-                    <p className="text-[0.65rem] text-gray-400 uppercase tracking-wide">o decile este código</p>
-                    <p className="text-2xl font-black tracking-[0.2em] text-gray-900 mt-1">{code}</p>
+                    <p className="text-[0.65rem] text-faint uppercase tracking-wide">o decile este código</p>
+                    <p className="text-2xl font-black tracking-[0.2em] text-ink mt-1">{code}</p>
                   </div>
                 </>
               )}
 
-              <div className="mt-4 space-y-1 text-sm text-gray-500">
+              <div className="mt-4 space-y-1 text-sm text-muted">
                 <p>🏪 {reservation.campaign?.business?.name}</p>
                 <p>👥 {reservation.party_size} {reservation.party_size === 1 ? 'persona' : 'personas'}</p>
               </div>

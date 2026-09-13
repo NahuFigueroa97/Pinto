@@ -50,18 +50,18 @@ export default function MisCampanasPage() {
   });
 
   const statusBadge: Record<string, string> = {
-    active: 'bg-green-50 text-green-700',
-    draft: 'bg-gray-100 text-gray-600',
-    paused: 'bg-yellow-50 text-yellow-700',
-    expired: 'bg-red-50 text-red-500',
-    archived: 'bg-gray-100 text-gray-400',
+    active: 'bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-300',
+    draft: 'bg-subtle text-muted',
+    paused: 'bg-yellow-50 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-300',
+    expired: 'bg-red-50 text-red-500 dark:bg-red-500/15 dark:text-red-300',
+    archived: 'bg-subtle text-faint',
   };
 
   return (
     <div className="max-w-lg mx-auto pb-6">
-      <header className="flex items-center justify-between px-4 pt-6 pb-4 sticky top-0 bg-white z-10">
+      <header className="flex items-center justify-between px-4 pt-6 pb-4 sticky top-0 bg-surface z-10">
         <div className="flex items-center gap-3">
-          <button onClick={() => router.push('/negocio')} className="p-1.5 text-gray-400 hover:bg-gray-50 rounded-full transition">
+          <button onClick={() => router.push('/negocio')} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-faint hover:bg-canvas rounded-full transition">
             <ArrowLeft size={20} />
           </button>
           <h1 className="text-lg font-display font-bold">Mis campañas</h1>
@@ -77,8 +77,8 @@ export default function MisCampanasPage() {
         ) : queryError ? (
           <div className="text-center py-16 px-6">
             <p className="text-4xl mb-3">😕</p>
-            <p className="text-gray-700 font-medium">No se pudo cargar</p>
-            <p className="text-xs text-gray-400 mt-1 break-words">
+            <p className="text-ink-soft font-medium">No se pudo cargar</p>
+            <p className="text-xs text-faint mt-1 break-words">
               {queryError instanceof Error ? queryError.message : 'Algo salió mal'}
             </p>
             <button onClick={() => refetch()} disabled={isFetching}
@@ -87,7 +87,7 @@ export default function MisCampanasPage() {
             </button>
           </div>
         ) : !campaigns?.length ? (
-          <div className="text-center py-16 text-gray-400 bg-white rounded-3xl border border-dashed border-gray-200">
+          <div className="text-center py-16 text-faint bg-surface rounded-3xl border border-dashed border-line-strong">
             <p className="text-4xl mb-3">📢</p>
             <p className="font-medium">No tenés campañas</p>
             <Link href="/negocio/campanas/nueva" className="text-accent-500 font-medium text-sm mt-3 inline-block bg-accent-50 px-4 py-2 rounded-full">
@@ -96,15 +96,15 @@ export default function MisCampanasPage() {
           </div>
         ) : (
           campaigns.map((c: any) => (
-            <div key={c.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition">
+            <div key={c.id} className="bg-surface rounded-2xl border border-line shadow-sm p-4 hover:shadow-md transition">
               <div className="flex items-start justify-between">
                 <div onClick={() => router.push(`/negocio/campanas/editar?id=${c.id}`)} className="flex-1 min-w-0 cursor-pointer">
-                  <h3 className="font-bold text-sm text-gray-900 truncate">{c.title}</h3>
-                  <p className="text-[0.65rem] text-gray-500 mt-1 uppercase tracking-wider font-semibold">
+                  <h3 className="font-bold text-sm text-ink truncate">{c.title}</h3>
+                  <p className="text-[0.65rem] text-muted mt-1 uppercase tracking-wider font-semibold">
                     {c.type.replace('_', ' ')} · {new Date(c.starts_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}
                   </p>
                 </div>
-                <span className={`text-[0.6rem] uppercase tracking-tighter font-black px-2 py-0.5 rounded-full shrink-0 ${statusBadge[c.status] ?? 'bg-gray-100 text-gray-500'}`}>
+                <span className={`text-[0.6rem] uppercase tracking-tighter font-black px-2 py-0.5 rounded-full shrink-0 ${statusBadge[c.status] ?? 'bg-subtle text-muted'}`}>
                   {c.status}
                 </span>
               </div>
@@ -122,7 +122,7 @@ export default function MisCampanasPage() {
                 )}
                 <Link
                   href={`/negocio/campanas/editar?id=${c.id}`}
-                  className="flex items-center justify-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-xl border border-gray-200 text-gray-600 bg-gray-50 hover:bg-white transition"
+                  className="flex items-center justify-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-xl border border-line-strong text-muted bg-canvas hover:bg-surface transition"
                 >
                   <Edit size={14} /> Gestionar
                 </Link>

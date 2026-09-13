@@ -18,6 +18,42 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!--
+                App Links.
+
+                Sin esto, el link que alguien comparte por WhatsApp abre el
+                navegador y no la app: se pierde justo ahi el efecto viral
+                que justifica tener el boton de compartir. En Argentina
+                WhatsApp ES el canal de crecimiento.
+
+                android:autoVerify hace que Android busque
+                https://<host>/.well-known/assetlinks.json al instalar; si
+                coincide el SHA-256 del certificado de firma, la app se
+                queda con los links de ese dominio sin preguntar nada.
+                Ver docs/DEEP_LINKS.md.
+
+                El host sale de android/gradle.properties. Sin configurar,
+                apunta a un .invalid que no resuelve y el filtro no captura.
+            -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="${appLinkHost}" />
+            </intent-filter>
+
+            <!--
+                Esquema propio. No es clickeable dentro de WhatsApp, pero
+                sirve para probar el ruteo sin tener dominio todavia:
+                adb shell am start -a android.intent.action.VIEW -d "pinto://planes/detalle?id=..."
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="pinto" />
+            </intent-filter>
         </activity>
 
         <provider

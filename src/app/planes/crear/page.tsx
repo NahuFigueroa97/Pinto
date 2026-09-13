@@ -114,12 +114,12 @@ function CrearPlanInner() {
     }
   };
 
-  const inputClass = "w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none transition text-sm";
+  const inputClass = "w-full px-4 py-3 rounded-xl border border-line-strong bg-surface focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none transition text-sm";
 
   return (
     <div className="max-w-lg mx-auto pb-8">
       <header className="flex items-center gap-3 px-4 pt-6 pb-4">
-        <button onClick={() => router.back()} className="p-1.5 text-gray-400"><ArrowLeft size={20} /></button>
+        <button onClick={() => router.back()} className="-m-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-faint"><ArrowLeft size={20} /></button>
         <div>
           <h1 className="text-lg font-display font-bold">Crear plan</h1>
           {campaign && <p className="text-xs text-accent-600">📢 Basado en: {campaign.title}</p>}
@@ -127,10 +127,10 @@ function CrearPlanInner() {
       </header>
 
       <form onSubmit={handleSubmit} className="px-4 space-y-4">
-        {error && <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100">{error}</div>}
+        {error && <div className="bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-300 text-sm px-4 py-3 rounded-xl border border-red-100">{error}</div>}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Título del plan *</label>
+          <label className="block text-sm font-medium text-ink-soft mb-1">Título del plan *</label>
           <input
             type="text"
             value={form.title}
@@ -141,7 +141,7 @@ function CrearPlanInner() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+          <label className="block text-sm font-medium text-ink-soft mb-1">Descripción</label>
           <textarea
             value={form.description}
             onChange={e => setForm({ ...form, description: e.target.value })}
@@ -153,17 +153,17 @@ function CrearPlanInner() {
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Día *</label>
+            <label className="block text-sm font-medium text-ink-soft mb-1">Día *</label>
             <input type="date" value={form.plan_date} onChange={e => setForm({ ...form, plan_date: e.target.value })} className={inputClass} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Hora</label>
+            <label className="block text-sm font-medium text-ink-soft mb-1">Hora</label>
             <input type="time" value={form.plan_time} onChange={e => setForm({ ...form, plan_time: e.target.value })} className={inputClass} />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Punto de encuentro</label>
+          <label className="block text-sm font-medium text-ink-soft mb-1">Punto de encuentro</label>
           <input
             type="text"
             value={form.meeting_point}
@@ -175,11 +175,11 @@ function CrearPlanInner() {
 
         {/* Category */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+          <label className="block text-sm font-medium text-ink-soft mb-1">Categoría</label>
           <div className="flex flex-wrap gap-2">
             {categories?.map((cat: any) => (
               <button key={cat.id} type="button" onClick={() => setCategoryId(categoryId === cat.id ? '' : cat.id)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${categoryId === cat.id ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${categoryId === cat.id ? 'bg-brand-500 text-white' : 'bg-subtle text-muted'}`}>
                 {cat.emoji} {cat.name}
               </button>
             ))}
@@ -188,11 +188,11 @@ function CrearPlanInner() {
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Máx. personas</label>
+            <label className="block text-sm font-medium text-ink-soft mb-1">Máx. personas</label>
             <input type="number" value={form.max_members} onChange={e => setForm({ ...form, max_members: e.target.value })} className={inputClass} min="2" max="50" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Visibilidad</label>
+            <label className="block text-sm font-medium text-ink-soft mb-1">Visibilidad</label>
             <select value={form.visibility} onChange={e => setForm({ ...form, visibility: e.target.value })} className={inputClass}>
               <option value="public">🌐 Público</option>
               <option value="private">🔒 Privado</option>

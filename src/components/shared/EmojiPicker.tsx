@@ -54,13 +54,13 @@ export function EmojiPicker({ onPick }: { onPick: (emoji: string) => void }) {
         type="button"
         onClick={() => setOpen(o => !o)}
         aria-label="Emojis"
-        className={`p-2.5 rounded-xl transition ${open ? 'bg-brand-100 text-brand-600' : 'text-gray-400 hover:text-gray-600'}`}
+        className={`p-2.5 rounded-xl transition ${open ? 'bg-brand-100 text-brand-600' : 'text-faint hover:text-muted'}`}
       >
         <Smile size={20} />
       </button>
 
       {open && (
-        <div className="absolute bottom-full mb-2 left-0 w-[17.5rem] bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden z-30">
+        <div className="absolute bottom-full mb-2 left-0 w-[17.5rem] bg-surface rounded-2xl border border-line-strong shadow-xl overflow-hidden z-30">
           <div className="grid grid-cols-6 gap-1 p-2.5 max-h-44 overflow-y-auto">
             {GROUPS[group].emojis.map(e => (
               <button
@@ -70,20 +70,20 @@ export function EmojiPicker({ onPick }: { onPick: (emoji: string) => void }) {
                 // pierda el foco y en Android se cierre el teclado entre
                 // emoji y emoji.
                 onMouseDown={ev => { ev.preventDefault(); onPick(e); }}
-                className="text-2xl h-10 rounded-lg hover:bg-gray-100 active:scale-90 transition"
+                className="text-2xl h-10 rounded-lg hover:bg-subtle active:scale-90 transition"
               >
                 {e}
               </button>
             ))}
           </div>
-          <div className="flex border-t border-gray-100 bg-gray-50/80">
+          <div className="flex border-t border-line bg-canvas/80">
             {GROUPS.map((g, i) => (
               <button
                 key={g.name}
                 type="button"
                 onMouseDown={ev => { ev.preventDefault(); setGroup(i); }}
                 title={g.name}
-                className={`flex-1 py-2 text-lg transition ${i === group ? 'bg-white' : 'opacity-50'}`}
+                className={`flex-1 py-2 text-lg transition ${i === group ? 'bg-surface' : 'opacity-50'}`}
               >
                 {g.icon}
               </button>

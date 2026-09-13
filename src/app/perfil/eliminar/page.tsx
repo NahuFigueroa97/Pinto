@@ -57,7 +57,7 @@ export default function EliminarCuentaPage() {
   if (!user) {
     return (
       <div className="max-w-lg mx-auto px-4 pt-20 text-center">
-        <p className="text-gray-500">Iniciá sesión para eliminar tu cuenta</p>
+        <p className="text-muted">Iniciá sesión para eliminar tu cuenta</p>
         <Link href="/login" className="text-brand-500 font-medium mt-2 inline-block">Iniciar sesión</Link>
       </div>
     );
@@ -66,7 +66,7 @@ export default function EliminarCuentaPage() {
   return (
     <div className="max-w-lg mx-auto pb-8">
       <header className="flex items-center gap-3 px-4 pt-6 pb-4">
-        <button onClick={() => router.back()} className="p-1.5 text-gray-400"><ArrowLeft size={20} /></button>
+        <button onClick={() => router.back()} className="-m-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-faint"><ArrowLeft size={20} /></button>
         <h1 className="text-lg font-display font-bold text-red-600">Eliminar cuenta</h1>
       </header>
 
@@ -96,9 +96,9 @@ export default function EliminarCuentaPage() {
               </p>
             </div>
 
-            <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+            <div className="bg-surface rounded-2xl p-4 border border-line shadow-sm">
               <h3 className="font-semibold text-sm mb-2">📧 Contacto alternativo</h3>
-              <p className="text-xs text-gray-500 mb-2">
+              <p className="text-xs text-muted mb-2">
                 Si tenés algún problema con tu cuenta, contactanos antes de eliminarla:
               </p>
               <p className="text-sm font-medium text-brand-500">soporte@pinto.app</p>
@@ -110,7 +110,7 @@ export default function EliminarCuentaPage() {
             </button>
 
             <button onClick={() => router.back()}
-              className="w-full py-3 bg-gray-100 text-gray-600 font-medium rounded-xl">
+              className="w-full py-3 bg-subtle text-muted font-medium rounded-xl">
               Cancelar
             </button>
           </>
@@ -119,7 +119,7 @@ export default function EliminarCuentaPage() {
         {step === 'confirm' && (
           <>
             {error && (
-              <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100">
+              <div className="bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-300 text-sm px-4 py-3 rounded-xl border border-red-100">
                 ⚠️ {error}
               </div>
             )}
@@ -147,7 +147,7 @@ export default function EliminarCuentaPage() {
             </button>
 
             <button onClick={() => { setStep('info'); setConfirmText(''); }}
-              className="w-full py-3 bg-gray-100 text-gray-600 font-medium rounded-xl">
+              className="w-full py-3 bg-subtle text-muted font-medium rounded-xl">
               Volver atrás
             </button>
           </>
@@ -156,8 +156,8 @@ export default function EliminarCuentaPage() {
         {step === 'done' && (
           <div className="text-center py-16">
             <p className="text-4xl mb-4">👋</p>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Cuenta eliminada</h2>
-            <p className="text-gray-500">Tu cuenta y tus datos fueron eliminados. Redirigiendo...</p>
+            <h2 className="text-xl font-bold text-ink mb-2">Cuenta eliminada</h2>
+            <p className="text-muted">Tu cuenta y tus datos fueron eliminados. Redirigiendo...</p>
           </div>
         )}
       </div>

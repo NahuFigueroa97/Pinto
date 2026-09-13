@@ -9,6 +9,10 @@ import { useQuery } from '@tanstack/react-query';
 import type { Campaign, BusinessCategory } from '@/types/database';
 import { sb } from '@/lib/sb';
 import { PageSpinner } from '@/components/shared/PageSpinner';
+import { tap } from '@/lib/haptics';
+import { SkeletonLista } from '@/components/shared/Skeleton';
+import { PullToRefresh } from '@/components/shared/PullToRefresh';
+import { Onboarding } from '@/components/shared/Onboarding';
 
 const CATEGORY_ICONS: Record<string, typeof Coffee> = {
   cafeteria: Coffee,
@@ -87,12 +91,14 @@ export default function HomePage() {
   });
 
   return (
+    <PullToRefresh onRefresh={() => refetch()}>
     <div className="max-w-lg mx-auto">
+      <Onboarding />
       {/* Header */}
       <header className="px-4 pt-6 pb-3 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold text-gradient">Pintó 🔥</h1>
-          <p className="text-sm text-gray-500 mt-0.5">¿Qué hacemos hoy en Catamarca? 🤔</p>
+          <p className="text-sm text-muted mt-0.5">¿Qué hacemos hoy en Catamarca? 🤔</p>
         </div>
         {user ? (
           <Link href="/perfil" className="w-9 h-9 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-semibold text-sm">
@@ -105,6 +111,34 @@ export default function HomePage() {
         )}
       </header>
 
+      {/*
+        Accesos directos.
+
+        Explorar, Cerca y Comunidad eran pestañas de la barra inferior. Se
+        sacaron de ahí —cinco de seis pestañas eran "contenido" y nadie
+        entendía la diferencia— pero tenían que seguir a un toque de
+        distancia. Acá arriba, además, se leen como lo que son: formas de
+        mirar lo mismo, no destinos separados.
+      */}
+      <div className="grid grid-cols-4 gap-2 px-4 pb-4">
+        {[
+          { href: '/explorar', emoji: '🔍', label: 'Explorar' },
+          { href: '/cerca',    emoji: '📍', label: 'Cerca' },
+          { href: '/planes/mis-planes', emoji: '🤝', label: 'Mis planes' },
+          { href: '/feed',     emoji: '📣', label: 'Comunidad' },
+        ].map(a => (
+          <Link
+            key={a.href}
+            href={a.href}
+            onClick={() => void tap()}
+            className="flex flex-col items-center justify-center gap-1 min-h-[64px] py-2 bg-surface border border-line rounded-2xl active:scale-95 transition"
+          >
+            <span className="text-lg leading-none">{a.emoji}</span>
+            <span className="text-[0.65rem] font-medium text-muted">{a.label}</span>
+          </Link>
+        ))}
+      </div>
+
       {/* Categories */}
       <div className="flex gap-2 px-4 pb-3 overflow-x-auto no-scrollbar">
         <button
@@ -112,7 +146,7 @@ export default function HomePage() {
           className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-medium transition-all
             ${selectedCategory === 'all'
               ? 'bg-brand-500 text-white shadow-md shadow-brand-500/25'
-              : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'}`}
+              : 'bg-surface text-muted border border-line-strong hover:border-line-strong'}`}
         >
           <Flame size={14} /> Todos
         </button>
@@ -125,7 +159,7 @@ export default function HomePage() {
               className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-medium transition-all
                 ${selectedCategory === cat.slug
                   ? 'bg-brand-500 text-white shadow-md shadow-brand-500/25'
-                  : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'}`}
+                  : 'bg-surface text-muted border border-line-strong hover:border-line-strong'}`}
             >
               <Icon size={14} /> {cat.name}
             </button>
@@ -136,12 +170,12 @@ export default function HomePage() {
       {/* Campaign Cards */}
       <div className="px-4 space-y-3 pb-6">
         {isLoading ? (
-          <PageSpinner fullScreen={false} text="✨ Buscando planes..." onRetry={() => void refetch()} />
+          <PageSpinner fullScreen={false} onRetry={() => void refetch()} skeleton={<SkeletonLista cuantos={4} />} />
         ) : queryError ? (
           <div className="text-center py-16 px-6">
             <p className="text-4xl mb-3">😕</p>
-            <p className="text-gray-700 font-medium">No se pudo cargar</p>
-            <p className="text-xs text-gray-400 mt-1 break-words">
+            <p className="text-ink-soft font-medium">No se pudo cargar</p>
+            <p className="text-xs text-faint mt-1 break-words">
               {queryError instanceof Error ? queryError.message : 'Algo salió mal'}
             </p>
             <button onClick={() => refetch()} disabled={isFetching}
@@ -152,18 +186,18 @@ export default function HomePage() {
         ) : !campaigns?.length ? (
           <div className="text-center py-16">
             <p className="text-5xl mb-3">😴</p>
-            <p className="text-gray-500 font-medium">No hay promos ahora</p>
-            <p className="text-sm text-gray-400 mt-1">¡Volvé más tarde o cambiá el filtro! 🔍</p>
+            <p className="text-muted font-medium">No hay promos ahora</p>
+            <p className="text-sm text-faint mt-1">¡Volvé más tarde o cambiá el filtro! 🔍</p>
           </div>
         ) : (
           campaigns.map(campaign => (
             <Link
               key={campaign.id}
               href={`/campana?id=${campaign.id}`}
-              className="block bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+              className="block bg-surface rounded-2xl border border-line shadow-sm hover:shadow-md transition-shadow overflow-hidden"
             >
               {campaign.banner_image_url && (
-                <div className="h-32 bg-gray-100 overflow-hidden">
+                <div className="h-32 bg-subtle overflow-hidden">
                   <img src={campaign.banner_image_url} alt="" className="w-full h-full object-cover" />
                 </div>
               )}
@@ -175,25 +209,25 @@ export default function HomePage() {
                         {CAMPAIGN_TYPE_LABELS[campaign.type] ?? campaign.type}
                       </span>
                       {campaign.is_featured && (
-                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-yellow-50 text-yellow-600">⭐ Destacado</span>
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-yellow-50 text-yellow-600 dark:bg-yellow-500/15 dark:text-yellow-300">⭐ Destacado</span>
                       )}
                       {campaign.is_free && (
-                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-50 text-green-600">Gratis</span>
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-50 text-green-600 dark:bg-green-500/15 dark:text-green-300">Gratis</span>
                       )}
                     </div>
-                    <h3 className="font-semibold text-gray-900 leading-snug">{campaign.title}</h3>
-                    <p className="text-sm text-gray-500 mt-0.5 line-clamp-2">{campaign.short_description}</p>
+                    <h3 className="font-semibold text-ink leading-snug">{campaign.title}</h3>
+                    <p className="text-sm text-muted mt-0.5 line-clamp-2">{campaign.short_description}</p>
                   </div>
-                  <ChevronRight size={18} className="text-gray-300 mt-1 shrink-0" />
+                  <ChevronRight size={18} className="text-faint mt-1 shrink-0" />
                 </div>
 
-                <div className="flex items-center gap-3 mt-3 text-xs text-gray-400">
+                <div className="flex items-center gap-3 mt-3 text-xs text-faint">
                   {campaign.business && (
                     <span className="flex items-center gap-1">
-                      <span className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-[0.6rem] font-bold text-gray-500">
+                      <span className="w-5 h-5 rounded-full bg-subtle flex items-center justify-center text-[0.6rem] font-bold text-muted">
                         {campaign.business.name?.[0]}
                       </span>
-                      <span className="font-medium text-gray-600">{campaign.business.name}</span>
+                      <span className="font-medium text-muted">{campaign.business.name}</span>
                     </span>
                   )}
                   <span className="flex items-center gap-0.5">
@@ -213,5 +247,6 @@ export default function HomePage() {
         )}
       </div>
     </div>
+    </PullToRefresh>
   );
 }

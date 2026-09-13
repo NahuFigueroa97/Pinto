@@ -37,7 +37,7 @@ export default function FavoritosPage() {
   if (!user) return (
     <div className="max-w-lg mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
       <Heart size={48} className="text-gray-200 mb-4" />
-      <p className="text-gray-500 mb-3">Iniciá sesión para ver tus favoritos</p>
+      <p className="text-muted mb-3">Iniciá sesión para ver tus favoritos</p>
       <Link href="/login" className="text-brand-500 font-medium">Iniciar sesión</Link>
     </div>
   );
@@ -46,7 +46,7 @@ export default function FavoritosPage() {
     <div className="max-w-lg mx-auto pb-6">
       <header className="px-4 pt-6 pb-4">
         <h1 className="text-xl font-display font-bold">Favoritos</h1>
-        <p className="text-sm text-gray-500">{favorites?.length || 0} guardados</p>
+        <p className="text-sm text-muted">{favorites?.length || 0} guardados</p>
       </header>
 
       <div className="px-4 space-y-3">
@@ -55,8 +55,8 @@ export default function FavoritosPage() {
         ) : queryError ? (
           <div className="text-center py-16 px-6">
             <p className="text-4xl mb-3">😕</p>
-            <p className="text-gray-700 font-medium">No se pudo cargar</p>
-            <p className="text-xs text-gray-400 mt-1 break-words">
+            <p className="text-ink-soft font-medium">No se pudo cargar</p>
+            <p className="text-xs text-faint mt-1 break-words">
               {queryError instanceof Error ? queryError.message : 'Algo salió mal'}
             </p>
             <button onClick={() => refetch()} disabled={isFetching}
@@ -65,28 +65,28 @@ export default function FavoritosPage() {
             </button>
           </div>
         ) : !favorites?.length ? (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16 text-faint">
             <Heart size={40} className="mx-auto mb-3 text-gray-200" />
             <p>Todavía no guardaste favoritos</p>
             <Link href="/" className="text-brand-500 text-sm font-medium mt-2 inline-block">Explorar campañas</Link>
           </div>
         ) : (
           favorites.map((fav: any) => (
-            <div key={fav.id} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
+            <div key={fav.id} className="flex items-center gap-3 p-3 bg-surface rounded-xl border border-line shadow-sm">
               <div className="flex-1 min-w-0">
                 {fav.campaign ? (
                   <Link href={`/campana?id=${fav.campaign.id}`}>
                     <h3 className="font-semibold text-sm">{fav.campaign.title}</h3>
-                    <p className="text-xs text-gray-500 truncate">{fav.campaign.business?.name}</p>
+                    <p className="text-xs text-muted truncate">{fav.campaign.business?.name}</p>
                   </Link>
                 ) : fav.business ? (
                   <Link href={`/negocio/detalle?slug=${fav.business.slug}`}>
                     <h3 className="font-semibold text-sm">{fav.business.name}</h3>
-                    <p className="text-xs text-gray-500 truncate">{fav.business.address}</p>
+                    <p className="text-xs text-muted truncate">{fav.business.address}</p>
                   </Link>
                 ) : null}
               </div>
-              <button onClick={() => removeFav.mutate(fav.id)} className="p-2 text-gray-300 hover:text-red-500 transition">
+              <button onClick={() => removeFav.mutate(fav.id)} className="p-2 text-faint hover:text-red-500 transition">
                 <Trash2 size={16} />
               </button>
             </div>

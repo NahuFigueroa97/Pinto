@@ -76,20 +76,20 @@ export function OfferEditor({
       {/* ── Escalones ── */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="text-sm font-medium text-gray-700">🎁 Beneficio según el grupo</label>
+          <label className="text-sm font-medium text-ink-soft">🎁 Beneficio según el grupo</label>
           {canAdd ? (
             <button type="button" onClick={addTier}
               className="flex items-center gap-1 text-xs font-medium text-brand-500 bg-brand-50 px-2.5 py-1 rounded-full">
               <Plus size={12} /> Escalón
             </button>
           ) : maxTiers === 1 ? (
-            <span className="text-[0.65rem] text-gray-400">
+            <span className="text-[0.65rem] text-faint">
               {planName ? `Plan ${planName}: 1 escalón` : '1 escalón'}
             </span>
           ) : null}
         </div>
 
-        <p className="text-xs text-gray-400 mb-3 flex items-start gap-1.5">
+        <p className="text-xs text-faint mb-3 flex items-start gap-1.5">
           <Info size={12} className="mt-0.5 shrink-0" />
           Cuanto más grande el grupo, mejor el beneficio. Es lo que empuja a la gente
           a invitar a otros en vez de venir sola.
@@ -99,20 +99,20 @@ export function OfferEditor({
           {value.tiers.map((tier, i) => {
             const typeInfo = DISCOUNT_TYPES.find(t => t.value === tier.discount_type);
             return (
-              <div key={i} className="bg-gray-50 rounded-xl p-3 space-y-2.5">
+              <div key={i} className="bg-canvas rounded-xl p-3 space-y-2.5">
                 <div className="flex items-center gap-2">
-                  <Users size={14} className="text-gray-400 shrink-0" />
+                  <Users size={14} className="text-faint shrink-0" />
                   <input
                     type="number" min={1} max={50}
                     value={tier.min_people}
                     onChange={e => setTier(i, { min_people: Math.max(1, parseInt(e.target.value) || 1) })}
-                    className="w-16 px-2 py-1.5 rounded-lg border border-gray-200 text-sm text-center"
+                    className="w-16 px-2 py-1.5 rounded-lg border border-line-strong text-sm text-center"
                   />
-                  <span className="text-sm text-gray-500 flex-1">
+                  <span className="text-sm text-muted flex-1">
                     {tier.min_people === 1 ? 'persona o más' : 'personas o más'}
                   </span>
                   {value.tiers.length > 1 && (
-                    <button type="button" onClick={() => removeTier(i)} className="p-1 text-gray-300 hover:text-red-400">
+                    <button type="button" onClick={() => removeTier(i)} className="-m-1 min-w-[44px] min-h-[44px] flex items-center justify-center text-faint hover:text-red-400">
                       <X size={14} />
                     </button>
                   )}
@@ -126,7 +126,7 @@ export function OfferEditor({
                       discount_value: DISCOUNT_TYPES.find(t => t.value === e.target.value)?.needsValue
                         ? (tier.discount_value ?? 10) : null,
                     })}
-                    className="flex-1 px-2.5 py-1.5 rounded-lg border border-gray-200 text-sm bg-white"
+                    className="flex-1 px-2.5 py-1.5 rounded-lg border border-line-strong text-sm bg-surface"
                   >
                     {DISCOUNT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </select>
@@ -136,13 +136,13 @@ export function OfferEditor({
                       type="number" min={0}
                       value={tier.discount_value ?? ''}
                       onChange={e => setTier(i, { discount_value: parseFloat(e.target.value) || 0 })}
-                      className="w-24 px-2.5 py-1.5 rounded-lg border border-gray-200 text-sm"
+                      className="w-24 px-2.5 py-1.5 rounded-lg border border-line-strong text-sm"
                       placeholder={tier.discount_type === 'percent' ? '45' : '1500'}
                     />
                   )}
                 </div>
 
-                <p className="text-[0.7rem] text-gray-400">
+                <p className="text-[0.7rem] text-faint">
                   El cliente ve: <b className="text-brand-600">
                     {tierLabel(tier.discount_type, tier.discount_value)}
                   </b>
@@ -156,7 +156,7 @@ export function OfferEditor({
 
       {/* ── Días ── */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">📅 Días que aplica</label>
+        <label className="block text-sm font-medium text-ink-soft mb-2">📅 Días que aplica</label>
         <div className="flex gap-1.5">
           {WEEKDAYS.map(d => {
             const on = days.includes(d.value);
@@ -164,7 +164,7 @@ export function OfferEditor({
               <button key={d.value} type="button" onClick={() => toggleDay(d.value)}
                 title={d.label}
                 className={`w-9 h-9 rounded-full text-xs font-bold transition ${
-                  on ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-400'
+                  on ? 'bg-brand-500 text-white' : 'bg-subtle text-faint'
                 }`}>
                 {d.short}
               </button>
@@ -172,25 +172,25 @@ export function OfferEditor({
           })}
         </div>
         {value.valid_weekdays === null && (
-          <p className="text-[0.7rem] text-gray-400 mt-1.5">Todos los días</p>
+          <p className="text-[0.7rem] text-faint mt-1.5">Todos los días</p>
         )}
       </div>
 
       {/* ── Franja horaria ── */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-ink-soft mb-2">
           <Clock size={13} className="inline mr-1" /> Franja horaria
         </label>
         <div className="flex items-center gap-2">
           <input type="time" value={value.valid_from_time}
             onChange={e => set({ valid_from_time: e.target.value })}
-            className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-sm" />
-          <span className="text-gray-400 text-sm">a</span>
+            className="flex-1 px-3 py-2 rounded-xl border border-line-strong text-sm" />
+          <span className="text-faint text-sm">a</span>
           <input type="time" value={value.valid_until_time}
             onChange={e => set({ valid_until_time: e.target.value })}
-            className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-sm" />
+            className="flex-1 px-3 py-2 rounded-xl border border-line-strong text-sm" />
         </div>
-        <p className="text-[0.7rem] text-gray-400 mt-1.5">
+        <p className="text-[0.7rem] text-faint mt-1.5">
           Dejalo vacío para que aplique a cualquier hora. Ideal para llenar las
           horas flojas: &quot;hasta las 19&quot; mueve gente a la tarde.
         </p>
@@ -198,23 +198,23 @@ export function OfferEditor({
 
       {/* ── Cupo ── */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">🎟️ Cupo total (opcional)</label>
+        <label className="block text-sm font-medium text-ink-soft mb-1">🎟️ Cupo total (opcional)</label>
         <input type="number" min={1} value={value.max_redemptions_total}
           onChange={e => set({ max_redemptions_total: e.target.value })}
           placeholder="Sin límite"
-          className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm" />
-        <p className="text-[0.7rem] text-gray-400 mt-1.5">
+          className="w-full px-4 py-2.5 rounded-xl border border-line-strong text-sm" />
+        <p className="text-[0.7rem] text-faint mt-1.5">
           Cuántas veces se puede canjear en total. Un cupo chico genera urgencia.
         </p>
       </div>
 
       {/* ── Letra chica ── */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">📋 Condiciones</label>
+        <label className="block text-sm font-medium text-ink-soft mb-1">📋 Condiciones</label>
         <textarea value={value.terms} rows={2}
           onChange={e => set({ terms: e.target.value })}
           placeholder="Ej: No acumulable con otras promos. No incluye bebidas alcohólicas."
-          className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm" />
+          className="w-full px-4 py-2.5 rounded-xl border border-line-strong text-sm" />
       </div>
     </div>
   );

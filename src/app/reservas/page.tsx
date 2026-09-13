@@ -35,10 +35,10 @@ export default function ReservasPage() {
   });
 
   const statusColors: Record<string, string> = {
-    confirmed: 'bg-green-50 text-green-700',
-    cancelled: 'bg-red-50 text-red-500',
-    completed: 'bg-blue-50 text-blue-600',
-    no_show: 'bg-gray-100 text-gray-500',
+    confirmed: 'bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-300',
+    cancelled: 'bg-red-50 text-red-500 dark:bg-red-500/15 dark:text-red-300',
+    completed: 'bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300',
+    no_show: 'bg-subtle text-muted',
   };
   const statusLabels: Record<string, string> = {
     confirmed: 'Confirmada',
@@ -50,7 +50,7 @@ export default function ReservasPage() {
   if (!user) return (
     <div className="max-w-lg mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
       <CalendarCheck size={48} className="text-gray-200 mb-4" />
-      <p className="text-gray-500 mb-3">Iniciá sesión para ver tus reservas</p>
+      <p className="text-muted mb-3">Iniciá sesión para ver tus reservas</p>
       <Link href="/login" className="text-brand-500 font-medium">Iniciar sesión</Link>
     </div>
   );
@@ -67,8 +67,8 @@ export default function ReservasPage() {
         ) : queryError ? (
           <div className="text-center py-16 px-6">
             <p className="text-4xl mb-3">😕</p>
-            <p className="text-gray-700 font-medium">No se pudo cargar</p>
-            <p className="text-xs text-gray-400 mt-1 break-words">
+            <p className="text-ink-soft font-medium">No se pudo cargar</p>
+            <p className="text-xs text-faint mt-1 break-words">
               {queryError instanceof Error ? queryError.message : 'Algo salió mal'}
             </p>
             <button onClick={() => refetch()} disabled={isFetching}
@@ -77,7 +77,7 @@ export default function ReservasPage() {
             </button>
           </div>
         ) : !reservations?.length ? (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16 text-faint">
             <CalendarCheck size={40} className="mx-auto mb-3 text-gray-200" />
             <p>No tenés reservas</p>
             <Link href="/" className="text-brand-500 text-sm font-medium mt-2 inline-block">Ver campañas</Link>
@@ -87,19 +87,19 @@ export default function ReservasPage() {
             const campaign = res.campaign;
             const startDate = campaign ? new Date(campaign.starts_at) : null;
             return (
-              <div key={res.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+              <div key={res.id} className="bg-surface rounded-xl border border-line shadow-sm p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <Link href={`/campana?id=${res.campaign_id}`} className="font-semibold text-sm hover:text-brand-500">
                       {campaign?.title ?? 'Campaña'}
                     </Link>
-                    <p className="text-xs text-gray-500 mt-0.5">{campaign?.business?.name}</p>
+                    <p className="text-xs text-muted mt-0.5">{campaign?.business?.name}</p>
                   </div>
                   <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusColors[res.status]}`}>
                     {statusLabels[res.status]}
                   </span>
                 </div>
-                <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
+                <div className="flex items-center gap-4 mt-2 text-xs text-faint">
                   {startDate && (
                     <span className="flex items-center gap-0.5">
                       <Clock size={11} />

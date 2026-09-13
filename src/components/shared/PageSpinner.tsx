@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { RefreshCw, ArrowLeft, Home, Stethoscope } from 'lucide-react';
@@ -27,11 +27,20 @@ export function PageSpinner({
   text,
   onRetry,
   fullScreen = true,
+  skeleton,
 }: {
   text?: string;
   /** Reintento específico de la pantalla. Sin esto se refrescan todas las consultas activas. */
   onRetry?: () => void;
   fullScreen?: boolean;
+  /**
+   * Esqueleto en vez de rueda.
+   *
+   * Se pasa por acá y no se usa suelto a propósito: un esqueleto solo
+   * vuelve a ser un callejón sin salida si la consulta nunca resuelve. Así
+   * hereda la salida de emergencia de los 10 s.
+   */
+  skeleton?: ReactNode;
 }) {
   const [slow, setSlow] = useState(false);
   const router = useRouter();
@@ -50,15 +59,17 @@ export function PageSpinner({
     else void queryClient.refetchQueries({ type: 'active' });
   };
 
+  if (skeleton && !slow) return <>{skeleton}</>;
+
   return (
     <div className={`flex flex-col items-center justify-center px-6 text-center ${fullScreen ? 'min-h-[60vh]' : 'py-16'}`}>
-      <div className="spinner" />
-      {text && <p className="mt-3 text-sm text-gray-400">{text}</p>}
+      {!skeleton && <div className="spinner" />}
+      {text && !skeleton && <p className="mt-3 text-sm text-faint">{text}</p>}
 
       {slow && (
         <div className="mt-6 max-w-xs">
-          <p className="text-sm font-medium text-gray-700">Está tardando más de lo normal</p>
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-sm font-medium text-ink-soft">Está tardando más de lo normal</p>
+          <p className="text-xs text-faint mt-1">
             Puede ser tu conexión. Podés reintentar o volver.
           </p>
 
@@ -72,20 +83,20 @@ export function PageSpinner({
             <div className="flex gap-2">
               <button
                 onClick={() => router.back()}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-50 text-gray-600 rounded-xl text-xs font-medium border border-gray-200"
+                className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-canvas text-muted rounded-xl text-xs font-medium border border-line-strong"
               >
                 <ArrowLeft size={13} /> Volver
               </button>
               <button
                 onClick={() => router.push('/')}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-50 text-gray-600 rounded-xl text-xs font-medium border border-gray-200"
+                className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-canvas text-muted rounded-xl text-xs font-medium border border-line-strong"
               >
                 <Home size={13} /> Inicio
               </button>
             </div>
             <button
               onClick={() => router.push('/diagnostico')}
-              className="inline-flex items-center justify-center gap-1.5 text-[0.7rem] text-gray-400 mt-1"
+              className="inline-flex items-center justify-center gap-1.5 text-[0.7rem] text-faint mt-1"
             >
               <Stethoscope size={12} /> Ver qué está fallando
             </button>

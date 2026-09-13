@@ -53,8 +53,8 @@ export default function RecoverPasswordPage() {
           <div className="w-16 h-16 bg-brand-50 rounded-full flex items-center justify-center mx-auto mb-6">
             <Mail className="text-brand-500" size={28} />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">¡Email enviado!</h1>
-          <p className="text-gray-500 mb-8">
+          <h1 className="text-2xl font-bold text-ink mb-2">¡Email enviado!</h1>
+          <p className="text-muted mb-8">
             Revisá tu bandeja de entrada. Te enviamos un link para que puedas cambiar tu contraseña.
           </p>
           <button
@@ -72,31 +72,31 @@ export default function RecoverPasswordPage() {
     <div className="min-h-screen flex flex-col justify-center px-6">
       <button 
         onClick={() => router.push('/login')} 
-        className="absolute top-6 left-4 p-2 text-gray-400"
+        className="absolute top-6 left-4 p-2 text-faint"
       >
         <ArrowLeft size={22} />
       </button>
 
       <div className="max-w-sm mx-auto w-full">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Recuperar clave</h1>
-          <p className="text-gray-500 mt-2">Te enviaremos un link para restablecerla</p>
+          <h1 className="text-2xl font-bold text-ink">Recuperar clave</h1>
+          <p className="text-muted mt-2">Te enviaremos un link para restablecerla</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100">
+            <div className="bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-300 text-sm px-4 py-3 rounded-xl border border-red-100">
               {error}
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-ink-soft mb-1">Email</label>
             <input
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none transition text-sm"
+              className="w-full px-4 py-3 rounded-xl border border-line-strong bg-surface focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none transition text-sm"
               placeholder="tu@email.com"
               required
             />
@@ -111,7 +111,7 @@ export default function RecoverPasswordPage() {
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <p className="text-center text-sm text-muted mt-6">
           ¿Te acordaste?{' '}
           <Link href="/login" className="text-brand-500 font-medium">Iniciá sesión</Link>
         </p>

@@ -113,7 +113,7 @@ function CampaignDetailInner() {
   if (isLoading) return <PageSpinner />;
 
   if (!id || !campaign) return (
-    <div className="flex flex-col items-center justify-center min-h-screen text-gray-400 px-6 text-center">
+    <div className="flex flex-col items-center justify-center min-h-screen text-faint px-6 text-center">
       <p className="text-4xl mb-3">😕</p>
       <p>{!id ? 'No pudimos abrir la promo' : 'Campaña no encontrada'}</p>
       <button onClick={() => router.push('/')} className="mt-3 text-brand-500 font-medium">Volver</button>
@@ -126,44 +126,44 @@ function CampaignDetailInner() {
   return (
     <div className="max-w-lg mx-auto pb-24">
       <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 glass">
-        <button onClick={() => router.back()} className="p-1.5 rounded-full bg-white/50"><ArrowLeft size={20} /></button>
+        <button onClick={() => router.back()} className="rounded-full bg-surface/50 min-w-[44px] min-h-[44px] flex items-center justify-center"><ArrowLeft size={20} /></button>
         <div className="flex gap-2">
-          <button onClick={() => toggleFavorite.mutate()} className="p-1.5 rounded-full bg-white/50">
-            <Heart size={20} className={isFavorited ? 'fill-red-500 text-red-500' : 'text-gray-600'} />
+          <button onClick={() => toggleFavorite.mutate()} className="rounded-full bg-surface/50 min-w-[44px] min-h-[44px] flex items-center justify-center">
+            <Heart size={20} className={isFavorited ? 'fill-red-500 text-red-500' : 'text-muted'} />
           </button>
         </div>
       </div>
 
       {campaign.banner_image_url && (
-        <div className="h-48 bg-gray-100"><img src={campaign.banner_image_url} alt="" className="w-full h-full object-cover" /></div>
+        <div className="h-48 bg-subtle"><img src={campaign.banner_image_url} alt="" className="w-full h-full object-cover" /></div>
       )}
 
       <div className="px-4 pt-4 space-y-4">
         <div className="flex flex-wrap gap-2">
           <span className="text-xs font-semibold px-3 py-1 rounded-full bg-brand-50 text-brand-600">{TYPE_LABELS[campaign.type]}</span>
-          {campaign.is_free && <span className="text-xs font-semibold px-3 py-1 rounded-full bg-green-50 text-green-600">Gratis</span>}
-          {campaign.is_featured && <span className="text-xs font-semibold px-3 py-1 rounded-full bg-yellow-50 text-yellow-600">⭐ Destacado</span>}
+          {campaign.is_free && <span className="text-xs font-semibold px-3 py-1 rounded-full bg-green-50 text-green-600 dark:bg-green-500/15 dark:text-green-300">Gratis</span>}
+          {campaign.is_featured && <span className="text-xs font-semibold px-3 py-1 rounded-full bg-yellow-50 text-yellow-600 dark:bg-yellow-500/15 dark:text-yellow-300">⭐ Destacado</span>}
         </div>
 
         <h1 className="text-xl font-display font-bold">{campaign.title}</h1>
-        <p className="text-gray-600 text-sm leading-relaxed">{campaign.full_description || campaign.short_description}</p>
+        <p className="text-muted text-sm leading-relaxed">{campaign.full_description || campaign.short_description}</p>
 
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-gray-50 rounded-xl p-3">
-            <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-0.5"><Clock size={12} /> Cuándo</div>
+          <div className="bg-canvas rounded-xl p-3">
+            <div className="flex items-center gap-1.5 text-xs text-faint mb-0.5"><Clock size={12} /> Cuándo</div>
             <p className="text-sm font-medium">{startDate.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
-            <p className="text-xs text-gray-500">{startDate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} - {endDate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</p>
+            <p className="text-xs text-muted">{startDate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} - {endDate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</p>
           </div>
           {campaign.max_capacity && (
-            <div className="bg-gray-50 rounded-xl p-3">
-              <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-0.5"><Users size={12} /> Capacidad</div>
+            <div className="bg-canvas rounded-xl p-3">
+              <div className="flex items-center gap-1.5 text-xs text-faint mb-0.5"><Users size={12} /> Capacidad</div>
               <p className="text-sm font-medium">{campaign.max_capacity} lugares</p>
-              {campaign.min_group_size && <p className="text-xs text-gray-500">Mín. {campaign.min_group_size} personas</p>}
+              {campaign.min_group_size && <p className="text-xs text-muted">Mín. {campaign.min_group_size} personas</p>}
             </div>
           )}
           {campaign.price_text && (
-            <div className="bg-gray-50 rounded-xl p-3">
-              <div className="text-xs text-gray-400 mb-0.5">💰 Precio</div>
+            <div className="bg-canvas rounded-xl p-3">
+              <div className="text-xs text-faint mb-0.5">💰 Precio</div>
               <p className="text-sm font-medium">{campaign.price_text}</p>
             </div>
           )}
@@ -187,12 +187,12 @@ function CampaignDetailInner() {
         {campaign.business && (
           <button
             onClick={() => router.push(`/negocio/detalle?slug=${campaign.business.slug}`)}
-            className="w-full flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-xl shadow-sm"
+            className="w-full flex items-center gap-3 p-3 bg-surface border border-line rounded-xl shadow-sm"
           >
             <div className="w-10 h-10 rounded-xl bg-accent-50 flex items-center justify-center text-accent-500"><Store size={18} /></div>
             <div className="flex-1 text-left">
               <p className="font-semibold text-sm">{campaign.business.name}</p>
-              {campaign.business.address && <p className="text-xs text-gray-400 flex items-center gap-0.5"><MapPin size={10} /> {campaign.business.address}</p>}
+              {campaign.business.address && <p className="text-xs text-faint flex items-center gap-0.5"><MapPin size={10} /> {campaign.business.address}</p>}
             </div>
           </button>
         )}
@@ -210,16 +210,16 @@ function CampaignDetailInner() {
               </Link>
             ) : !showMsgBox ? (
               <button onClick={() => user ? setShowMsgBox(true) : router.push('/login')}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-white border-2 border-dashed border-brand-200 text-brand-500 font-bold rounded-xl text-sm hover:border-brand-400 transition">
+                className="w-full flex items-center justify-center gap-2 py-3 bg-surface border-2 border-dashed border-brand-200 text-brand-500 font-bold rounded-xl text-sm hover:border-brand-400 transition">
                 💬 Consultale al negocio
               </button>
             ) : (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-4 space-y-3">
+              <div className="bg-surface rounded-2xl border border-line shadow-lg p-4 space-y-3">
                 <p className="text-sm font-bold">💬 Mensaje para {campaign.business.name}</p>
                 {msgError && <p className="text-xs text-red-500">{msgError}</p>}
                 <textarea value={msgText} onChange={e => { setMsgText(e.target.value); setMsgError(''); }}
                   placeholder="Ej: ¿Hasta qué hora es válida la promo? ¿Puedo ir con niños?"
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-brand-400 outline-none resize-none" rows={3} />
+                  className="w-full px-3 py-2.5 rounded-xl border border-line-strong text-sm focus:border-brand-400 outline-none resize-none" rows={3} />
                 <div className="flex gap-2">
                   <button onClick={async () => {
                     if (!msgText.trim() || !user) return;
@@ -243,7 +243,7 @@ function CampaignDetailInner() {
                     className="flex-1 py-2.5 bg-brand-500 text-white font-bold rounded-xl text-sm disabled:opacity-40">
                     Enviar ✉️
                   </button>
-                  <button onClick={() => setShowMsgBox(false)} className="px-4 py-2.5 text-gray-400 text-sm font-medium">Cancelar</button>
+                  <button onClick={() => setShowMsgBox(false)} className="px-4 py-2.5 text-faint text-sm font-medium">Cancelar</button>
                 </div>
               </div>
             )}
@@ -251,11 +251,11 @@ function CampaignDetailInner() {
         )}
       </div>
 
-      <div className="fixed bottom-16 inset-x-0 p-4 glass border-t border-gray-100">
+      <div className="fixed bottom-16 inset-x-0 p-4 glass border-t border-line">
         <div className="max-w-lg mx-auto">
           {myReservation ? (
             <div className="flex items-center gap-3">
-              <div className="flex-1 bg-green-50 text-green-700 px-4 py-3 rounded-xl text-center">
+              <div className="flex-1 bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-300 px-4 py-3 rounded-xl text-center">
                 <CalendarCheck size={16} className="inline mr-1" />
                 <span className="text-sm font-medium">Reserva confirmada ({myReservation.party_size} pers.)</span>
               </div>
@@ -267,7 +267,7 @@ function CampaignDetailInner() {
                   escalera de descuentos el grupo importa siempre: es lo que
                   determina qué beneficio se desbloquea. */}
               {((tiers?.length ?? 0) > 1 || (campaign.min_group_size ?? 0) > 1) && (
-                <div className="flex items-center bg-gray-100 rounded-xl">
+                <div className="flex items-center bg-subtle rounded-xl">
                   <button onClick={() => setPartySize(Math.max(1, partySize - 1))} className="px-3 py-2 text-lg">-</button>
                   <span className="px-2 text-sm font-medium">{partySize}</span>
                   <button onClick={() => setPartySize(partySize + 1)} className="px-3 py-2 text-lg">+</button>
@@ -279,9 +279,9 @@ function CampaignDetailInner() {
               </button>
             </div>
           ) : role === 'business' ? (
-            <div className="text-center text-sm text-gray-500 py-2">Como negocio no podés reservar promociones</div>
+            <div className="text-center text-sm text-muted py-2">Como negocio no podés reservar promociones</div>
           ) : (
-            <div className="text-center text-sm text-gray-500 py-2">No requiere reserva — ¡presentate directamente!</div>
+            <div className="text-center text-sm text-muted py-2">No requiere reserva — ¡presentate directamente!</div>
           )}
         </div>
       </div>
@@ -328,18 +328,18 @@ function CampaignPlans({ campaignId }: { campaignId: string }) {
       {isLoading ? (
         <div className="flex justify-center py-6 text-accent-400"><div className="spinner-sm" /></div>
       ) : !plans?.length ? (
-        <p className="text-xs text-gray-400 text-center py-4">Nadie armó un plan todavía.</p>
+        <p className="text-xs text-faint text-center py-4">Nadie armó un plan todavía.</p>
       ) : (
         plans.map((p: any) => (
           <Link key={p.id} href={`/planes/detalle?id=${p.id}`}
-            className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
+            className="flex items-center gap-3 p-3 bg-surface rounded-xl border border-line shadow-sm">
             <div className="flex-1 min-w-0">
               <h4 className="font-medium text-sm truncate">{p.title}</h4>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-faint">
                 {p.creator?.full_name} · <Users size={10} className="inline" /> {p.members_count ?? 0}/{p.max_members}
               </p>
             </div>
-            <ChevronRight size={14} className="text-gray-300" />
+            <ChevronRight size={14} className="text-faint" />
           </Link>
         ))
       )}

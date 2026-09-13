@@ -167,20 +167,20 @@ export default function EditarPerfilPage() {
     }
   };
 
-  const inputClass = "w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none transition text-sm";
+  const inputClass = "w-full px-4 py-3 rounded-xl border border-line-strong bg-surface focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none transition text-sm";
 
   if (!user) return null;
 
   return (
     <div className="max-w-lg mx-auto pb-8">
       <header className="flex items-center gap-3 px-4 pt-6 pb-4">
-        <button onClick={() => router.back()} className="p-1.5 text-gray-400"><ArrowLeft size={20} /></button>
+        <button onClick={() => router.back()} className="-m-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-faint"><ArrowLeft size={20} /></button>
         <h1 className="text-lg font-display font-bold">✏️ Editar perfil</h1>
       </header>
 
       <form onSubmit={handleSubmit} className="px-4 space-y-4">
-        {error && <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100">⚠️ {error}</div>}
-        {success && <div className="bg-green-50 text-green-600 text-sm px-4 py-3 rounded-xl border border-green-100">✅ Perfil actualizado</div>}
+        {error && <div className="bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-300 text-sm px-4 py-3 rounded-xl border border-red-100">⚠️ {error}</div>}
+        {success && <div className="bg-green-50 text-green-600 dark:bg-green-500/15 dark:text-green-300 text-sm px-4 py-3 rounded-xl border border-green-100">✅ Perfil actualizado</div>}
 
         {/* Avatar Upload */}
         <div className="flex flex-col items-center pb-2">
@@ -197,26 +197,26 @@ export default function EditarPerfilPage() {
             </div>
             <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
           </label>
-          <p className="text-[0.6rem] text-gray-400 mt-2">{uploadingPhoto ? '📸 Subiendo...' : 'Tocá para cambiar foto'}</p>
+          <p className="text-[0.6rem] text-faint mt-2">{uploadingPhoto ? '📸 Subiendo...' : 'Tocá para cambiar foto'}</p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">👤 Nombre</label>
+          <label className="block text-sm font-medium text-ink-soft mb-1">👤 Nombre</label>
           <input type="text" value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} className={inputClass} />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">📝 Bio</label>
+          <label className="block text-sm font-medium text-ink-soft mb-1">📝 Bio</label>
           <textarea value={form.bio} onChange={e => setForm({ ...form, bio: e.target.value })} className={inputClass} rows={3} placeholder="Contá algo de vos..." />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">🎂 Año de nacimiento</label>
+            <label className="block text-sm font-medium text-ink-soft mb-1">🎂 Año de nacimiento</label>
             <input type="number" value={form.birth_year} onChange={e => setForm({ ...form, birth_year: e.target.value })} className={inputClass} placeholder="1995" min="1940" max="2010" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">⚡ Género</label>
+            <label className="block text-sm font-medium text-ink-soft mb-1">⚡ Género</label>
             <select value={form.gender} onChange={e => setForm({ ...form, gender: e.target.value })} className={inputClass}>
               <option value="">Prefiero no decir</option>
               <option value="male">Masculino</option>
@@ -228,12 +228,12 @@ export default function EditarPerfilPage() {
         </div>
 
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={form.show_age} onChange={e => setForm({ ...form, show_age: e.target.checked })} className="rounded border-gray-300" />
+          <input type="checkbox" checked={form.show_age} onChange={e => setForm({ ...form, show_age: e.target.checked })} className="rounded border-line-strong" />
           👁️ Mostrar rango de edad en mi perfil
         </label>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">📍 Zona / barrio</label>
+          <label className="block text-sm font-medium text-ink-soft mb-1">📍 Zona / barrio</label>
           <select value={form.zone_id} onChange={e => setForm({ ...form, zone_id: e.target.value })} className={inputClass}>
             <option value="">Sin especificar</option>
             {zones?.map((z: any) => <option key={z.id} value={z.id}>{z.name}</option>)}
@@ -241,18 +241,18 @@ export default function EditarPerfilPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">💬 Sobre mis intereses</label>
+          <label className="block text-sm font-medium text-ink-soft mb-1">💬 Sobre mis intereses</label>
           <input type="text" value={form.interests_text} onChange={e => setForm({ ...form, interests_text: e.target.value })} className={inputClass} placeholder="Me gusta el fútbol, las birras y el trekking" />
         </div>
 
         {/* Interests selector */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">🎯 Intereses</label>
+          <label className="block text-sm font-medium text-ink-soft mb-2">🎯 Intereses</label>
           <div className="flex flex-wrap gap-2">
             {allInterests?.map((i: any) => (
               <button key={i.id} type="button" onClick={() => toggleInterest(i.id)}
                 className={`text-xs px-3 py-1.5 rounded-full border transition ${
-                  selectedInterests.includes(i.id) ? 'bg-brand-500 text-white border-brand-500' : 'bg-white text-gray-600 border-gray-200'
+                  selectedInterests.includes(i.id) ? 'bg-brand-500 text-white border-brand-500' : 'bg-surface text-muted border-line-strong'
                 }`}>
                 {i.icon} {i.name}
               </button>
@@ -263,11 +263,11 @@ export default function EditarPerfilPage() {
         {/* Verification */}
         <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
           <h3 className="font-bold text-sm mb-1">✅ Verificación de identidad</h3>
-          <p className="text-xs text-gray-500 mb-3">Verificar tu cuenta genera más confianza en la comunidad</p>
+          <p className="text-xs text-muted mb-3">Verificar tu cuenta genera más confianza en la comunidad</p>
           {(profile as any)?.is_verified ? (
-            <div className="bg-green-50 text-green-700 px-3 py-2 rounded-xl text-sm font-medium text-center">✅ Tu cuenta está verificada</div>
+            <div className="bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-300 px-3 py-2 rounded-xl text-sm font-medium text-center">✅ Tu cuenta está verificada</div>
           ) : (profile as any)?.verification_requested_at ? (
-            <div className="bg-yellow-50 text-yellow-700 px-3 py-2 rounded-xl text-sm font-medium text-center">⏳ Verificación en revisión</div>
+            <div className="bg-yellow-50 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-300 px-3 py-2 rounded-xl text-sm font-medium text-center">⏳ Verificación en revisión</div>
           ) : (
             <button type="button" onClick={async () => {
               await supabase.from('profiles').update({ verification_requested_at: new Date().toISOString() }).eq('id', user!.id);
@@ -285,7 +285,7 @@ export default function EditarPerfilPage() {
         </button>
       </form>
 
-      <div className="mt-8 pt-6 border-t border-gray-100 text-center space-y-3">
+      <div className="mt-8 pt-6 border-t border-line text-center space-y-3">
         {/* <a href> hacía una navegación dura contra el servidor local de
             Capacitor, que con trailingSlash no resuelve "/perfil/eliminar"
             sin la barra final: la pantalla quedaba colgada. <Link> hace

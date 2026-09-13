@@ -269,10 +269,10 @@ export default function DiagnosticoPage() {
   return (
     <div className="max-w-lg mx-auto pb-10">
       <header className="flex items-center gap-3 px-4 pt-6 pb-4">
-        <button onClick={() => router.back()} className="p-1.5 text-gray-400"><ArrowLeft size={20} /></button>
+        <button onClick={() => router.back()} className="-m-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-faint"><ArrowLeft size={20} /></button>
         <div>
           <h1 className="text-lg font-display font-bold">🩺 Diagnóstico</h1>
-          <p className="text-xs text-gray-500">Dónde se traba la app</p>
+          <p className="text-xs text-muted">Dónde se traba la app</p>
         </div>
       </header>
 
@@ -287,7 +287,7 @@ export default function DiagnosticoPage() {
 
         {steps.length > 0 && (
           <>
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
+            <div className="bg-surface rounded-2xl border border-line shadow-sm divide-y divide-line">
               {steps.map(s => (
                 <div key={s.name} className="flex items-start gap-3 px-4 py-2.5">
                   <span className={`text-sm mt-0.5 ${s.ok ? 'text-green-500' : 'text-red-500'}`}>
@@ -295,11 +295,11 @@ export default function DiagnosticoPage() {
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">{s.name}</p>
-                    <p className="text-[0.7rem] text-gray-400 break-words">{s.detail}</p>
+                    <p className="text-[0.7rem] text-faint break-words">{s.detail}</p>
                   </div>
                   <span className={`text-xs font-mono shrink-0 ${
                     s.ms > 5000 ? 'text-red-500 font-bold'
-                    : s.ms > 1500 ? 'text-yellow-600' : 'text-gray-400'
+                    : s.ms > 1500 ? 'text-yellow-600' : 'text-faint'
                   }`}>
                     {s.ms}ms
                   </span>
@@ -309,8 +309,8 @@ export default function DiagnosticoPage() {
 
             {/* Por qué cada plan entra o no en el listado */}
             {plans.length > 0 && (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                <p className="px-4 py-2 text-xs font-bold bg-gray-50 border-b border-gray-100">
+              <div className="bg-surface rounded-2xl border border-line shadow-sm overflow-hidden">
+                <p className="px-4 py-2 text-xs font-bold bg-canvas border-b border-line">
                   Planes que ve tu sesión · hoy = {today()}
                 </p>
                 {plans.map(p => {
@@ -324,7 +324,7 @@ export default function DiagnosticoPage() {
                         <span className={shown ? 'text-green-500' : 'text-red-500'}>{shown ? '●' : '✕'}</span>
                         <p className="text-sm font-medium truncate flex-1">{p.title}</p>
                       </div>
-                      <p className="text-[0.65rem] text-gray-400 ml-6">
+                      <p className="text-[0.65rem] text-faint ml-6">
                         <span className={okDate ? '' : 'text-red-500 font-bold'}>{p.plan_date}</span>
                         {' · '}
                         <span className={okStatus ? '' : 'text-red-500 font-bold'}>{p.status}</span>
@@ -341,7 +341,7 @@ export default function DiagnosticoPage() {
             {!running && (
               <button
                 onClick={() => void copy()}
-                className="w-full flex items-center justify-center gap-2 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm font-medium"
+                className="w-full flex items-center justify-center gap-2 py-2.5 bg-subtle text-muted rounded-xl text-sm font-medium"
               >
                 {copied ? <><Check size={14} /> Copiado</> : <><Copy size={14} /> Copiar resultado</>}
               </button>
@@ -349,15 +349,15 @@ export default function DiagnosticoPage() {
           </>
         )}
 
-        <div className="bg-gray-50 rounded-xl p-3 text-[0.7rem] text-gray-500 leading-relaxed">
-          <p className="font-medium text-gray-600 mb-1">Cómo leerlo</p>
+        <div className="bg-canvas rounded-xl p-3 text-[0.7rem] text-muted leading-relaxed">
+          <p className="font-medium text-muted mb-1">Cómo leerlo</p>
           <p>Si <b>&quot;Conexión a internet&quot;</b> ya tarda, es la red del teléfono.</p>
           <p>Si la <b>consulta simple</b> anda y el <b>feed</b> no, es esa consulta.</p>
           <p>Si <b>todo</b> tarda parecido, es la conexión con Supabase.</p>
           <p>Si se traba en <b>&quot;Sesión&quot;</b>, es el lock de auth.</p>
         </div>
 
-        <p className="text-[0.6rem] text-gray-300 text-center font-mono">
+        <p className="text-[0.6rem] text-faint text-center font-mono">
           build {process.env.NEXT_PUBLIC_BUILD_ID} · {process.env.NEXT_PUBLIC_BUILD_DATE}
         </p>
       </div>

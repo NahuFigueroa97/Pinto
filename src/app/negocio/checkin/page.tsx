@@ -183,7 +183,7 @@ export default function CheckinPage() {
   if (!user) {
     return (
       <div className="max-w-lg mx-auto pt-20 text-center px-6">
-        <p className="text-gray-500">Iniciá sesión con tu cuenta de negocio</p>
+        <p className="text-muted">Iniciá sesión con tu cuenta de negocio</p>
       </div>
     );
   }
@@ -191,12 +191,12 @@ export default function CheckinPage() {
   return (
     <div className="max-w-lg mx-auto pb-24">
       <header className="flex items-center gap-3 px-4 pt-6 pb-4">
-        <button onClick={() => { stopCamera(); router.back(); }} className="p-1.5 text-gray-400">
+        <button onClick={() => { stopCamera(); router.back(); }} className="-m-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-faint">
           <ArrowLeft size={20} />
         </button>
         <div>
           <h1 className="text-lg font-display font-bold">Validar reserva</h1>
-          <p className="text-xs text-gray-500">Escaneá el QR del cliente o cargá su código</p>
+          <p className="text-xs text-muted">Escaneá el QR del cliente o cargá su código</p>
         </div>
       </header>
 
@@ -214,8 +214,8 @@ export default function CheckinPage() {
 
                 {/* El beneficio que corresponde a este grupo, a esta hora */}
                 {result.offer?.ok && result.offer.tier && (
-                  <div className="mt-3 bg-white rounded-xl p-3 border border-green-100 text-center">
-                    <p className="text-[0.65rem] text-gray-400 uppercase tracking-wide">Aplicar</p>
+                  <div className="mt-3 bg-surface rounded-xl p-3 border border-green-100 text-center">
+                    <p className="text-[0.65rem] text-faint uppercase tracking-wide">Aplicar</p>
                     <p className="text-2xl font-black text-brand-600 mt-0.5">{result.offer.tier.label}</p>
                   </div>
                 )}
@@ -231,11 +231,11 @@ export default function CheckinPage() {
                   </div>
                 )}
                 {result.stamps && (
-                  <div className="mt-3 bg-white rounded-xl p-3 border border-green-100">
-                    <p className="text-xs font-medium text-gray-700">
+                  <div className="mt-3 bg-surface rounded-xl p-3 border border-green-100">
+                    <p className="text-xs font-medium text-ink-soft">
                       🎯 Sellos: {result.stamps.current}/{result.stamps.required}
                     </p>
-                    <div className="w-full bg-gray-100 rounded-full h-1.5 mt-2">
+                    <div className="w-full bg-subtle rounded-full h-1.5 mt-2">
                       <div
                         className="bg-brand-500 h-1.5 rounded-full transition-all"
                         style={{ width: `${Math.min(100, (result.stamps.current / result.stamps.required) * 100)}%` }}
@@ -285,24 +285,24 @@ export default function CheckinPage() {
         </button>
 
         {/* Carga manual */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+        <div className="bg-surface rounded-2xl border border-line shadow-sm p-4">
           <div className="flex items-center gap-2 mb-2">
-            <Keyboard size={16} className="text-gray-400" />
+            <Keyboard size={16} className="text-faint" />
             <p className="text-sm font-semibold">Código manual</p>
           </div>
-          <p className="text-xs text-gray-400 mb-3">
+          <p className="text-xs text-faint mb-3">
             Si la cámara no anda, pedile al cliente los 8 caracteres que figuran debajo de su QR.
           </p>
           <div className="flex items-center gap-2 mb-2">
-            <label className="text-xs text-gray-500 shrink-0">¿Cuántos vinieron?</label>
+            <label className="text-xs text-muted shrink-0">¿Cuántos vinieron?</label>
             <input
               type="number" min={1} max={50} inputMode="numeric"
               value={partySize}
               onChange={e => { setPartySize(e.target.value); partySizeRef.current = e.target.value; }}
               placeholder="auto"
-              className="w-20 px-2.5 py-1.5 rounded-lg border border-gray-200 text-sm text-center outline-none focus:border-accent-400"
+              className="w-20 px-2.5 py-1.5 rounded-lg border border-line-strong text-sm text-center outline-none focus:border-accent-400"
             />
-            <span className="text-[0.65rem] text-gray-400">vacío = lo reservado</span>
+            <span className="text-[0.65rem] text-faint">vacío = lo reservado</span>
           </div>
           <div className="flex gap-2">
             <input
@@ -312,7 +312,7 @@ export default function CheckinPage() {
               autoCapitalize="characters"
               autoCorrect="off"
               spellCheck={false}
-              className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-mono tracking-widest text-center outline-none focus:border-accent-400"
+              className="flex-1 px-4 py-2.5 rounded-xl border border-line-strong text-sm font-mono tracking-widest text-center outline-none focus:border-accent-400"
             />
             <button
               onClick={() => { void submitCode(manualCode); setManualCode(''); }}

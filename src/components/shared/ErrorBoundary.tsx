@@ -49,8 +49,8 @@ export class ErrorBoundary extends Component<Props, State> {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 text-center">
         <p className="text-4xl mb-3">😵</p>
-        <p className="font-medium text-gray-700">Algo se rompió en esta pantalla</p>
-        <p className="text-xs text-gray-400 mt-1 break-words max-w-xs">{error.message}</p>
+        <p className="font-medium text-ink-soft">Algo se rompió en esta pantalla</p>
+        <p className="text-xs text-faint mt-1 break-words max-w-xs">{error.message}</p>
 
         <div className="flex flex-col gap-2 mt-5 w-full max-w-xs">
           <button
@@ -61,7 +61,7 @@ export class ErrorBoundary extends Component<Props, State> {
           </button>
           <button
             onClick={() => { window.location.href = '/'; }}
-            className="px-5 py-2 bg-gray-50 text-gray-600 rounded-xl text-xs font-medium border border-gray-200"
+            className="px-5 py-2 bg-canvas text-muted rounded-xl text-xs font-medium border border-line-strong"
           >
             Volver al inicio
           </button>

@@ -573,3 +573,97 @@ chat.
 3. **Fan-out de notificaciones.** `notify_on_plan_chat` inserta una fila en
    `notification_queue` por miembro y por mensaje. Con grupos grandes y
    mucho tráfico conviene agrupar.
+
+---
+
+## Anexo — Diseño y usabilidad (13/09)
+
+Nueve huecos frente a lo que hace cualquier app social. Ordenados por lo que
+realmente cambia, no por categoría.
+
+### 1. No había bandeja de notificaciones
+
+Era la diferencia estructural. En Instagram el corazón, en Twitter la
+campanita, en WhatsApp la lista de chats: **siempre hay un lugar donde vive
+lo que te pasó**. Acá, un push deslizado sin abrir se perdía, y la solicitud
+para sumarse a tu plan sólo existía adentro del plan correcto, que había que
+recordar cuál era.
+
+Los datos ya estaban en `notification_queue`. `019_bandeja_notificaciones.sql`
+agrega `read_at` con un índice parcial sobre las no leídas, y `/avisos` es la
+pantalla. Entrar cuenta como haberlos visto, pero no los borra.
+
+### 2. Seis pestañas, cinco de ellas "contenido"
+
+Inicio, Feed, Explorar, Planes, Cerca, Perfil. El problema no era el ancho
+—que también: 60 px por pestaña en un teléfono de 360— sino que la barra
+escondía el modelo mental en vez de enseñarlo. Nadie nuevo podía saber la
+diferencia entre Inicio, Feed y Explorar.
+
+Ahora son cuatro, cada una una intención distinta: descubrir, organizar,
+enterarse, vos. Explorar, Cerca y Comunidad pasaron a accesos en Inicio, que
+es de donde salen. Alto de 56 a 64 px, que era el mínimo de 48 dp incumplido.
+
+### 3. El globito
+
+El contador de no leídos existía pero vivía adentro de una pantalla: sólo lo
+veías si ya habías entrado. En una app social el globito **es** el motivo de
+volver; sin él todo depende del push, que es justo lo que el usuario apaga.
+
+### 4. Modo oscuro
+
+Cero clases `dark:` en todo el proyecto, y unas 914 clases de color fijas
+(`bg-white`, `text-gray-400`, `border-gray-100`). Agregarle `dark:` a cada una
+es imposible de mantener y se desincroniza en la primera pantalla nueva.
+
+Se migró a **tokens semánticos**: la pantalla dice *qué* es cada cosa
+—`surface`, `ink`, `muted`, `line`— y el tema decide el color. Una pantalla
+nueva sale bien en los dos modos sin escribir nada extra.
+
+Detalles que importan: script anti-parpadeo antes de hidratar (si no, fogonazo
+blanco en cada arranque), tres opciones y no un interruptor (el automático
+sigue al sistema en vivo), y el oscuro no es gris invertido — los grises puros
+sobre OLED vibran, así que el fondo lleva una pizca de azul.
+
+### 5. Esqueletos en vez de ruedas
+
+No aceleran nada, pero muestran la **forma** de lo que viene: el ojo ya sabe
+dónde va el título y dónde la foto. Van a través de `PageSpinner` para heredar
+la salida de emergencia de los 10 s — un esqueleto suelto vuelve a ser un
+callejón sin salida si la consulta nunca resuelve.
+
+### 6. Háptica y tirar-para-refrescar
+
+`@capacitor/haptics` estaba en `package.json` sin usarse en ningún lado. Es
+buena parte de lo que separa "una web adentro de un APK" de algo que se siente
+una app.
+
+El tirar-para-refrescar va a mano: las páginas scrollean en el `<body>` y
+`overscroll-behavior: none` —necesario para que el WebView no rebote—
+desactiva cualquier solución nativa.
+
+### 7. Onboarding
+
+Alguien se registraba y caía en una home sin nada que explicara qué es un
+"plan". Tres pantallas, salteable, y termina en una acción concreta en vez de
+un "Empezar" que no lleva a ningún lado.
+
+Los vacíos también: "No hay planes disponibles" deja al usuario en un
+callejón. Un vacío bueno es un botón.
+
+### 8. El link compartido no abría la app
+
+Había compartir por WhatsApp, pero el `AndroidManifest.xml` sólo tenía el
+`LAUNCHER`: el link caía en el navegador y se perdía justo ahí el efecto que
+justifica el botón. Ver `docs/DEEP_LINKS.md` — falta publicar el
+`assetlinks.json`, que necesita el dominio y la huella de Play App Signing.
+
+Además no existía un compartir de **invitación**: el único que había era de
+seguridad ("avisarle a alguien dónde voy"). En una app que vive de que la
+gente arme juntadas, invitar es el producto.
+
+### 9. Áreas de toque
+
+29 botones de ícono por debajo del mínimo — sobre todo flechas de volver y X
+de cerrar, los dos controles más tocados. Se llevaron a 44×44 con márgenes
+negativos, así que crece el área sin mover el diseño.

@@ -133,10 +133,10 @@ function FotosInner() {
   return (
     <div className="max-w-lg mx-auto pb-8">
       <header className="flex items-center gap-3 px-4 pt-6 pb-4">
-        <button onClick={() => router.back()} className="p-1.5 text-gray-400"><ArrowLeft size={20} /></button>
+        <button onClick={() => router.back()} className="-m-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-faint"><ArrowLeft size={20} /></button>
         <div className="flex-1">
           <h1 className="text-lg font-display font-bold">📸 Fotos de la juntada</h1>
-          <p className="text-xs text-gray-500">{photos?.length ?? 0} fotos</p>
+          <p className="text-xs text-muted">{photos?.length ?? 0} fotos</p>
         </div>
         <label className={`flex items-center gap-1.5 px-3 py-2 bg-brand-500 text-white rounded-xl text-sm font-medium cursor-pointer ${uploading ? 'opacity-50' : ''}`}>
           <Upload size={14} /> {uploading ? 'Subiendo...' : 'Subir'}
@@ -146,12 +146,12 @@ function FotosInner() {
 
       <div className="px-4">
         {uploadError && (
-          <div className="bg-red-50 text-red-600 text-sm px-4 py-2 rounded-xl mb-3">
+          <div className="bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-300 text-sm px-4 py-2 rounded-xl mb-3">
             ❌ {uploadError}
           </div>
         )}
         {photos?.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16 text-faint">
             <p className="text-4xl mb-3">📷</p>
             <p className="font-medium">No hay fotos todavía</p>
             <p className="text-sm mt-1">¡Sé el primero en subir una!</p>

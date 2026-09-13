@@ -237,30 +237,30 @@ export default function NuevoNegocioPage() {
     }
   };
 
-  const inputClass = "w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:border-accent-400 focus:ring-2 focus:ring-accent-100 outline-none transition text-sm";
+  const inputClass = "w-full px-4 py-3 rounded-xl border border-line-strong bg-surface focus:border-accent-400 focus:ring-2 focus:ring-accent-100 outline-none transition text-sm";
 
   return (
     <div className="max-w-lg mx-auto pb-8">
       <header className="flex items-center gap-3 px-4 pt-6 pb-4">
-        <button onClick={() => router.back()} className="p-1.5 text-gray-400"><ArrowLeft size={20} /></button>
+        <button onClick={() => router.back()} className="-m-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-faint"><ArrowLeft size={20} /></button>
         <h1 className="text-lg font-display font-bold">Crear mi negocio</h1>
       </header>
 
       <form onSubmit={handleSubmit} className="px-4 space-y-4">
         {error && (
-          <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100 flex items-center justify-between">
+          <div className="bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-300 text-sm px-4 py-3 rounded-xl border border-red-100 flex items-center justify-between">
             <span>{error}</span>
             <button type="button" onClick={() => setError('')}><X size={14} /></button>
           </div>
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del negocio *</label>
+          <label className="block text-sm font-medium text-ink-soft mb-1">Nombre del negocio *</label>
           <input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className={inputClass} placeholder="Ej: Café Central" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Categoría *</label>
+          <label className="block text-sm font-medium text-ink-soft mb-1">Categoría *</label>
           <select value={form.category_id} onChange={e => setForm({ ...form, category_id: e.target.value })} className={inputClass}>
             <option value="">Seleccioná una categoría</option>
             {categories?.map((c: any) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
@@ -268,25 +268,25 @@ export default function NuevoNegocioPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+          <label className="block text-sm font-medium text-ink-soft mb-1">Descripción</label>
           <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className={inputClass} rows={3} placeholder="Contanos sobre tu negocio" />
         </div>
 
         {/* MAP */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-ink-soft mb-1">
             <MapPin size={14} className="inline mr-1" /> Ubicación
           </label>
 
           {!showMap ? (
             <button type="button" onClick={() => setShowMap(true)}
-              className="w-full py-4 border-2 border-dashed border-gray-200 rounded-xl text-center text-sm text-gray-500 hover:border-brand-300 hover:text-brand-500 transition">
+              className="w-full py-4 border-2 border-dashed border-line-strong rounded-xl text-center text-sm text-muted hover:border-brand-300 hover:text-brand-500 transition">
               <MapPin size={20} className="mx-auto mb-1" />
               Tocá para abrir el mapa y marcar tu ubicación
             </button>
           ) : (
             <div className="space-y-2">
-              <div ref={mapContainerRef} className="w-full h-64 rounded-xl overflow-hidden border border-gray-200 z-0" />
+              <div ref={mapContainerRef} className="w-full h-64 rounded-xl overflow-hidden border border-line-strong z-0" />
 
               <div className="flex items-center gap-2">
                 <button type="button" onClick={useMyLocation}
@@ -294,7 +294,7 @@ export default function NuevoNegocioPage() {
                   <Crosshair size={14} /> Usar mi ubicación
                 </button>
 
-                {!pin && <p className="text-xs text-gray-400 italic">👆 Tocá el mapa para marcar</p>}
+                {!pin && <p className="text-xs text-faint italic">👆 Tocá el mapa para marcar</p>}
               </div>
 
               {address && (
@@ -310,17 +310,17 @@ export default function NuevoNegocioPage() {
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+            <label className="block text-sm font-medium text-ink-soft mb-1">Teléfono</label>
             <input type="tel" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className={inputClass} placeholder="3834-000000" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
+            <label className="block text-sm font-medium text-ink-soft mb-1">WhatsApp</label>
             <input type="tel" value={form.whatsapp} onChange={e => setForm({ ...form, whatsapp: e.target.value })} className={inputClass} placeholder="3834-000000" />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Instagram</label>
+          <label className="block text-sm font-medium text-ink-soft mb-1">Instagram</label>
           <input type="text" value={form.instagram} onChange={e => setForm({ ...form, instagram: e.target.value })} className={inputClass} placeholder="@tunegocio" />
         </div>
 

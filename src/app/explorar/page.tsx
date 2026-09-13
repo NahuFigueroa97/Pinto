@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { Business, BusinessCategory, Zone } from '@/types/database';
 import { sb } from '@/lib/sb';
 import { PageSpinner } from '@/components/shared/PageSpinner';
+import { SkeletonLista } from '@/components/shared/Skeleton';
 
 export default function ExplorarPage() {
   const [search, setSearch] = useState('');
@@ -58,19 +59,19 @@ export default function ExplorarPage() {
     <div className="max-w-lg mx-auto pb-6">
       <header className="px-4 pt-6 pb-3">
         <h1 className="text-xl font-display font-bold">Explorar negocios</h1>
-        <p className="text-sm text-gray-500">Descubrí locales cerca tuyo</p>
+        <p className="text-sm text-muted">Descubrí locales cerca tuyo</p>
       </header>
 
       {/* Search */}
       <div className="px-4 pb-3">
         <div className="relative">
-          <Search size={16} className="absolute left-3 top-3 text-gray-400" />
+          <Search size={16} className="absolute left-3 top-3 text-faint" />
           <input
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar negocios..."
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none"
+            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-line-strong bg-surface text-sm focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none"
           />
         </div>
       </div>
@@ -80,7 +81,7 @@ export default function ExplorarPage() {
         <select
           value={selectedCategory}
           onChange={e => setSelectedCategory(e.target.value)}
-          className="shrink-0 text-sm px-3 py-2 rounded-full border border-gray-200 bg-white text-gray-600 outline-none"
+          className="shrink-0 text-sm px-3 py-2 rounded-full border border-line-strong bg-surface text-muted outline-none"
         >
           <option value="all">Todas las categorías</option>
           {categories?.map(c => <option key={c.id} value={c.slug}>{c.icon} {c.name}</option>)}
@@ -88,7 +89,7 @@ export default function ExplorarPage() {
         <select
           value={selectedZone}
           onChange={e => setSelectedZone(e.target.value)}
-          className="shrink-0 text-sm px-3 py-2 rounded-full border border-gray-200 bg-white text-gray-600 outline-none"
+          className="shrink-0 text-sm px-3 py-2 rounded-full border border-line-strong bg-surface text-muted outline-none"
         >
           <option value="all">Todas las zonas</option>
           {zones?.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
@@ -98,12 +99,12 @@ export default function ExplorarPage() {
       {/* Results */}
       <div className="px-4 space-y-3">
         {isLoading ? (
-          <PageSpinner fullScreen={false} text="Cargando negocios..." onRetry={() => void refetch()} />
+          <PageSpinner fullScreen={false} onRetry={() => void refetch()} skeleton={<SkeletonLista cuantos={4} />} />
         ) : queryError ? (
           <div className="text-center py-16 px-6">
             <p className="text-4xl mb-3">😕</p>
-            <p className="text-gray-700 font-medium">No se pudo cargar</p>
-            <p className="text-xs text-gray-400 mt-1 break-words">
+            <p className="text-ink-soft font-medium">No se pudo cargar</p>
+            <p className="text-xs text-faint mt-1 break-words">
               {queryError instanceof Error ? queryError.message : 'Algo salió mal'}
             </p>
             <button onClick={() => refetch()} disabled={isFetching}
@@ -112,7 +113,7 @@ export default function ExplorarPage() {
             </button>
           </div>
         ) : !businesses?.length ? (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16 text-faint">
             <p className="text-4xl mb-3">🏪</p>
             <p>No se encontraron negocios</p>
           </div>
@@ -121,9 +122,9 @@ export default function ExplorarPage() {
             <Link
               key={biz.id}
               href={`/negocio/detalle?slug=${biz.slug}`}
-              className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition"
+              className="flex items-center gap-3 p-3 bg-surface rounded-xl border border-line shadow-sm hover:shadow-md transition"
             >
-              <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-lg shrink-0">
+              <div className="w-12 h-12 rounded-xl bg-subtle flex items-center justify-center text-lg shrink-0">
                 {(biz.category as any)?.icon || '🏪'}
               </div>
               <div className="flex-1 min-w-0">
@@ -132,12 +133,12 @@ export default function ExplorarPage() {
                   {biz.is_verified && <span className="text-blue-500 shrink-0" title="Verificado">✔</span>}
                   {biz.is_featured && <Star size={12} className="text-yellow-500 fill-yellow-500 shrink-0" />}
                 </div>
-                <p className="text-xs text-gray-500 truncate">{(biz.category as any)?.name}</p>
+                <p className="text-xs text-muted truncate">{(biz.category as any)?.name}</p>
                 {biz.address && (
-                  <p className="text-xs text-gray-400 flex items-center gap-0.5 mt-0.5"><MapPin size={10} /> {biz.address}</p>
+                  <p className="text-xs text-faint flex items-center gap-0.5 mt-0.5"><MapPin size={10} /> {biz.address}</p>
                 )}
               </div>
-              <ChevronRight size={16} className="text-gray-300 shrink-0" />
+              <ChevronRight size={16} className="text-faint shrink-0" />
             </Link>
           ))
         )}
