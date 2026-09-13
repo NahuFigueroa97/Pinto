@@ -3,13 +3,15 @@
 import { Suspense, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, MapPin, Shield, Calendar, Star, Users, Camera, Ban, Flag } from 'lucide-react';
+import { ArrowLeft, MapPin, Shield, Calendar, Star, Users, Ban, Flag } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth';
 import { useBlockedIds, useBlockUser } from '@/lib/blocks';
 import type { Profile, UserInterest } from '@/types/database';
 import { sb } from '@/lib/sb';
+import { PageSpinner } from '@/components/shared/PageSpinner';
+import { QueryState } from '@/components/shared/QueryState';
 
 function getAge(birthYear: number | null): string | null {
   if (!birthYear) return null;
@@ -37,7 +39,7 @@ function VerPerfilInner() {
   const { block, unblock } = useBlockUser();
   const [confirmBlock, setConfirmBlock] = useState(false);
 
-  const { data: profile, isLoading } = useQuery({
+  const { data: profile, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['profile_public', id],
     queryFn: async () => {
       if (!id) return null;
@@ -84,7 +86,17 @@ function VerPerfilInner() {
 
   // Ver la nota en planes/detalle: sin el id, la query queda deshabilitada
   // y `!id || isLoading` dejaba el spinner girando indefinidamente.
-  if (isLoading) return <div className="flex justify-center pt-20"><div className="spinner" /></div>;
+  if (isLoading) return <PageSpinner onRetry={() => void refetch()} />;
+
+  // Un fallo de red o de RLS caía en la misma rama que "no existe" y se
+  // mostraba como "Perfil no encontrado": el usuario quedaba convencido de
+  // que la persona no estaba, sin reintentar y sin saber qué pasó.
+  if (error) return (
+    <QueryState isLoading={false} error={error} onRetry={() => void refetch()} isRetrying={isFetching}>
+      {null}
+    </QueryState>
+  );
+
   if (!id || !profile) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-gray-400 px-6 text-center">
       <p className="text-4xl mb-3">👤</p>
@@ -256,5 +268,5 @@ function VerPerfilInner() {
 }
 
 export default function VerPerfilPage() {
-  return <Suspense fallback={<div className="flex justify-center pt-20"><div className="spinner" /></div>}><VerPerfilInner /></Suspense>;
+  return <Suspense fallback={<PageSpinner />}><VerPerfilInner /></Suspense>;
 }

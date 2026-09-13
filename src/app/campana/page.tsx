@@ -12,6 +12,7 @@ import { useCampaignTiers } from '@/lib/offers';
 import { OfferLadder } from '@/components/shared/OfferLadder';
 import Link from 'next/link';
 import { sb } from '@/lib/sb';
+import { PageSpinner } from '@/components/shared/PageSpinner';
 
 const TYPE_LABELS: Record<string, string> = {
   promo: '🏷️ Promo',
@@ -109,7 +110,7 @@ function CampaignDetailInner() {
 
   // Ver la nota en planes/detalle: sin el id, la query queda deshabilitada
   // y `!id || isLoading` dejaba el spinner girando indefinidamente.
-  if (isLoading) return <div className="flex items-center justify-center min-h-screen"><div className="spinner" /></div>;
+  if (isLoading) return <PageSpinner />;
 
   if (!id || !campaign) return (
     <div className="flex flex-col items-center justify-center min-h-screen text-gray-400 px-6 text-center">
@@ -347,5 +348,5 @@ function CampaignPlans({ campaignId }: { campaignId: string }) {
 }
 
 export default function CampaignDetailPage() {
-  return <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="spinner" /></div>}><CampaignDetailInner /></Suspense>;
+  return <Suspense fallback={<PageSpinner />}><CampaignDetailInner /></Suspense>;
 }

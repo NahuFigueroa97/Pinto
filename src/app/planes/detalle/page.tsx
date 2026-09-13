@@ -11,6 +11,8 @@ import { useCampaignTiers } from '@/lib/offers';
 import { OfferLadder } from '@/components/shared/OfferLadder';
 import Link from 'next/link';
 import { sb } from '@/lib/sb';
+import { PageSpinner } from '@/components/shared/PageSpinner';
+import { QueryState } from '@/components/shared/QueryState';
 
 function PlanDetailInner() {
   const searchParams = useSearchParams();
@@ -22,7 +24,7 @@ function PlanDetailInner() {
   const [showJoinForm, setShowJoinForm] = useState(false);
   const [joinError, setJoinError] = useState('');
 
-  const { data: plan, isLoading } = useQuery({
+  const { data: plan, isLoading, error: planError, refetch: refetchPlan, isFetching: fetchingPlan } = useQuery({
     queryKey: ['plan', id],
     queryFn: async () => {
       if (!id) return null;
@@ -148,7 +150,15 @@ function PlanDetailInner() {
   // query está deshabilitada (enabled: !!id), así que isLoading es false y
   // el spinner no se apagaba nunca. Pasaba al abrir una notificación, porque
   // la navegación dura sin barra final perdía el query string.
-  if (isLoading) return <div className="flex justify-center pt-20"><div className="spinner" /></div>;
+  if (isLoading) return <PageSpinner onRetry={() => void refetchPlan()} />;
+
+  // Igual que en el perfil: un error de red o de RLS no es "no existe".
+  if (planError) return (
+    <QueryState isLoading={false} error={planError} onRetry={() => void refetchPlan()} isRetrying={fetchingPlan}>
+      {null}
+    </QueryState>
+  );
+
   if (!id || !plan) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-gray-400 px-6 text-center">
       <p className="text-4xl mb-3">🤷</p>
@@ -425,5 +435,5 @@ function PlanDetailInner() {
 }
 
 export default function PlanDetallePage() {
-  return <Suspense fallback={<div className="flex justify-center pt-20"><div className="spinner" /></div>}><PlanDetailInner /></Suspense>;
+  return <Suspense fallback={<PageSpinner />}><PlanDetailInner /></Suspense>;
 }

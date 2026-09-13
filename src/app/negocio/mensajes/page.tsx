@@ -8,6 +8,7 @@ import { ArrowLeft, Send, MessageCircle } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { sb } from '@/lib/sb';
 import { EmojiPicker } from '@/components/shared/EmojiPicker';
+import { PageSpinner } from '@/components/shared/PageSpinner';
 
 function NegocioMensajesInner() {
   const { user } = useAuth();
@@ -117,7 +118,7 @@ function NegocioMensajesInner() {
 
   // `if (!business) return <spinner/>` dejaba la pantalla girando para
   // siempre cuando la cuenta todavía no tenía negocio creado.
-  if (loadingBusiness) return <div className="flex justify-center pt-20"><div className="spinner" /></div>;
+  if (loadingBusiness) return <PageSpinner />;
   if (!business) return (
     <div className="max-w-lg mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
       <p className="text-5xl mb-3">🏪</p>
@@ -228,7 +229,7 @@ function NegocioMensajesInner() {
 
 export default function NegocioMensajesPage() {
   return (
-    <Suspense fallback={<div className="flex justify-center pt-20"><div className="spinner" /></div>}>
+    <Suspense fallback={<PageSpinner />}>
       <NegocioMensajesInner />
     </Suspense>
   );

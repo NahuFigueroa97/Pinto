@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { sb } from '@/lib/sb';
+import { PageSpinner } from '@/components/shared/PageSpinner';
 
 export default function NegocioReservasPage() {
   const { user } = useAuth();
@@ -62,7 +63,7 @@ export default function NegocioReservasPage() {
 
       <div className="px-4 space-y-3">
         {isLoading ? (
-          <div className="flex justify-center py-16"><div className="spinner" /></div>
+          <PageSpinner fullScreen={false} />
         ) : queryError ? (
           <div className="text-center py-16 px-6">
             <p className="text-4xl mb-3">😕</p>

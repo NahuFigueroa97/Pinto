@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { sb } from '@/lib/sb';
+import { PageSpinner } from '@/components/shared/PageSpinner';
 
 function ValorarInner() {
   const searchParams = useSearchParams();
@@ -113,5 +114,5 @@ function ValorarInner() {
 }
 
 export default function ValorarPage() {
-  return <Suspense fallback={<div className="flex justify-center pt-20"><div className="spinner" /></div>}><ValorarInner /></Suspense>;
+  return <Suspense fallback={<PageSpinner />}><ValorarInner /></Suspense>;
 }

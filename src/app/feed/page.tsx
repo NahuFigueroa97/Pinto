@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { Clock, Users, ChevronRight } from 'lucide-react';
 import { useBlockedIds, filterBlocked } from '@/lib/blocks';
+import { PageSpinner } from '@/components/shared/PageSpinner';
 
 const ACTION_LABELS: Record<string, { emoji: string; text: (m: any) => string }> = {
   created_plan: { emoji: '🎉', text: (m) => `creó el plan "${m?.title || ''}"` },
@@ -61,7 +62,7 @@ export default function FeedPage() {
 
       <div className="px-4 space-y-2">
         {isLoading ? (
-          <div className="flex justify-center py-16"><div className="spinner" /></div>
+          <PageSpinner fullScreen={false} />
         ) : error ? (
           <div className="text-center py-16">
             <p className="text-4xl mb-3">😕</p>

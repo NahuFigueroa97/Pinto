@@ -10,6 +10,7 @@ import { sb } from '@/lib/sb';
 import { useBlockedIds, filterBlocked } from '@/lib/blocks';
 import { moderateContent } from '@/lib/moderation';
 import { EmojiPicker } from '@/components/shared/EmojiPicker';
+import { PageSpinner } from '@/components/shared/PageSpinner';
 
 /** Cuánto se puede alejar del fondo y seguir considerándose "abajo". */
 const NEAR_BOTTOM_PX = 120;
@@ -60,6 +61,7 @@ function ChatInner() {
   const [atBottom, setAtBottom] = useState(true);
   // Equivalente al "Info del mensaje" de WhatsApp: quién lo leyó y cuándo.
   const [infoOf, setInfoOf] = useState<ChatMessage | null>(null);
+  const [readError, setReadError] = useState('');
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -106,13 +108,55 @@ function ChatInner() {
     refetchInterval: 8000,
   });
 
-  /** Marcar como leído: al entrar y cada vez que llega algo estando abajo. */
-  const markRead = useCallback(() => {
+  /**
+   * Marcar como leído.
+   *
+   * Antes esto era `void supabase.rpc(...)`: si el RPC fallaba —falta la
+   * migración 016, no sos miembro, lo que sea— el visto simplemente no
+   * andaba y no quedaba ni un rastro para saberlo.
+   */
+  const markRead = useCallback(async () => {
     if (!planId) return;
-    void supabase.rpc('mark_chat_read', { p_plan_id: planId });
-  }, [planId]);
+    // Si la app está en segundo plano no se leyó nada. Marcarlo igual sería
+    // mentirle a quien mandó el mensaje.
+    if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
 
-  useEffect(() => { markRead(); }, [markRead]);
+    const { error: err } = await supabase.rpc('mark_chat_read', { p_plan_id: planId });
+    if (err) {
+      console.error('[chat] no se pudo marcar como leído:', err.message);
+      setReadError(err.message);
+      return;
+    }
+    setReadError('');
+    // Sin esto el resto del grupo tarda hasta 8 s (el refetchInterval) en
+    // ver el visto.
+    void queryClient.invalidateQueries({ queryKey: ['chat_reads', planId] });
+  }, [planId, queryClient]);
+
+  /**
+   * El id del último mensaje cambia cada vez que llega algo nuevo, propio o
+   * ajeno: es la señal de "hay algo más para dar por leído".
+   *
+   * Antes la única llamada era al montar, más una dentro del efecto de
+   * auto-scroll condicionada a `atBottom`. O sea: si abrías el chat y te
+   * quedabas adentro, tu marca de lectura quedaba clavada en el momento en
+   * que entraste. Los mensajes que llegaban después nunca contaban como
+   * leídos — ni siquiera al responderlos — y el que los mandó seguía viendo
+   * "Todavía no lo vio nadie" para siempre.
+   */
+  const lastMessageId = messages?.length ? messages[messages.length - 1].id : null;
+
+  useEffect(() => {
+    void markRead();
+  }, [markRead, lastMessageId]);
+
+  // Al volver del segundo plano: los mensajes que llegaron mientras tanto
+  // recién ahora se están viendo de verdad.
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') void markRead(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [markRead]);
 
   // useMemo no es cosmético acá: `all` es dependencia del efecto de
   // auto-scroll, así que recrearlo en cada render lo dispararía siempre.
@@ -144,11 +188,10 @@ function ChatInner() {
     const last = all[all.length - 1];
     const isMine = last?.user_id === user?.id;
 
-    if (atBottom || isMine) {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-      markRead();
-    }
-  }, [all, atBottom, user?.id, markRead]);
+    // El marcado como leído ya no vive acá: dependía de `atBottom`, que en
+    // pleno scroll suave vale false, así que se perdían lecturas.
+    if (atBottom || isMine) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [all, atBottom, user?.id]);
 
   const onScroll = () => {
     const el = scrollRef.current;
@@ -325,7 +368,7 @@ function ChatInner() {
       {/* Volver al fondo cuando hay mensajes nuevos más abajo */}
       {!atBottom && (
         <button
-          onClick={() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); markRead(); }}
+          onClick={() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); void markRead(); }}
           className="absolute bottom-24 right-5 w-10 h-10 rounded-full bg-white border border-gray-200 shadow-lg flex items-center justify-center text-gray-500"
           aria-label="Ir al último mensaje"
         >
@@ -395,6 +438,13 @@ function ChatInner() {
 
       <div className="shrink-0 border-t border-gray-100 bg-white px-3 py-2 safe-bottom">
         {error && <p className="text-xs text-red-500 mb-2 px-1">{error}</p>}
+        {/* El visto es silencioso por naturaleza: si el RPC falla, la única
+            señal sería que nadie ve nunca los tildes celestes. */}
+        {readError && (
+          <p className="text-[0.65rem] text-amber-600 mb-2 px-1">
+            El visto no está funcionando ({readError})
+          </p>
+        )}
         <div className="flex items-end gap-1">
           <EmojiPicker onPick={insertEmoji} />
           <textarea
@@ -426,7 +476,7 @@ function ChatInner() {
 
 export default function PlanChatPage() {
   return (
-    <Suspense fallback={<div className="flex justify-center pt-20"><div className="spinner" /></div>}>
+    <Suspense fallback={<PageSpinner />}>
       <ChatInner />
     </Suspense>
   );

@@ -10,6 +10,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { moderateContent } from '@/lib/moderation';
 import { sb } from '@/lib/sb';
 import { EmojiPicker } from '@/components/shared/EmojiPicker';
+import { PageSpinner } from '@/components/shared/PageSpinner';
 
 /**
  * Bandeja de mensajes del usuario.
@@ -183,7 +184,7 @@ function MensajesUsuarioInner() {
       </header>
 
       {isLoading ? (
-        <div className="flex justify-center py-16"><div className="spinner" /></div>
+        <PageSpinner fullScreen={false} />
       ) : !conversations?.length ? (
         <div className="text-center py-16 px-4">
           <p className="text-5xl mb-3">📭</p>
@@ -223,7 +224,7 @@ function MensajesUsuarioInner() {
 
 export default function MensajesUsuarioPage() {
   return (
-    <Suspense fallback={<div className="flex justify-center pt-20"><div className="spinner" /></div>}>
+    <Suspense fallback={<PageSpinner />}>
       <MensajesUsuarioInner />
     </Suspense>
   );

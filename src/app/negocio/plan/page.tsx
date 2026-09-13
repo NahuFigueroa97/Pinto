@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
 import { sb } from '@/lib/sb';
 import { formatMoney } from '@/lib/money';
+import { PageSpinner } from '@/components/shared/PageSpinner';
 
 /**
  * Planes de suscripción del negocio.
@@ -96,7 +97,7 @@ export default function PlanNegocioPage() {
 
       <div className="px-4 space-y-3">
         {isLoading ? (
-          <div className="flex justify-center py-16"><div className="spinner" /></div>
+          <PageSpinner fullScreen={false} />
         ) : error ? (
           <div className="text-center py-16">
             <p className="text-4xl mb-3">😕</p>

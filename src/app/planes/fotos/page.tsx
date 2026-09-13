@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { sb } from '@/lib/sb';
+import { PageSpinner } from '@/components/shared/PageSpinner';
 
 function compressImage(file: File, maxWidth = 800, quality = 0.7): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -200,5 +201,5 @@ function FotosInner() {
 }
 
 export default function PlanFotosPage() {
-  return <Suspense fallback={<div className="flex justify-center pt-20"><div className="spinner" /></div>}><FotosInner /></Suspense>;
+  return <Suspense fallback={<PageSpinner />}><FotosInner /></Suspense>;
 }

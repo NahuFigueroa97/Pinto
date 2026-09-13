@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
 import { generateQRSvg, encodeReservationQR } from '@/lib/qr';
+import { PageSpinner } from '@/components/shared/PageSpinner';
 
 function QRInner() {
   const searchParams = useSearchParams();
@@ -53,7 +54,7 @@ function QRInner() {
       <div className="px-4 flex flex-col items-center">
         <div className="bg-white rounded-3xl border border-gray-100 shadow-lg p-8 text-center w-full">
           {isLoading ? (
-            <div className="py-16 flex justify-center"><div className="spinner" /></div>
+            <PageSpinner fullScreen={false} />
           ) : !reservation ? (
             <p className="py-16 text-gray-400 text-sm">No encontramos esta reserva.</p>
           ) : (
@@ -108,5 +109,5 @@ function QRInner() {
 }
 
 export default function ReservaQRPage() {
-  return <Suspense fallback={<div className="flex justify-center pt-20"><div className="spinner" /></div>}><QRInner /></Suspense>;
+  return <Suspense fallback={<PageSpinner />}><QRInner /></Suspense>;
 }

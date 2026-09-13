@@ -8,6 +8,7 @@ import { LogOut, Shield, Store, Edit, MapPin, Star, Users, ChevronRight, Megapho
 import Link from 'next/link';
 import type { UserInterest } from '@/types/database';
 import { sb } from '@/lib/sb';
+import { PageSpinner } from '@/components/shared/PageSpinner';
 
 function getAge(birthYear: number | null): string | null {
   if (!birthYear) return null;
@@ -266,7 +267,7 @@ function BusinessProfile() {
 export default function PerfilPage() {
   const { user, role, loading } = useAuth();
 
-  if (loading) return <div className="flex justify-center pt-20"><div className="spinner" /></div>;
+  if (loading) return <PageSpinner />;
 
   if (!user) return (
     <div className="max-w-lg mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center px-6">

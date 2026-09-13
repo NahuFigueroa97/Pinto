@@ -5,7 +5,8 @@ import { AuthProvider, useAuth } from '@/lib/auth';
 import { useState, useEffect, type ReactNode } from 'react';
 import { initNotifications, startNotificationPolling, stopNotificationPolling } from '@/lib/notifications';
 import { onNavigationRequest, navigateTo } from '@/lib/navigation';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 
 function NotificationManager() {
   // Se depende de user.id y no del objeto `user`: supabase-js devuelve una
@@ -67,6 +68,18 @@ function NotificationRouter() {
   return null;
 }
 
+/**
+ * El boundary se reinicia al cambiar de ruta.
+ *
+ * Sin la `key`, una pantalla que explotó dejaba el mensaje de error fijo:
+ * el estado del boundary sobrevive a la navegación y el usuario veía "algo
+ * se rompió" incluso en pantallas sanas.
+ */
+function RouteErrorBoundary({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  return <ErrorBoundary key={pathname}>{children}</ErrorBoundary>;
+}
+
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
@@ -84,7 +97,7 @@ export function Providers({ children }: { children: ReactNode }) {
       <AuthProvider>
         <NotificationManager />
         <NotificationRouter />
-        {children}
+        <RouteErrorBoundary>{children}</RouteErrorBoundary>
       </AuthProvider>
     </QueryClientProvider>
   );

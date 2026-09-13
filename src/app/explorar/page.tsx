@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
 import type { Business, BusinessCategory, Zone } from '@/types/database';
 import { sb } from '@/lib/sb';
+import { PageSpinner } from '@/components/shared/PageSpinner';
 
 export default function ExplorarPage() {
   const [search, setSearch] = useState('');
@@ -97,10 +98,7 @@ export default function ExplorarPage() {
       {/* Results */}
       <div className="px-4 space-y-3">
         {isLoading ? (
-          <div className="flex flex-col items-center py-16 text-gray-400">
-            <div className="spinner" />
-            <p className="mt-3 text-sm">Cargando negocios...</p>
-          </div>
+          <PageSpinner fullScreen={false} text="Cargando negocios..." onRetry={() => void refetch()} />
         ) : queryError ? (
           <div className="text-center py-16 px-6">
             <p className="text-4xl mb-3">😕</p>

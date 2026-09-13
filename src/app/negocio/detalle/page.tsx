@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { sb } from '@/lib/sb';
+import { PageSpinner } from '@/components/shared/PageSpinner';
 
 const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
@@ -80,7 +81,7 @@ function NegocioDetalleInner() {
 
   // Ver la nota en planes/detalle: sin el slug, la query queda deshabilitada
   // y `!slug || isLoading` dejaba el spinner girando indefinidamente.
-  if (isLoading) return <div className="flex justify-center pt-20"><div className="spinner" /></div>;
+  if (isLoading) return <PageSpinner />;
   if (!slug || !business) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-gray-400 px-6 text-center">
       <p className="text-4xl mb-3">🏪</p>
@@ -166,5 +167,5 @@ function NegocioDetalleInner() {
 }
 
 export default function NegocioDetallePage() {
-  return <Suspense fallback={<div className="flex justify-center pt-20"><div className="spinner" /></div>}><NegocioDetalleInner /></Suspense>;
+  return <Suspense fallback={<PageSpinner />}><NegocioDetalleInner /></Suspense>;
 }

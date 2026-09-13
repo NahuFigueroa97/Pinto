@@ -2,6 +2,7 @@
 
 import { RefreshCw } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { PageSpinner } from './PageSpinner';
 
 /**
  * Estado de una consulta: cargando / error / vacío / contenido.
@@ -35,14 +36,10 @@ export function QueryState({
   emptyText?: string;
   children: ReactNode;
 }) {
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center py-16 text-gray-400">
-        <div className="spinner" />
-        {loadingText && <p className="mt-3 text-sm">{loadingText}</p>}
-      </div>
-    );
-  }
+  // La rama de carga pasa por PageSpinner para que herede la salida de
+  // emergencia: sin eso, una consulta que no resuelve dejaba a QueryState
+  // mostrando la rueda igual que antes, con error y vacío inalcanzables.
+  if (isLoading) return <PageSpinner fullScreen={false} text={loadingText} onRetry={onRetry} />;
 
   if (error) {
     const message = error instanceof Error ? error.message : 'Algo salió mal';

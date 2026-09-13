@@ -8,6 +8,7 @@ import type { BusinessTransaction } from '@/types/database';
 import { parseMoney } from '@/lib/money';
 import { useRouter } from 'next/navigation';
 import { sb } from '@/lib/sb';
+import { PageSpinner } from '@/components/shared/PageSpinner';
 
 type Period = 'day' | 'week' | 'month';
 
@@ -76,7 +77,7 @@ export default function FinanzasPage() {
     onError: (err: any) => setExpenseError(err?.message ?? 'No se pudo registrar el gasto'),
   });
 
-  if (loadingBusiness) return <div className="flex justify-center pt-20"><div className="spinner" /></div>;
+  if (loadingBusiness) return <PageSpinner />;
   if (!business) return (
     <div className="max-w-lg mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
       <p className="text-5xl mb-3">💰</p>

@@ -27,11 +27,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = useCallback(async (userId: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
       .single();
+    if (error) {
+      // El error se descartaba en silencio. Sin perfil, `role` cae a 'user'
+      // y un dueño de negocio se queda sin su panel sin saber por qué.
+      console.error('[auth] no se pudo cargar el perfil:', error.message);
+      return null;
+    }
     if (data) setProfile(data as Profile);
     return data as Profile | null;
   }, []);
@@ -78,23 +84,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       const u = session?.user ?? null;
       setUser(u);
-      if (u) {
-        await fetchProfile(u.id);
-        if (PUSH_EVENTS.has(event)) void initPushNotifications(u.id);
-      } else {
-        setProfile(null);
+      // try/finally, no por prolijidad: si algo de acá adentro tiraba, el
+      // callback quedaba rechazado y `setLoading(false)` no se ejecutaba
+      // NUNCA. La app entera se quedaba en "cargando" —toda pantalla que
+      // mira auth.loading, o sea casi todas— hasta reiniciarla. Bastaba con
+      // que la carga del perfil fallara por red al abrir la app.
+      try {
+        if (u) {
+          await fetchProfile(u.id);
+          if (PUSH_EVENTS.has(event)) void initPushNotifications(u.id);
+        } else {
+          setProfile(null);
+        }
+      } catch (err) {
+        console.error('[auth] fallo al inicializar la sesión:', err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     // supabase-js ya emite INITIAL_SESSION en el listener de arriba, así que
     // este getSession() solo sirve de red de seguridad para apagar el loading
     // si el evento no llega (p. ej. storage bloqueado).
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) setLoading(false);
-    });
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => { if (!session) setLoading(false); })
+      .catch((err) => {
+        // Sin el catch, un getSession rechazado era una promesa sin manejar
+        // y la red de seguridad no servía justo cuando más hacía falta.
+        console.error('[auth] getSession falló:', err);
+        setLoading(false);
+      });
 
-    return () => subscription.unsubscribe();
+    // Último recurso. Si en 15 s ni el listener ni getSession apagaron el
+    // loading —el lock de auth trabado es el caso típico— la app arranca
+    // como si no hubiera sesión. Es peor no arrancar: desde la pantalla de
+    // login se puede reintentar, desde una rueda que gira no se puede nada.
+    const bail = setTimeout(() => setLoading(false), 15_000);
+
+    return () => {
+      clearTimeout(bail);
+      subscription.unsubscribe();
+    };
   }, [fetchProfile]);
 
   return (

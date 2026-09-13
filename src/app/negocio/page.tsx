@@ -10,6 +10,7 @@ import { parseMoney, formatMoney } from '@/lib/money';
 import { Link2 } from 'lucide-react';
 import { useState } from 'react';
 import { sb } from '@/lib/sb';
+import { PageSpinner } from '@/components/shared/PageSpinner';
 
 export default function NegocioDashboard() {
   const { user } = useAuth();
@@ -122,7 +123,7 @@ export default function NegocioDashboard() {
 
   const { refreshProfile } = useAuth();
 
-  if (isLoading) return <div className="flex justify-center pt-20"><div className="spinner" /></div>;
+  if (isLoading) return <PageSpinner />;
 
   if (!business) {
     return (

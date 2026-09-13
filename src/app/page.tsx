@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
 import type { Campaign, BusinessCategory } from '@/types/database';
 import { sb } from '@/lib/sb';
+import { PageSpinner } from '@/components/shared/PageSpinner';
 
 const CATEGORY_ICONS: Record<string, typeof Coffee> = {
   cafeteria: Coffee,
@@ -135,10 +136,7 @@ export default function HomePage() {
       {/* Campaign Cards */}
       <div className="px-4 space-y-3 pb-6">
         {isLoading ? (
-          <div className="flex flex-col items-center py-16 text-gray-400">
-            <div className="spinner" />
-            <p className="mt-3 text-sm">✨ Buscando planes...</p>
-          </div>
+          <PageSpinner fullScreen={false} text="✨ Buscando planes..." onRetry={() => void refetch()} />
         ) : queryError ? (
           <div className="text-center py-16 px-6">
             <p className="text-4xl mb-3">😕</p>

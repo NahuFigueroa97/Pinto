@@ -6,6 +6,7 @@ import { ArrowLeft, Flag } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useMutation } from '@tanstack/react-query';
+import { PageSpinner } from '@/components/shared/PageSpinner';
 
 const REASONS = [
   { value: 'inappropriate', label: '🚫 Contenido inapropiado' },
@@ -94,5 +95,5 @@ function ReportarInner() {
 }
 
 export default function ReportarPage() {
-  return <Suspense fallback={<div className="flex justify-center pt-20"><div className="spinner" /></div>}><ReportarInner /></Suspense>;
+  return <Suspense fallback={<PageSpinner />}><ReportarInner /></Suspense>;
 }

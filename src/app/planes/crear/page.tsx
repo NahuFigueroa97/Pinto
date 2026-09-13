@@ -9,6 +9,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useUserLocation } from '@/lib/geolocation';
 import { moderateContent } from '@/lib/moderation';
 import { sb } from '@/lib/sb';
+import { PageSpinner } from '@/components/shared/PageSpinner';
 
 function CrearPlanInner() {
   const searchParams = useSearchParams();
@@ -209,5 +210,5 @@ function CrearPlanInner() {
 }
 
 export default function CrearPlanPage() {
-  return <Suspense fallback={<div className="flex justify-center pt-20"><div className="spinner" /></div>}><CrearPlanInner /></Suspense>;
+  return <Suspense fallback={<PageSpinner />}><CrearPlanInner /></Suspense>;
 }

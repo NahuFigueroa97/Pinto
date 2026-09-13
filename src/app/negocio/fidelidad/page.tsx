@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { sb } from '@/lib/sb';
+import { PageSpinner } from '@/components/shared/PageSpinner';
 
 export default function FidelidadNegocioPage() {
   const router = useRouter();
@@ -101,7 +102,7 @@ export default function FidelidadNegocioPage() {
 
       <div className="px-4 space-y-3">
         {isLoading ? (
-          <div className="flex justify-center py-16"><div className="spinner" /></div>
+          <PageSpinner fullScreen={false} />
         ) : !cards?.length ? (
           <div className="text-center py-16 text-gray-400">
             <Gift size={40} className="mx-auto mb-3 text-gray-200" />

@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { useQuery } from '@tanstack/react-query';
 import { today } from '@/lib/dates';
 import { sb } from '@/lib/sb';
+import { PageSpinner } from '@/components/shared/PageSpinner';
 
 export default function PintoRandomPage() {
   const { user, role } = useAuth();
@@ -44,12 +45,7 @@ export default function PintoRandomPage() {
     }, 300);
   };
 
-  if (isLoading) return (
-    <div className="max-w-lg mx-auto flex flex-col items-center justify-center min-h-[70vh]">
-      <div className="spinner" />
-      <p className="text-sm text-gray-400 mt-3">Mezclando planes... 🎲</p>
-    </div>
-  );
+  if (isLoading) return <PageSpinner text="Mezclando planes... 🎲" />;
 
   if (!plans?.length) return (
     <div className="max-w-lg mx-auto flex flex-col items-center justify-center min-h-[70vh] text-center px-6">

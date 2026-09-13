@@ -155,6 +155,65 @@ export default function DiagnosticoPage() {
       return `${data?.length ?? 0} fila(s) · hoy = ${today()}`;
     }));
 
+    // 10-12. El perfil de otra persona: la pantalla que se quedaba girando.
+    //     Se parte en dos —con embed de zona y sin él— porque un embed roto
+    //     es exactamente lo que rompió /planes y no se veía por ningún lado.
+    let otherId: string | null = null;
+    push(await timed('Buscar otro usuario', async () => {
+      let q = supabase.from('profiles').select('id, full_name').limit(1);
+      if (user) q = q.neq('id', user.id);
+      const { data, error } = await q;
+      if (error) throw error;
+      otherId = data?.[0]?.id ?? null;
+      return otherId ? `${data![0].full_name ?? 'sin nombre'} (${otherId.slice(0, 8)})` : 'no hay otro perfil';
+    }));
+
+    push(await timed('Perfil ajeno SIN embed', async () => {
+      if (!otherId) return 'no aplica';
+      const { data, error } = await supabase.from('profiles')
+        .select('id, full_name, reputation_score').eq('id', otherId).single();
+      if (error) throw error;
+      return data ? 'ok' : 'sin filas (RLS)';
+    }));
+
+    push(await timed('Perfil ajeno CON zone:zones', async () => {
+      if (!otherId) return 'no aplica';
+      const { data, error } = await supabase.from('profiles')
+        .select('id, full_name, avatar_url, bio, birth_year, show_age, interests_text, reputation_score, plans_created_count, plans_joined_count, is_verified, zone:zones(name)')
+        .eq('id', otherId).single();
+      if (error) throw error;
+      return data ? 'ok' : 'sin filas (RLS)';
+    }));
+
+    // 13-14. El visto del chat. Si estos dos no existen, falta correr
+    //     016_chat_vistos.sql y el visto no puede andar.
+    let planId: string | null = null;
+    push(await timed('Un plan donde soy miembro', async () => {
+      if (!user) return 'sin sesión, no aplica';
+      const { data, error } = await supabase.from('social_plan_members')
+        .select('plan_id').eq('user_id', user.id).limit(1);
+      if (error) throw error;
+      planId = data?.[0]?.plan_id ?? null;
+      return planId ? planId.slice(0, 8) : 'no sos miembro de ningún plan';
+    }));
+
+    push(await timed('Visto: marcar leído (mark_chat_read)', async () => {
+      if (!planId) return 'no aplica';
+      const { error } = await supabase.rpc('mark_chat_read', { p_plan_id: planId });
+      if (error) throw error;
+      return 'ok';
+    }));
+
+    push(await timed('Visto: quién leyó (chat_read_state)', async () => {
+      if (!planId) return 'no aplica';
+      const { data, error } = await supabase.rpc('chat_read_state', { p_plan_id: planId });
+      if (error) throw error;
+      const rows = (data ?? []) as { full_name: string | null; last_read_at: string | null }[];
+      if (rows.length === 0) return '0 miembros además de vos';
+      const conMarca = rows.filter(r => r.last_read_at).length;
+      return `${rows.length} miembro(s), ${conMarca} con marca de lectura`;
+    }));
+
     setRunning(false);
   };
 

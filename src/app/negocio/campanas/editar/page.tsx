@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Campaign, CampaignType } from '@/types/database';
+import { PageSpinner } from '@/components/shared/PageSpinner';
 
 const TYPES: { value: CampaignType; label: string; desc: string }[] = [
   { value: 'promo', label: '🏷️ Promo simple', desc: 'Descuento o beneficio directo' },
@@ -117,7 +118,7 @@ function EditarCampanaInner() {
 
   // Ver la nota en planes/detalle: sin el id, la query queda deshabilitada
   // y `!id || isLoadingCampaign` dejaba el spinner girando indefinidamente.
-  if (isLoadingCampaign) return <div className="flex justify-center pt-20"><Loader2 className="animate-spin text-accent-500" size={28} /></div>;
+  if (isLoadingCampaign) return <PageSpinner />;
   if (!id || !campaign) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-gray-400 px-6 text-center">
       <p className="text-4xl mb-3">📢</p>
@@ -218,7 +219,7 @@ function EditarCampanaInner() {
 }
 
 export default function EditarCampanaPage() {
-  return <Suspense fallback={<div className="flex justify-center pt-20"><Loader2 className="animate-spin text-accent-500" size={28} /></div>}>
+  return <Suspense fallback={<PageSpinner />}>
     <EditarCampanaInner />
   </Suspense>;
 }
