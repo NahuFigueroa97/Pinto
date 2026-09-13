@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { moderateContent } from '@/lib/moderation';
 import { sb } from '@/lib/sb';
+import { EmojiPicker } from '@/components/shared/EmojiPicker';
 
 /**
  * Bandeja de mensajes del usuario.
@@ -79,7 +80,15 @@ function MensajesUsuarioInner() {
     refetchInterval: 10_000,
   });
 
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [thread]);
+  // Solo baja solo si ya estabas abajo: si subiste a releer algo viejo,
+  // el refetch periódico te tiraba de vuelta al fondo cada pocos segundos.
+  const scrollBoxRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = scrollBoxRef.current;
+    if (!el) return;
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distance < 150) chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [thread]);
 
   const send = useMutation({
     mutationFn: async () => {
@@ -125,7 +134,7 @@ function MensajesUsuarioInner() {
           <h1 className="font-bold text-sm truncate">{(current?.business as any)?.name ?? 'Negocio'}</h1>
         </header>
 
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+        <div ref={scrollBoxRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
           {thread?.map((msg: any) => (
             <div key={msg.id} className={`flex ${msg.sender_role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[75%] px-3.5 py-2 rounded-2xl text-sm ${
@@ -145,7 +154,8 @@ function MensajesUsuarioInner() {
 
         <div className="px-4 py-3 border-t border-gray-100 bg-white safe-bottom">
           {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
-          <div className="flex gap-2">
+          <div className="flex items-center gap-1">
+            <EmojiPicker onPick={e => setMessage(m => m + e)} />
             <input
               type="text" value={message} onChange={e => { setMessage(e.target.value); setError(''); }}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) send.mutate(); }}

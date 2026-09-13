@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Upload, X } from 'lucide-react';
+import { ArrowLeft, Upload, X, Eye } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -50,6 +50,32 @@ function FotosInner() {
     },
     enabled: !!planId,
   });
+
+  /** Cuántas personas vio cada foto. */
+  const { data: viewCounts } = useQuery({
+    queryKey: ['photo_views', planId],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('photo_view_counts', { p_plan_id: planId });
+      if (error) throw error;
+      const map: Record<string, number> = {};
+      for (const row of (data ?? []) as { photo_id: string; views: number }[]) {
+        map[row.photo_id] = row.views;
+      }
+      return map;
+    },
+    enabled: !!planId,
+  });
+
+  // Al abrir el álbum se marcan todas como vistas de una sola vez. Una
+  // petición por foto sería una ráfaga de 20 requests cada vez que alguien
+  // entra a mirar.
+  const markedRef = useRef(false);
+  useEffect(() => {
+    if (markedRef.current || !photos?.length || !user) return;
+    markedRef.current = true;
+    const ids = photos.filter((p: any) => p.user_id !== user.id).map((p: any) => p.id);
+    if (ids.length) void supabase.rpc('mark_photos_seen', { p_photo_ids: ids });
+  }, [photos, user]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -134,8 +160,14 @@ function FotosInner() {
             {photos?.map((p: any) => (
               <div key={p.id} className="relative rounded-xl overflow-hidden aspect-square group">
                 <img src={p.photo_url} alt="" className="w-full h-full object-cover" />
-                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-                  <p className="text-white text-[0.6rem] font-medium">{p.user?.full_name}</p>
+                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-2 flex items-end justify-between gap-1">
+                  <p className="text-white text-[0.6rem] font-medium truncate">{p.user?.full_name}</p>
+                  {/* Solo a quien la subió le interesa cuánta gente la vio */}
+                  {p.user_id === user?.id && (viewCounts?.[p.id] ?? 0) > 0 && (
+                    <span className="flex items-center gap-0.5 text-white/90 text-[0.6rem] font-medium shrink-0">
+                      <Eye size={10} /> {viewCounts?.[p.id]}
+                    </span>
+                  )}
                 </div>
                 {p.user_id === user?.id && (
                   <button

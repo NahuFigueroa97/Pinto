@@ -1,14 +1,49 @@
 'use client';
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Send } from 'lucide-react';
+import { ArrowLeft, Send, Check, CheckCheck } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { sb } from '@/lib/sb';
 import { useBlockedIds, filterBlocked } from '@/lib/blocks';
 import { moderateContent } from '@/lib/moderation';
-import { sb } from '@/lib/sb';
+import { EmojiPicker } from '@/components/shared/EmojiPicker';
+
+/** Cuánto se puede alejar del fondo y seguir considerándose "abajo". */
+const NEAR_BOTTOM_PX = 120;
+
+interface ChatMessage {
+  id: string;
+  plan_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  user?: { full_name: string | null; avatar_url: string | null };
+  /** Solo en los optimistas: todavía no confirmó el servidor. */
+  pending?: boolean;
+}
+
+interface ReadState {
+  user_id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  last_read_at: string | null;
+}
+
+function sameDay(a: string, b: string) {
+  return new Date(a).toDateString() === new Date(b).toDateString();
+}
+
+function dayLabel(iso: string) {
+  const d = new Date(iso);
+  const hoy = new Date();
+  const ayer = new Date(); ayer.setDate(hoy.getDate() - 1);
+  if (d.toDateString() === hoy.toDateString()) return 'Hoy';
+  if (d.toDateString() === ayer.toDateString()) return 'Ayer';
+  return d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+}
 
 function ChatInner() {
   const searchParams = useSearchParams();
@@ -17,114 +52,274 @@ function ChatInner() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { blockedSet } = useBlockedIds();
+
   const [msg, setMsg] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+  const [pending, setPending] = useState<ChatMessage[]>([]);
+  const [atBottom, setAtBottom] = useState(true);
+
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const lastCountRef = useRef(0);
 
   const { data: plan } = useQuery({
     queryKey: ['chat_plan', planId],
-    queryFn: async () => {
-      const data = await sb(supabase.from('social_plans').select('title').eq('id', planId).single());
-      return data;
-    },
+    queryFn: async () => sb(supabase.from('social_plans').select('title').eq('id', planId).single()),
     enabled: !!planId,
   });
 
   const { data: messages } = useQuery({
     queryKey: ['chat_messages', planId],
     queryFn: async () => {
-      const data = await sb(supabase.from('plan_chat_messages')
-        .select('*, user:profiles(full_name, avatar_url)')
-        .eq('plan_id', planId)
-        .order('created_at', { ascending: true })
-        .limit(100));
-      return data ?? [];
+      const rows = await sb(
+        supabase.from('plan_chat_messages')
+          .select('*, user:profiles(full_name, avatar_url)')
+          .eq('plan_id', planId)
+          .order('created_at', { ascending: true })
+          .limit(200),
+      );
+      return (rows ?? []) as ChatMessage[];
     },
     enabled: !!planId,
     refetchInterval: 3000,
   });
 
+  /** Quién leyó hasta cuándo, para el visto. */
+  const { data: reads } = useQuery({
+    queryKey: ['chat_reads', planId],
+    queryFn: async () => {
+      const { data, error: err } = await supabase.rpc('chat_read_state', { p_plan_id: planId });
+      if (err) throw err;
+      return (data ?? []) as ReadState[];
+    },
+    enabled: !!planId,
+    refetchInterval: 8000,
+  });
+
+  /** Marcar como leído: al entrar y cada vez que llega algo estando abajo. */
+  const markRead = useCallback(() => {
+    if (!planId) return;
+    void supabase.rpc('mark_chat_read', { p_plan_id: planId });
+  }, [planId]);
+
+  useEffect(() => { markRead(); }, [markRead]);
+
+  // useMemo no es cosmético acá: `all` es dependencia del efecto de
+  // auto-scroll, así que recrearlo en cada render lo dispararía siempre.
+  const all = useMemo(() => {
+    const visible = filterBlocked<ChatMessage>(messages, blockedSet, m => m.user_id);
+    // Los optimistas que el servidor ya confirmó dejan de mostrarse aparte
+    const confirmedIds = new Set(visible.map(m => m.id));
+    return [...visible, ...pending.filter(p => !confirmedIds.has(p.id))];
+  }, [messages, blockedSet, pending]);
+
+  /**
+   * Auto-scroll, pero solo si el usuario ya estaba abajo.
+   *
+   * Antes esto era `scrollIntoView()` en cada refetch (cada 3 s), así que si
+   * alguien subía a leer algo viejo, el chat lo tiraba de vuelta al fondo
+   * una y otra vez y era imposible leer.
+   */
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (all.length === lastCountRef.current) return;
+    const grew = all.length > lastCountRef.current;
+    lastCountRef.current = all.length;
+    if (!grew) return;
+
+    const last = all[all.length - 1];
+    const isMine = last?.user_id === user?.id;
+
+    if (atBottom || isMine) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      markRead();
+    }
+  }, [all, atBottom, user?.id, markRead]);
+
+  const onScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setAtBottom(distance < NEAR_BOTTOM_PX);
+  };
+
+  /** El textarea crece con el texto, hasta 5 líneas. */
+  const autoGrow = () => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  };
+  useEffect(autoGrow, [msg]);
 
   const sendMessage = async () => {
-    if (!msg.trim() || !user || !planId || sending) return;
+    const text = msg.trim();
+    if (!text || !user || !planId || sending) return;
 
-    // El chat no pasaba por ningún filtro: la moderación solo corría al crear
-    // un plan. Play pide moderar todo el contenido generado por usuarios.
-    const check = moderateContent(msg);
+    const check = moderateContent(text);
     if (!check.ok) { setError(check.reason); return; }
 
-    setSending(true);
+    // Optimista: el mensaje aparece al instante. Con refetchInterval de 3 s,
+    // esperar la confirmación hacía que se sintiera trabado.
+    const optimistic: ChatMessage = {
+      id: `pending-${Date.now()}`,
+      plan_id: planId,
+      user_id: user.id,
+      content: text,
+      created_at: new Date().toISOString(),
+      pending: true,
+    };
+    setPending(p => [...p, optimistic]);
+    setMsg('');
     setError('');
+    setSending(true);
+
     const { error: insertErr } = await supabase
       .from('plan_chat_messages')
-      .insert({ plan_id: planId, user_id: user.id, content: msg.trim() });
+      .insert({ plan_id: planId, user_id: user.id, content: text });
+
     setSending(false);
 
     if (insertErr) {
-      // Antes el error se descartaba: el mensaje desaparecía del input y el
-      // usuario creía que se había enviado.
-      setError('No se pudo enviar el mensaje. Probá de nuevo.');
+      setPending(p => p.filter(x => x.id !== optimistic.id));
+      setMsg(text);            // no se pierde lo escrito
+      setError('No se pudo enviar. Probá de nuevo.');
       return;
     }
-    setMsg('');
     queryClient.invalidateQueries({ queryKey: ['chat_messages', planId] });
   };
 
-  // Los mensajes de personas bloqueadas no se muestran
-  const visibleMessages = filterBlocked<any>(messages, blockedSet, m => m.user_id);
+  const insertEmoji = (emoji: string) => {
+    setMsg(m => m + emoji);
+    inputRef.current?.focus();
+  };
+
+  /** Cuántos miembros leyeron un mensaje dado. */
+  const seenBy = (iso: string) =>
+    (reads ?? []).filter(r => r.last_read_at && new Date(r.last_read_at) >= new Date(iso));
+
+  const others = reads?.length ?? 0;
 
   return (
-    <div className="flex flex-col h-[100dvh] max-w-lg mx-auto">
+    <div className="flex flex-col h-[100dvh] max-w-lg mx-auto bg-gray-50">
       <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 bg-white shrink-0">
         <button onClick={() => router.back()} className="p-1 text-gray-400"><ArrowLeft size={20} /></button>
-        <div>
-          <h1 className="text-sm font-bold">💬 Chat del grupo</h1>
-          <p className="text-xs text-gray-400">{plan?.title || 'Cargando...'}</p>
+        <div className="min-w-0">
+          <h1 className="text-sm font-bold truncate">💬 {plan?.title || 'Chat del grupo'}</h1>
+          <p className="text-[0.65rem] text-gray-400">
+            {others + 1} {others + 1 === 1 ? 'participante' : 'participantes'}
+          </p>
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-        {visibleMessages.length === 0 && (
+      <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto px-4 py-3 space-y-1">
+        {all.length === 0 && (
           <div className="text-center py-10 text-gray-400 text-sm">
             <p className="text-3xl mb-2">💬</p>
             <p>¡Arrancá la conversación!</p>
           </div>
         )}
-        {visibleMessages.map((m: any) => {
-          const isMe = m.user_id === user?.id;
+
+        {all.map((m, i) => {
+          const isMine = m.user_id === user?.id;
+          const prev = all[i - 1];
+          // Se agrupan los mensajes seguidos de la misma persona: evita
+          // repetir el nombre y hace la conversación mucho más legible.
+          const grouped = prev && prev.user_id === m.user_id && sameDay(prev.created_at, m.created_at)
+            && new Date(m.created_at).getTime() - new Date(prev.created_at).getTime() < 5 * 60_000;
+          const newDay = !prev || !sameDay(prev.created_at, m.created_at);
+          const seen = isMine && !m.pending ? seenBy(m.created_at) : [];
+          const isLastMine = isMine && !m.pending
+            && !all.slice(i + 1).some(x => x.user_id === user?.id);
+
           return (
-            <div key={m.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[75%] ${isMe ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-800'} rounded-2xl px-3.5 py-2`}>
-                {!isMe && <p className="text-[0.6rem] font-bold mb-0.5 opacity-70">{m.user?.full_name}</p>}
-                <p className="text-sm">{m.content}</p>
-                <p className={`text-[0.55rem] mt-0.5 ${isMe ? 'text-white/60' : 'text-gray-400'}`}>
-                  {new Date(m.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
-                </p>
+            <div key={m.id}>
+              {newDay && (
+                <div className="flex justify-center my-3">
+                  <span className="text-[0.6rem] text-gray-400 bg-white px-3 py-1 rounded-full border border-gray-100">
+                    {dayLabel(m.created_at)}
+                  </span>
+                </div>
+              )}
+
+              <div className={`flex ${isMine ? 'justify-end' : 'justify-start'} ${grouped ? 'mt-0.5' : 'mt-2'}`}>
+                <div
+                  className={`max-w-[78%] px-3.5 py-2 ${
+                    isMine
+                      ? `bg-brand-500 text-white rounded-2xl ${grouped ? 'rounded-tr-md' : ''} rounded-br-md`
+                      : `bg-white text-gray-800 border border-gray-100 rounded-2xl ${grouped ? 'rounded-tl-md' : ''} rounded-bl-md`
+                  } ${m.pending ? 'opacity-60' : ''}`}
+                >
+                  {!isMine && !grouped && (
+                    <p className="text-[0.65rem] font-bold mb-0.5 text-brand-500">{m.user?.full_name}</p>
+                  )}
+                  {/* whitespace-pre-wrap conserva los saltos de línea y
+                      break-words evita que un enlace largo rompa el layout */}
+                  <p className="text-[0.95rem] whitespace-pre-wrap break-words leading-snug">{m.content}</p>
+                  <div className={`flex items-center gap-1 justify-end mt-0.5 ${isMine ? 'text-white/60' : 'text-gray-400'}`}>
+                    <span className="text-[0.55rem]">
+                      {new Date(m.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    {isMine && (
+                      m.pending
+                        ? <Check size={11} className="opacity-50" />
+                        : seen.length > 0
+                          ? <CheckCheck size={11} className="text-sky-200" />
+                          : <Check size={11} />
+                    )}
+                  </div>
+                </div>
               </div>
+
+              {/* El visto detallado solo en el último mensaje propio: en un
+                  grupo, repetirlo en cada burbuja es ruido. */}
+              {isLastMine && seen.length > 0 && (
+                <p className="text-[0.6rem] text-gray-400 text-right mt-0.5 pr-1">
+                  Visto por {seen.length === others
+                    ? 'todos'
+                    : seen.map(s => (s.full_name ?? '').split(' ')[0]).filter(Boolean).join(', ')}
+                </p>
+              )}
             </div>
           );
         })}
         <div ref={bottomRef} />
       </div>
 
-      <div className="shrink-0 border-t border-gray-100 bg-white px-4 py-3 safe-bottom">
-        {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
-        <div className="flex gap-2">
-          <input
+      {/* Volver al fondo cuando hay mensajes nuevos más abajo */}
+      {!atBottom && (
+        <button
+          onClick={() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); markRead(); }}
+          className="absolute bottom-24 right-5 w-10 h-10 rounded-full bg-white border border-gray-200 shadow-lg flex items-center justify-center text-gray-500"
+          aria-label="Ir al último mensaje"
+        >
+          ↓
+        </button>
+      )}
+
+      <div className="shrink-0 border-t border-gray-100 bg-white px-3 py-2 safe-bottom">
+        {error && <p className="text-xs text-red-500 mb-2 px-1">{error}</p>}
+        <div className="flex items-end gap-1">
+          <EmojiPicker onPick={insertEmoji} />
+          <textarea
+            ref={inputRef}
             value={msg}
+            rows={1}
             onChange={e => { setMsg(e.target.value); setError(''); }}
-            onKeyDown={e => e.key === 'Enter' && sendMessage()}
+            onKeyDown={e => {
+              // Enter envía, Shift+Enter hace salto de línea. Antes no había
+              // forma de escribir un mensaje de más de una línea.
+              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void sendMessage(); }
+            }}
             placeholder="Escribí un mensaje..."
-            className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:border-brand-400"
+            className="flex-1 px-3.5 py-2.5 rounded-2xl border border-gray-200 text-[0.95rem] outline-none focus:border-brand-400 resize-none leading-snug"
           />
           <button
-            onClick={sendMessage}
-            disabled={sending || !msg.trim()}
-            className="p-2.5 bg-brand-500 text-white rounded-xl disabled:opacity-50"
+            onClick={() => void sendMessage()}
+            disabled={!msg.trim()}
+            aria-label="Enviar"
+            className="p-2.5 bg-brand-500 text-white rounded-full disabled:opacity-40 active:scale-90 transition shrink-0"
           >
             <Send size={18} />
           </button>
@@ -135,5 +330,9 @@ function ChatInner() {
 }
 
 export default function PlanChatPage() {
-  return <Suspense fallback={<div className="flex justify-center pt-20"><div className="spinner" /></div>}><ChatInner /></Suspense>;
+  return (
+    <Suspense fallback={<div className="flex justify-center pt-20"><div className="spinner" /></div>}>
+      <ChatInner />
+    </Suspense>
+  );
 }

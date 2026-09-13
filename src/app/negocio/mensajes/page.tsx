@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Send, MessageCircle } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { sb } from '@/lib/sb';
+import { EmojiPicker } from '@/components/shared/EmojiPicker';
 
 function NegocioMensajesInner() {
   const { user } = useAuth();
@@ -87,8 +88,14 @@ function NegocioMensajesInner() {
     refetchInterval: 5000,
   });
 
+  // Solo baja solo si ya estabas abajo: si subiste a releer algo viejo,
+  // el refetch periódico te tiraba de vuelta al fondo cada pocos segundos.
+  const scrollBoxRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const el = scrollBoxRef.current;
+    if (!el) return;
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distance < 150) chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
   const sendMessage = useMutation({
@@ -137,7 +144,7 @@ function NegocioMensajesInner() {
           <h1 className="font-bold text-sm">{(chatUser?.user as any)?.full_name ?? 'Usuario'}</h1>
         </header>
 
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+        <div ref={scrollBoxRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
           {chatMessages?.map((msg: any) => (
             <div key={msg.id} className={`flex ${msg.sender_role === 'business' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[75%] px-3.5 py-2 rounded-2xl text-sm ${
@@ -156,7 +163,8 @@ function NegocioMensajesInner() {
         </div>
 
         <div className="px-4 py-3 border-t border-gray-100 bg-white">
-          <div className="flex gap-2">
+          <div className="flex items-center gap-1">
+            <EmojiPicker onPick={e => setMessage(m => m + e)} />
             <input
               type="text" value={message} onChange={e => setMessage(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage.mutate()}
