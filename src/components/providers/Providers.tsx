@@ -1,6 +1,6 @@
 'use client';
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { useState, useEffect, type ReactNode } from 'react';
 import { initNotifications, startNotificationPolling, stopNotificationPolling } from '@/lib/notifications';
@@ -42,8 +42,19 @@ function NotificationManager() {
  */
 function NotificationRouter() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   useEffect(() => onNavigationRequest((route) => {
+    // Una notificación significa que algo cambió en el servidor. Con
+    // staleTime de 60 s, react-query servía lo que tenía cacheado y la
+    // pantalla de destino mostraba datos viejos: llegaba el aviso de "X
+    // quiere sumarse", se abría el plan y la solicitud no estaba hasta
+    // reiniciar la app.
+    //
+    // invalidateQueries() sin filtro solo refetchea las consultas activas,
+    // así que el costo real es el de la pantalla a la que se entra.
+    void queryClient.invalidateQueries();
+
     try {
       router.push(route);
     } catch {
@@ -51,7 +62,7 @@ function NotificationRouter() {
       // la navegación dura con la barra final normalizada.
       navigateTo(route);
     }
-  }), [router]);
+  }), [router, queryClient]);
 
   return null;
 }

@@ -52,6 +52,11 @@ function PlanDetailInner() {
   });
 
   const { data: requests } = useQuery({
+    // Las solicitudes son lo que el creador viene a resolver: tienen que
+    // estar frescas al abrir la pantalla, no servidas del caché de hace un
+    // minuto.
+    staleTime: 0,
+    refetchOnMount: 'always',
     queryKey: ['plan_requests', id],
     queryFn: async () => {
       if (!id) return [];

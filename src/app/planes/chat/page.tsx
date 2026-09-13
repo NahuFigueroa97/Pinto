@@ -91,7 +91,13 @@ function ChatInner() {
     queryKey: ['chat_reads', planId],
     queryFn: async () => {
       const { data, error: err } = await supabase.rpc('chat_read_state', { p_plan_id: planId });
-      if (err) throw err;
+      if (err) {
+        // Lo más probable: falta correr supabase/migrations/016_chat_vistos.sql.
+        // El chat tiene que seguir andando sin el visto, pero el motivo no
+        // puede quedar invisible.
+        console.error('[chat] no se pudo leer el visto:', err.message);
+        return [] as ReadState[];
+      }
       return (data ?? []) as ReadState[];
     },
     enabled: !!planId,
@@ -110,9 +116,14 @@ function ChatInner() {
   // auto-scroll, así que recrearlo en cada render lo dispararía siempre.
   const all = useMemo(() => {
     const visible = filterBlocked<ChatMessage>(messages, blockedSet, m => m.user_id);
-    // Los optimistas que el servidor ya confirmó dejan de mostrarse aparte
-    const confirmedIds = new Set(visible.map(m => m.id));
-    return [...visible, ...pending.filter(p => !confirmedIds.has(p.id))];
+
+    // Se descarta por id, que ahora sí sirve: al confirmarse el envío, el
+    // optimista se saca de `pending` y en su lugar entra la fila real.
+    // Antes se comparaba el id optimista ("pending-1789...") contra los ids
+    // del servidor, que por construcción nunca coinciden: el mensaje falso
+    // no se quitaba nunca y al llegar el real se veían los dos.
+    const seen = new Set(visible.map(m => m.id));
+    return [...visible, ...pending.filter(p => !seen.has(p.id))];
   }, [messages, blockedSet, pending]);
 
   /**
@@ -175,19 +186,30 @@ function ChatInner() {
     setError('');
     setSending(true);
 
-    const { error: insertErr } = await supabase
+    // Se pide la fila insertada para poder reemplazar el optimista por ella
+    // en la misma operación: sin esto el mensaje desaparecería hasta el
+    // siguiente refetch.
+    const { data: inserted, error: insertErr } = await supabase
       .from('plan_chat_messages')
-      .insert({ plan_id: planId, user_id: user.id, content: text });
+      .insert({ plan_id: planId, user_id: user.id, content: text })
+      .select('*, user:profiles!user_id(full_name, avatar_url)')
+      .single();
 
     setSending(false);
 
-    if (insertErr) {
+    if (insertErr || !inserted) {
       setPending(p => p.filter(x => x.id !== optimistic.id));
       setMsg(text);            // no se pierde lo escrito
       setError('No se pudo enviar. Probá de nuevo.');
       return;
     }
-    queryClient.invalidateQueries({ queryKey: ['chat_messages', planId] });
+
+    queryClient.setQueryData<ChatMessage[]>(['chat_messages', planId], old => {
+      const list = old ?? [];
+      if (list.some(m => m.id === (inserted as ChatMessage).id)) return list;
+      return [...list, inserted as ChatMessage];
+    });
+    setPending(p => p.filter(x => x.id !== optimistic.id));
   };
 
   const insertEmoji = (emoji: string) => {
