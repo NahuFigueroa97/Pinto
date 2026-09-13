@@ -1,0 +1,73 @@
+# Publica la web en GitHub Pages.
+#
+# Para qué sirve: cuando alguien comparte un plan por WhatsApp, el que lo
+# recibe y no tiene la app instalada tiene que caer en ALGÚN lado. Sin esto,
+# el link no lleva a ninguna parte.
+#
+# Es la misma app: `output: 'export'` genera un sitio estático completo, así
+# que la web y la APK salen del mismo código.
+
+name: Publicar web
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:        # botón para publicar a mano desde la pestaña Actions
+
+# Permisos mínimos para que la acción de Pages pueda publicar.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Si se pushea dos veces seguidas, que gane la última en vez de pisarse.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22          # el package.json exige >=22 (Capacitor CLI)
+          cache: npm
+
+      - run: npm ci
+
+      - name: Compilar el sitio
+        env:
+          # La anon key es pública por diseño: viaja adentro del APK igual.
+          # Va como secret sólo por prolijidad, no porque sea sensible.
+          # NUNCA poner acá la service_role / sb_secret_: esa saltea RLS.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          # Un repo de proyecto se sirve bajo /<repo>/.
+          NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+          NEXT_PUBLIC_SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: npm run build
+
+      - name: Preparar la salida
+        run: |
+          # Sin .nojekyll, GitHub pasa el sitio por Jekyll, que ignora todo lo
+          # que empieza con guion bajo. Next pone TODO el JS y el CSS en
+          # _next/, así que la página cargaría en blanco.
+          touch out/.nojekyll
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

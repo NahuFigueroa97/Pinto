@@ -146,6 +146,8 @@ function UserProfile() {
             <ChevronRight size={16} className="ml-auto text-faint" />
           </Link>
         )}
+
+        <SelectorTema />
         <button onClick={async () => { await signOut(); router.push('/'); }}
           className="flex items-center gap-3 p-4 bg-surface rounded-xl border border-line shadow-sm w-full text-left">
           <span className="text-xl">👋</span>

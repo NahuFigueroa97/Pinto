@@ -18,6 +18,28 @@ import { requestNavigation } from './navigation';
  */
 
 /**
+ * Prefijo con el que se publica la web.
+ *
+ * GitHub Pages sirve un repo de proyecto bajo /<repo>/, así que el link
+ * compartido es .../Pinto/planes/detalle?id=x mientras que adentro de la app
+ * esa pantalla es /planes/detalle. Sin sacar el prefijo, safeRoute rechaza
+ * la ruta y el link no abre nada.
+ *
+ * Sale de NEXT_PUBLIC_SITE_URL porque es la única que la APK también conoce:
+ * el build de la app NO puede definir NEXT_PUBLIC_BASE_PATH (Capacitor sirve
+ * desde la raíz), pero sí sabe dónde vive la web.
+ */
+function prefijoWeb(): string {
+  const site = process.env.NEXT_PUBLIC_SITE_URL;
+  if (!site) return '';
+  try {
+    return new URL(site).pathname.replace(/\/+$/, '');
+  } catch {
+    return '';
+  }
+}
+
+/**
  * Saca la ruta interna de una URL entrante.
  *
  * Con https la parte útil es pathname + query. Con un esquema propio
@@ -33,7 +55,13 @@ export function rutaDesdeUrl(raw: string): string | null {
   }
 
   const esWeb = url.protocol === 'https:' || url.protocol === 'http:';
-  const camino = esWeb ? url.pathname : `/${url.host}${url.pathname}`;
+  let camino = esWeb ? url.pathname : `/${url.host}${url.pathname}`;
+
+  const prefijo = prefijoWeb();
+  if (prefijo && esWeb && (camino === prefijo || camino.startsWith(`${prefijo}/`))) {
+    camino = camino.slice(prefijo.length) || '/';
+  }
+
   const limpio = camino.replace(/\/+$/, '') || '/';
 
   // safeRoute es la misma lista blanca que usa el push: una URL que llega de

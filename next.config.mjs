@@ -71,9 +71,23 @@ function checkEnv(phase) {
   }
 }
 
+/**
+ * Prefijo de ruta, sólo para la web.
+ *
+ * GitHub Pages sirve un repo de proyecto bajo /<repo>/, así que la web
+ * necesita que todas las rutas y los assets lleven ese prefijo. La APK NO:
+ * Capacitor sirve desde la raíz de su propio servidor local, y con prefijo
+ * no encontraría nada.
+ *
+ * Por eso sale de una variable y no está fija: el workflow de Pages la
+ * define, y `npm run android:dev` no.
+ */
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'export',
+  ...(basePath ? { basePath, assetPrefix: basePath } : {}),
   env: {
     NEXT_PUBLIC_BUILD_ID: buildId(),
     NEXT_PUBLIC_BUILD_DATE: new Date().toISOString().slice(0, 16).replace('T', ' '),
