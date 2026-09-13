@@ -54,7 +54,8 @@ export default function PrivacyPage() {
 
         <Section title="5. Retención de datos">
           <ul className="list-disc pl-5 space-y-1 text-sm text-gray-600">
-            <li>Mensajes de chat: se eliminan después de 90 días.</li>
+            <li>Chat de un plan: se elimina 30 días después de la fecha del plan.</li>
+            <li>Fotos de una juntada: se eliminan 180 días después, avisándote 7 días antes.</li>
             <li>Feed de actividad: se elimina después de 60 días.</li>
             <li>Notificaciones: se eliminan después de 30 días.</li>
             <li>Consultas a negocios: se eliminan a las 24 h de leídas, o a los 7 días si no se leyeron.</li>
