@@ -36,11 +36,28 @@ interface Step {
   ok: boolean;
 }
 
-/** Ejecuta un paso midiendo el tiempo, sin que un fallo corte la corrida. */
+/**
+ * Plazo por paso.
+ *
+ * Sin esto, la herramienta para diagnosticar cuelgues se colgaba ella
+ * misma: el primer paso que no volvía cortaba la corrida y los pasos
+ * siguientes —los que dicen dónde está el problema— no se ejecutaban nunca.
+ * Un paso trabado ahora se reporta como trabado y la corrida sigue.
+ */
+const STEP_TIMEOUT_MS = 12_000;
+
 async function timed(name: string, fn: () => Promise<string>): Promise<Step> {
   const t0 = performance.now();
+  let timer: ReturnType<typeof setTimeout>;
+  const plazo = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error(`SE COLGÓ: no respondió en ${STEP_TIMEOUT_MS / 1000} s`)),
+      STEP_TIMEOUT_MS,
+    );
+  });
+
   try {
-    const detail = await fn();
+    const detail = await Promise.race([fn(), plazo]);
     return { name, detail, ms: Math.round(performance.now() - t0), ok: true };
   } catch (err) {
     return {
@@ -49,6 +66,8 @@ async function timed(name: string, fn: () => Promise<string>): Promise<Step> {
       ms: Math.round(performance.now() - t0),
       ok: false,
     };
+  } finally {
+    clearTimeout(timer!);
   }
 }
 
@@ -84,6 +103,20 @@ export default function DiagnosticoPage() {
         cache: 'no-store',
       });
       return `HTTP ${r.status}`;
+    }));
+
+    // 3a. La sesión leída del storage, SIN pasar por supabase-js. Si acá
+    //     hay token y vencido, el paso siguiente va a hacer un refresh por
+    //     red adentro del lock: ese es el camino lento y el que se trababa.
+    push(await timed('Sesión en storage (sin lock)', async () => {
+      const ref = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').match(/\/\/([^.]+)\./)?.[1];
+      const raw = ref ? localStorage.getItem(`sb-${ref}-auth-token`) : null;
+      if (!raw) return 'no hay sesión guardada';
+      const exp = (JSON.parse(raw) as { expires_at?: number })?.expires_at;
+      if (!exp) return 'guardada, sin fecha de vencimiento';
+      const cuando = new Date(exp * 1000);
+      const vencida = cuando.getTime() < Date.now();
+      return `${vencida ? 'VENCIDA' : 'vigente'} · ${cuando.toLocaleString('es-AR')}`;
     }));
 
     // 3. La sesión. Pasa por el lock de auth de supabase-js, que fue el

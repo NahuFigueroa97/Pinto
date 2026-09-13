@@ -63,9 +63,37 @@ function isNativeApp(): boolean {
  *
  * En un WebView de Capacitor hay un unico contexto de ejecución, así que el
  * lock entre pestañas no protege de nada. Se reemplaza por una cola en
- * memoria que ademas nunca espera indefinidamente: si el anterior no
- * termina en 5 s, se sigue igual.
+ * memoria.
+ *
+ * ------------------------------------------------------------------
+ * OJO con "soltar la cola si el anterior tarda".
+ *
+ * La primera versión de esto esperaba al anterior como mucho 5 s y después
+ * seguía igual, con la idea de que así nunca se podía esperar para siempre.
+ * Era peor el remedio.
+ *
+ * supabase-js detecta la reentrada —una operación que, desde adentro de la
+ * sección crítica, vuelve a pedir el lock— con un booleano de instancia,
+ * `lockAcquired`. Mientras es true, la llamada reentrante se encola en
+ * `pendingInLock` y se resuelve sola. Ese mecanismo SOLO funciona si la
+ * exclusión es de verdad: con dos secciones críticas corriendo a la vez, el
+ * `finally` de la segunda pone `lockAcquired = false` mientras la primera
+ * sigue adentro. A partir de ahí, una llamada reentrante de la primera ya
+ * no se reconoce como tal, toma el camino largo y se encola detrás de la
+ * sección que la contiene: se espera a sí misma.
+ *
+ * Ese es el cuelgue de `getSession()` que dejaba el diagnóstico clavado en
+ * el paso 3 y, con él, toda consulta a PostgREST —que necesita el token—
+ * en cualquier pantalla.
+ *
+ * Así que la espera es exclusión real, sin atajos. El plazo va donde
+ * corresponde: en la E/S (fetchWithTimeout), que es lo único que puede
+ * tardar de verdad. Queda una red de seguridad del lado del que tiene el
+ * lock, con un margen holgado, para que un bug imprevisto degrade la app en
+ * vez de congelarla.
  */
+const LOCK_SAFETY_MS = 30_000;
+
 function createSerialLock() {
   let tail: Promise<unknown> = Promise.resolve();
 
@@ -78,14 +106,17 @@ function createSerialLock() {
     let release!: () => void;
     tail = new Promise<void>((resolve) => { release = resolve; });
 
-    await Promise.race([
-      previous.catch(() => { /* que un fallo previo no bloquee la cola */ }),
-      new Promise((resolve) => setTimeout(resolve, 5_000)),
-    ]);
+    // Sin carrera contra un temporizador: quien espera, espera.
+    await previous.catch(() => { /* que un fallo previo no bloquee la cola */ });
 
+    // La red de seguridad va acá, en el que tiene el lock, no en el que
+    // espera. Con el plazo de fetch en 20 s ninguna sección crítica legítima
+    // llega a los 30, así que en la práctica no se dispara nunca.
+    const guard = setTimeout(release, LOCK_SAFETY_MS);
     try {
       return await fn();
     } finally {
+      clearTimeout(guard);
       release();
     }
   };

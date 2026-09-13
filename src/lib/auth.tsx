@@ -81,26 +81,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // todos esos eventos re-suscribía los listeners de Capacitor una y otra vez.
     const PUSH_EVENTS = new Set(['INITIAL_SESSION', 'SIGNED_IN']);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    /**
+     * El callback es SÍNCRONO a propósito.
+     *
+     * supabase-js espera (`await`) a todos los suscriptores de
+     * onAuthStateChange, y lo hace desde adentro del lock de auth. Si acá se
+     * hacía `await fetchProfile(...)`, el lock quedaba tomado durante toda
+     * una ida y vuelta a la base — o sea que cada consulta de cualquier
+     * pantalla, que necesita el token y por lo tanto el lock, esperaba a que
+     * terminara. Y peor: esa carga del perfil vuelve a pedir el lock desde
+     * adentro del lock.
+     *
+     * Devolviendo sincrónicamente, supabase-js no espera nada y suelta el
+     * lock enseguida. El perfil se carga afuera y apaga el `loading` cuando
+     * termina, así que lo que ve la UI no cambia.
+     */
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       const u = session?.user ?? null;
       setUser(u);
-      // try/finally, no por prolijidad: si algo de acá adentro tiraba, el
-      // callback quedaba rechazado y `setLoading(false)` no se ejecutaba
-      // NUNCA. La app entera se quedaba en "cargando" —toda pantalla que
-      // mira auth.loading, o sea casi todas— hasta reiniciarla. Bastaba con
-      // que la carga del perfil fallara por red al abrir la app.
-      try {
-        if (u) {
+
+      if (!u) {
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+
+      void (async () => {
+        try {
           await fetchProfile(u.id);
           if (PUSH_EVENTS.has(event)) void initPushNotifications(u.id);
-        } else {
-          setProfile(null);
+        } catch (err) {
+          // Si esto quedaba sin atrapar, `setLoading(false)` no corría nunca
+          // y la app entera se quedaba en "cargando" hasta reiniciarla.
+          console.error('[auth] fallo al cargar el perfil:', err);
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        console.error('[auth] fallo al inicializar la sesión:', err);
-      } finally {
-        setLoading(false);
-      }
+      })();
     });
 
     // supabase-js ya emite INITIAL_SESSION en el listener de arriba, así que
