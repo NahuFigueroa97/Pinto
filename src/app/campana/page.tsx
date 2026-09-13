@@ -297,7 +297,7 @@ function CampaignPlans({ campaignId }: { campaignId: string }) {
     queryFn: async () => {
       try {
         const { data, error } = await supabase.from('social_plans')
-          .select('*, creator:profiles(full_name), members:social_plan_members(id)')
+          .select('*, creator:profiles!creator_id(full_name), members:social_plan_members(id)')
           .eq('campaign_id', campaignId).eq('status', 'open').eq('visibility', 'public')
           .order('plan_date');
         if (error) return [];

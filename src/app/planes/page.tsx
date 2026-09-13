@@ -36,7 +36,7 @@ export default function PlanesFeedPage() {
     queryFn: async () => {
       let query = supabase
         .from('social_plans')
-        .select(`*, creator:profiles(id, full_name, avatar_url, reputation_score, zone:zones(name)),
+        .select(`*, creator:profiles!creator_id(id, full_name, avatar_url, reputation_score, zone:zones(name)),
                     campaign:campaigns(id, title, business:businesses(name)),
                     members:social_plan_members(id)`)
         .eq('status', 'open')

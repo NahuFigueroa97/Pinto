@@ -18,7 +18,7 @@ export default function PintoRandomPage() {
     queryKey: ['random_plans'],
     queryFn: async () => {
       const data = await sb(supabase.from('social_plans')
-        .select(`*, creator:profiles(full_name, avatar_url, reputation_score),
+        .select(`*, creator:profiles!creator_id(full_name, avatar_url, reputation_score),
                     members:social_plan_members(id),
                     category:plan_categories(name, emoji)`)
         .eq('status', 'open').eq('visibility', 'public')

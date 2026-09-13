@@ -28,7 +28,7 @@ function PlanDetailInner() {
       if (!id) return null;
       const data = await sb(supabase
         .from('social_plans')
-        .select(`*, creator:profiles(id, full_name, avatar_url, reputation_score, bio, birth_year, show_age,
+        .select(`*, creator:profiles!creator_id(id, full_name, avatar_url, reputation_score, bio, birth_year, show_age,
                     plans_created_count, plans_joined_count, interests_text, zone:zones(name)),
                   campaign:campaigns(id, title, short_description, business:businesses(name, address)),
                   category:plan_categories(name, emoji)`)

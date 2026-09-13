@@ -52,7 +52,7 @@ export default function CercaPage() {
     queryFn: async () => {
       if (!location) return [];
       const data = await sb(supabase.from('social_plans')
-        .select('*, creator:profiles(full_name), members:social_plan_members(id)')
+        .select('*, creator:profiles!creator_id(full_name), members:social_plan_members(id)')
         .eq('status', 'open').eq('visibility', 'public')
         .gte('plan_date', today())
         .not('latitude', 'is', null).limit(50));

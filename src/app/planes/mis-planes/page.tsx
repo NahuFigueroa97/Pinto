@@ -31,7 +31,7 @@ export default function MisPlanesPage() {
       const memberRows = await sb(supabase.from('social_plan_members').select('plan_id').eq('user_id', user.id).neq('role', 'creator'));
       if (!memberRows?.length) return [];
       const planIds = memberRows.map((m: any) => m.plan_id);
-      const data = await sb(supabase.from('social_plans').select(`*, creator:profiles(full_name),
+      const data = await sb(supabase.from('social_plans').select(`*, creator:profiles!creator_id(full_name),
         members:social_plan_members(id), campaign:campaigns(title)`)
         .in('id', planIds).order('plan_date', { ascending: false }));
       return data ?? [];

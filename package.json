@@ -17,7 +17,9 @@
     "android:dev": "next build && npx cap sync android && cd android && ./gradlew installDebug",
     "android:release": "next build && npx cap sync android && cd android && ./gradlew bundleRelease",
     "android:clean": "cd android && ./gradlew clean",
-    "android:logs": "adb logcat -s Capacitor:V Capacitor/Console:V chromium:V FirebaseMessaging:V"
+    "android:logs": "adb logcat -s Capacitor:V Capacitor/Console:V chromium:V FirebaseMessaging:V",
+    "check:embeds": "node scripts/check-embeds.mjs",
+    "verify": "npm run typecheck && npm run lint && npm run check:embeds"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.1",

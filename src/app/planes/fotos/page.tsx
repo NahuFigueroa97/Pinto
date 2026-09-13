@@ -43,7 +43,7 @@ function FotosInner() {
     queryKey: ['plan_photos', planId],
     queryFn: async () => {
       const data = await sb(supabase.from('plan_photos')
-        .select('*, user:profiles(full_name)')
+        .select('*, user:profiles!user_id(full_name)')
         .eq('plan_id', planId)
         .order('created_at', { ascending: false }));
       return data ?? [];
