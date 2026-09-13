@@ -63,10 +63,21 @@ function checkEnv(phase) {
 
   // No corta el build: la app funciona, solo queda rota la recuperación
   // de contraseña (ver docs/AUDITORIA_2026-09.md, hallazgo #26).
-  if (!process.env.NEXT_PUBLIC_SITE_URL) {
+  const site = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (!site) {
     console.warn(
       '\n⚠  NEXT_PUBLIC_SITE_URL no está definida: la recuperación de contraseña ' +
-      'va a mostrar un error en vez de mandar el mail.\n',
+      'va a mostrar un error en vez de mandar el mail, y los planes se van a ' +
+      'compartir sin link.\n',
+    );
+  } else if (/[<>{}\s]/.test(site) || /tu-dominio|donde-publiques|ejemplo\.com/i.test(site)) {
+    // Pasó de verdad: se copió el ejemplo del README tal cual y el link que
+    // se compartía por WhatsApp decía "donde-publiques-la-web".
+    console.warn(
+      `\n⚠  NEXT_PUBLIC_SITE_URL parece el texto de ejemplo y no una URL real:\n` +
+      `     ${site}\n` +
+      `   Se va a ignorar (los planes se comparten sin link). Poné la URL donde\n` +
+      `   publicaste la web, p. ej. https://tuusuario.github.io/Pinto\n`,
     );
   }
 }

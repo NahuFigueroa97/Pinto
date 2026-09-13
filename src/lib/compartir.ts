@@ -15,9 +15,40 @@ import { toAppUrl } from './navigation';
  * embudo de instalación que se quiere.
  */
 
-/** Link público a un plan. Sin SITE_URL configurado, no hay nada que compartir. */
+/**
+ * ¿Es una URL de verdad o quedó el texto de ejemplo?
+ *
+ * El README trae `NEXT_PUBLIC_SITE_URL=https://<donde publiques la web>` y es
+ * facilísimo copiarlo tal cual y olvidarse. El resultado era un link
+ * compartido que decía "donde-publiques-la-web" — peor que no mandar link,
+ * porque el que lo recibe piensa que la app está rota.
+ *
+ * Se rechaza cualquier cosa que no parsee como URL, que no sea http(s), o que
+ * conserve rastros de un marcador de posición.
+ */
+function urlPublicaValida(raw: string | undefined): string | null {
+  if (!raw) return null;
+  const limpio = raw.trim().replace(/\/+$/, '');
+  if (!limpio) return null;
+
+  // Los marcadores típicos: <...>, TU_DOMINIO, donde-publiques-la-web, …
+  if (/[<>{}\s]/.test(limpio)) return null;
+  if (/tu-dominio|tu_dominio|donde-publiques|ejemplo\.com|example\.com|cambiar|reemplaz/i.test(limpio)) return null;
+
+  try {
+    const u = new URL(limpio);
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return null;
+    // Un host sin punto no es público (localhost, "midominio")
+    if (!u.hostname.includes('.')) return null;
+    return limpio;
+  } catch {
+    return null;
+  }
+}
+
+/** Link público a un plan. Sin un SITE_URL creíble, no hay nada que compartir. */
 export function linkDePlan(planId: string): string | null {
-  const base = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, '');
+  const base = urlPublicaValida(process.env.NEXT_PUBLIC_SITE_URL);
   if (!base) return null;
   return `${base}${toAppUrl(`/planes/detalle?id=${planId}`)}`;
 }
