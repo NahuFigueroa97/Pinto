@@ -36,9 +36,14 @@ interface Plan {
  * navigator.share es preferible porque deja elegir Instagram, Telegram o
  * copiar: forzar WhatsApp sería decidir por el usuario.
  */
-export async function compartirPlan(plan: Plan): Promise<'ok' | 'cancelado' | 'sin-link'> {
+export async function compartirPlan(plan: Plan): Promise<'ok' | 'cancelado'> {
+  // Sin NEXT_PUBLIC_SITE_URL todavía no hay dominio donde caiga el link. No
+  // es motivo para no compartir: el plan en sí —qué, cuándo, dónde— ya sirve
+  // para invitar por WhatsApp. Se manda sin link y listo.
+  //
+  // Devolver un error acá era peor que inútil: el usuario tocaba "Invitar" y
+  // recibía un mensaje sobre configuración que no le dice nada.
   const link = linkDePlan(plan.id);
-  if (!link) return 'sin-link';
 
   const cuando = new Date(`${plan.plan_date}T00:00:00`).toLocaleDateString('es-AR', {
     weekday: 'long', day: 'numeric', month: 'long',
@@ -52,7 +57,7 @@ export async function compartirPlan(plan: Plan): Promise<'ok' | 'cancelado' | 's
 
   if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
     try {
-      await navigator.share({ title: plan.title, text: texto, url: link });
+      await navigator.share({ title: plan.title, text: texto, ...(link ? { url: link } : {}) });
       return 'ok';
     } catch (err) {
       // AbortError = el usuario cerró la hoja. No es un fallo y no hay que
@@ -61,6 +66,7 @@ export async function compartirPlan(plan: Plan): Promise<'ok' | 'cancelado' | 's
     }
   }
 
-  window.open(`https://wa.me/?text=${encodeURIComponent(`${texto}\n${link}`)}`, '_blank');
+  const cuerpo = link ? `${texto}\n${link}` : texto;
+  window.open(`https://wa.me/?text=${encodeURIComponent(cuerpo)}`, '_blank');
   return 'ok';
 }

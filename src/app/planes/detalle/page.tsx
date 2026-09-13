@@ -96,7 +96,6 @@ function PlanDetailInner() {
   // Quien no es del plan recibe la lista vacía por RLS, así que el conteo no
   // puede salir de ahí: sale de social_plans.members_count, que el trigger
   // mantiene y no filtra quiénes son.
-  const [shareError, setShareError] = useState('');
   const soyDelPlan = Boolean(isMember || isCreator);
   const memberCount = (plan as { members_count?: number } | undefined)?.members_count ?? members?.length ?? 0;
   const isPast = plan?.plan_date ? new Date(plan.plan_date + 'T23:59:59') < new Date() : false;
@@ -245,17 +244,12 @@ function PlanDetailInner() {
         */}
         {plan.visibility === 'public' && memberCount < plan.max_members && (
           <button
-            onClick={async () => {
-              void tap();
-              const r = await compartirPlan(plan as never);
-              if (r === 'sin-link') setShareError('Falta configurar el dominio para compartir.');
-            }}
+            onClick={() => { void tap(); void compartirPlan(plan as never); }}
             className="w-full flex items-center justify-center gap-2 min-h-[48px] py-3 bg-brand-500 text-white font-bold rounded-xl text-sm active:scale-95 transition shadow-md shadow-brand-500/20"
           >
             <Share2 size={16} /> Invitar gente a este plan
           </button>
         )}
-        {shareError && <p className="text-xs text-amber-600 -mt-2">{shareError}</p>}
 
         {/* Creator */}
         <div>
