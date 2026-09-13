@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
+import { sb } from '@/lib/sb';
 
 const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
@@ -21,11 +22,11 @@ function NegocioDetalleInner() {
     queryKey: ['business', slug],
     queryFn: async () => {
       if (!slug) return null;
-      const { data } = await supabase
+      const data = await sb(supabase
         .from('businesses')
         .select(`*, category:business_categories(name, icon), zone:zones(name), city:cities(name)`)
         .eq('slug', slug)
-        .single();
+        .single());
       if (data && user) {
         supabase.from('analytics_events').insert({ event_type: 'business_profile_view', user_id: user.id, business_id: data.id });
       }
@@ -38,8 +39,8 @@ function NegocioDetalleInner() {
     queryKey: ['business_campaigns', business?.id],
     queryFn: async () => {
       if (!business) return [];
-      const { data } = await supabase.from('campaigns').select('*').eq('business_id', business.id).eq('status', 'active')
-        .gte('ends_at', new Date().toISOString()).order('is_featured', { ascending: false }).order('starts_at');
+      const data = await sb(supabase.from('campaigns').select('*').eq('business_id', business.id).eq('status', 'active')
+        .gte('ends_at', new Date().toISOString()).order('is_featured', { ascending: false }).order('starts_at'));
       return data ?? [];
     },
     enabled: !!business,
@@ -49,7 +50,7 @@ function NegocioDetalleInner() {
     queryKey: ['business_hours', business?.id],
     queryFn: async () => {
       if (!business) return [];
-      const { data } = await supabase.from('business_hours').select('*').eq('business_id', business.id).order('weekday');
+      const data = await sb(supabase.from('business_hours').select('*').eq('business_id', business.id).order('weekday'));
       return data ?? [];
     },
     enabled: !!business,
@@ -59,7 +60,7 @@ function NegocioDetalleInner() {
     queryKey: ['favorite', 'business', business?.id],
     queryFn: async () => {
       if (!user || !business) return false;
-      const { data } = await supabase.from('favorites').select('id').eq('user_id', user.id).eq('business_id', business.id).maybeSingle();
+      const data = await sb(supabase.from('favorites').select('id').eq('user_id', user.id).eq('business_id', business.id).maybeSingle());
       return !!data;
     },
     enabled: !!user && !!business,

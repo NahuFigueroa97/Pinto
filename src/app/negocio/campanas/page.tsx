@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { sb } from '@/lib/sb';
 
 export default function MisCampanasPage() {
   const { user } = useAuth();
@@ -16,21 +17,21 @@ export default function MisCampanasPage() {
     queryKey: ['business_me', user?.id],
     queryFn: async () => {
       if (!user) return null;
-      const { data } = await supabase.from('businesses').select('id').eq('owner_user_id', user.id).maybeSingle();
+      const data = await sb(supabase.from('businesses').select('id').eq('owner_user_id', user.id).maybeSingle());
       return data;
     },
     enabled: !!user,
   });
 
-  const { data: campaigns, isLoading } = useQuery({
+  const { data: campaigns, isLoading, error: queryError, refetch, isFetching } = useQuery({
     queryKey: ['my_campaigns', business?.id],
     queryFn: async () => {
       if (!business) return [];
-      const { data } = await supabase
+      const data = await sb(supabase
         .from('campaigns')
         .select('*')
         .eq('business_id', business.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }));
       return data ?? [];
     },
     enabled: !!business,
@@ -72,6 +73,18 @@ export default function MisCampanasPage() {
       <div className="px-4 space-y-3">
         {isLoading ? (
           <div className="flex justify-center py-16 text-accent-500"><div className="spinner" /></div>
+        ) : queryError ? (
+          <div className="text-center py-16 px-6">
+            <p className="text-4xl mb-3">😕</p>
+            <p className="text-gray-700 font-medium">No se pudo cargar</p>
+            <p className="text-xs text-gray-400 mt-1 break-words">
+              {queryError instanceof Error ? queryError.message : 'Algo salió mal'}
+            </p>
+            <button onClick={() => refetch()} disabled={isFetching}
+              className="mt-4 px-5 py-2.5 bg-brand-500 text-white rounded-xl font-medium text-sm disabled:opacity-50 active:scale-95 transition">
+              {isFetching ? 'Reintentando...' : 'Reintentar'}
+            </button>
+          </div>
         ) : !campaigns?.length ? (
           <div className="text-center py-16 text-gray-400 bg-white rounded-3xl border border-dashed border-gray-200">
             <p className="text-4xl mb-3">📢</p>

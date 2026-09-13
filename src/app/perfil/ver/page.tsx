@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth';
 import { useBlockedIds, useBlockUser } from '@/lib/blocks';
 import type { Profile, UserInterest } from '@/types/database';
+import { sb } from '@/lib/sb';
 
 function getAge(birthYear: number | null): string | null {
   if (!birthYear) return null;
@@ -42,9 +43,9 @@ function VerPerfilInner() {
       if (!id) return null;
       // Antes era select('*'): devolvía al cliente toda la fila del perfil.
       // Se piden solo los campos que esta pantalla realmente muestra.
-      const { data } = await supabase.from('profiles')
+      const data = await sb(supabase.from('profiles')
         .select('id, full_name, avatar_url, bio, birth_year, show_age, interests_text, reputation_score, plans_created_count, plans_joined_count, is_verified, zone:zones(name)')
-        .eq('id', id).single();
+        .eq('id', id).single());
       return data as Profile | null;
     },
     enabled: !!id,
@@ -54,7 +55,7 @@ function VerPerfilInner() {
     queryKey: ['user_interests', id],
     queryFn: async () => {
       if (!id) return [];
-      const { data } = await supabase.from('user_interest_links').select('interest:user_interests(*)').eq('user_id', id);
+      const data = await sb(supabase.from('user_interest_links').select('interest:user_interests(*)').eq('user_id', id));
       return (data ?? []).map((r: any) => r.interest) as UserInterest[];
     },
     enabled: !!id,
@@ -64,7 +65,7 @@ function VerPerfilInner() {
     queryKey: ['user_photos', id],
     queryFn: async () => {
       if (!id) return [];
-      const { data } = await supabase.from('user_photos').select('*').eq('user_id', id).order('sort_order');
+      const data = await sb(supabase.from('user_photos').select('*').eq('user_id', id).order('sort_order'));
       return data ?? [];
     },
     enabled: !!id,
@@ -74,8 +75,8 @@ function VerPerfilInner() {
     queryKey: ['user_recent_plans', id],
     queryFn: async () => {
       if (!id) return [];
-      const { data } = await supabase.from('social_plan_members').select('plan:social_plans(id, title, plan_date, status)')
-        .eq('user_id', id).order('joined_at', { ascending: false }).limit(5);
+      const data = await sb(supabase.from('social_plan_members').select('plan:social_plans(id, title, plan_date, status)')
+        .eq('user_id', id).order('joined_at', { ascending: false }).limit(5));
       return (data ?? []).map((r: any) => r.plan).filter(Boolean);
     },
     enabled: !!id,

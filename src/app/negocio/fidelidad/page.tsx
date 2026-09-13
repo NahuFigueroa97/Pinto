@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { sb } from '@/lib/sb';
 
 export default function FidelidadNegocioPage() {
   const router = useRouter();
@@ -19,7 +20,7 @@ export default function FidelidadNegocioPage() {
     queryFn: async () => {
       // .single() tira error cuando el usuario todavía no creó su negocio;
       // .maybeSingle() devuelve null, que es lo que espera el resto.
-      const { data } = await supabase.from('businesses').select('id,name').eq('owner_user_id', user!.id).maybeSingle();
+      const data = await sb(supabase.from('businesses').select('id,name').eq('owner_user_id', user!.id).maybeSingle());
       return data;
     },
     enabled: !!user,

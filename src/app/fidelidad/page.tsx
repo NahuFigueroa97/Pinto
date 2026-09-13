@@ -5,18 +5,19 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
+import { sb } from '@/lib/sb';
 
 export default function MiFidelidadPage() {
   const router = useRouter();
   const { user } = useAuth();
 
-  const { data: stamps, isLoading } = useQuery({
+  const { data: stamps, isLoading, error: queryError, refetch, isFetching } = useQuery({
     queryKey: ['my_loyalty_stamps'],
     queryFn: async () => {
-      const { data } = await supabase.from('loyalty_stamps')
+      const data = await sb(supabase.from('loyalty_stamps')
         .select('*, card:loyalty_cards(*, business:businesses(name, logo_url))')
         .eq('user_id', user!.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }));
       return data ?? [];
     },
     enabled: !!user,
@@ -35,6 +36,18 @@ export default function MiFidelidadPage() {
       <div className="px-4 space-y-3">
         {isLoading ? (
           <div className="flex justify-center py-16"><div className="spinner" /></div>
+        ) : queryError ? (
+          <div className="text-center py-16 px-6">
+            <p className="text-4xl mb-3">😕</p>
+            <p className="text-gray-700 font-medium">No se pudo cargar</p>
+            <p className="text-xs text-gray-400 mt-1 break-words">
+              {queryError instanceof Error ? queryError.message : 'Algo salió mal'}
+            </p>
+            <button onClick={() => refetch()} disabled={isFetching}
+              className="mt-4 px-5 py-2.5 bg-brand-500 text-white rounded-xl font-medium text-sm disabled:opacity-50 active:scale-95 transition">
+              {isFetching ? 'Reintentando...' : 'Reintentar'}
+            </button>
+          </div>
         ) : !stamps?.length ? (
           <div className="text-center py-16 text-gray-400">
             <Gift size={40} className="mx-auto mb-3 text-gray-200" />

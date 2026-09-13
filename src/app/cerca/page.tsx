@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useUserLocation, sortByDistance } from '@/lib/geolocation';
 import { DistanceBadge } from '@/components/shared/DistanceBadge';
 import { today } from '@/lib/dates';
+import { sb } from '@/lib/sb';
 
 export default function CercaPage() {
   const { location, loading: geoLoading, error: geoError, requestLocation } = useUserLocation();
@@ -22,9 +23,9 @@ export default function CercaPage() {
     queryKey: ['nearby_campaigns', location?.lat, location?.lng, maxKm],
     queryFn: async () => {
       if (!location) return [];
-      const { data } = await supabase.from('campaigns')
+      const data = await sb(supabase.from('campaigns')
         .select('*, business:businesses(id, name, slug, address, latitude, longitude, category:business_categories(icon))')
-        .eq('status', 'active').gte('ends_at', new Date().toISOString()).limit(50);
+        .eq('status', 'active').gte('ends_at', new Date().toISOString()).limit(50));
       const withBizCoords = (data ?? []).filter((c: any) => c.business?.latitude && c.business?.longitude);
       const sorted = sortByDistance(
         withBizCoords.map((c: any) => ({ ...c, latitude: c.business.latitude, longitude: c.business.longitude })),
@@ -39,8 +40,8 @@ export default function CercaPage() {
     queryKey: ['nearby_businesses', location?.lat, location?.lng, maxKm],
     queryFn: async () => {
       if (!location) return [];
-      const { data } = await supabase.from('businesses').select('*, category:business_categories(name, icon)')
-        .eq('status', 'active').not('latitude', 'is', null).limit(50);
+      const data = await sb(supabase.from('businesses').select('*, category:business_categories(name, icon)')
+        .eq('status', 'active').not('latitude', 'is', null).limit(50));
       return sortByDistance(data ?? [], location.lat, location.lng).filter(b => b.distance <= maxKm);
     },
     enabled: !!location && tab === 'businesses',
@@ -50,11 +51,11 @@ export default function CercaPage() {
     queryKey: ['nearby_plans', location?.lat, location?.lng, maxKm],
     queryFn: async () => {
       if (!location) return [];
-      const { data } = await supabase.from('social_plans')
+      const data = await sb(supabase.from('social_plans')
         .select('*, creator:profiles(full_name), members:social_plan_members(id)')
         .eq('status', 'open').eq('visibility', 'public')
         .gte('plan_date', today())
-        .not('latitude', 'is', null).limit(50);
+        .not('latitude', 'is', null).limit(50));
       return sortByDistance(data ?? [], location.lat, location.lng).filter(p => p.distance <= maxKm);
     },
     enabled: !!location && tab === 'plans',

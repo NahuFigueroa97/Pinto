@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { moderateAll } from '@/lib/moderation';
+import { sb } from '@/lib/sb';
 
 export default function EditarPerfilPage() {
   const { user, profile, refreshProfile } = useAuth();
@@ -26,7 +27,7 @@ export default function EditarPerfilPage() {
   const { data: zones } = useQuery({
     queryKey: ['zones'],
     queryFn: async () => {
-      const { data } = await supabase.from('zones').select('*').eq('is_active', true).order('name');
+      const data = await sb(supabase.from('zones').select('*').eq('is_active', true).order('name'));
       return data ?? [];
     },
   });
@@ -34,7 +35,7 @@ export default function EditarPerfilPage() {
   const { data: allInterests } = useQuery({
     queryKey: ['interests'],
     queryFn: async () => {
-      const { data } = await supabase.from('user_interests').select('*').order('sort_order');
+      const data = await sb(supabase.from('user_interests').select('*').order('sort_order'));
       return data ?? [];
     },
   });
@@ -43,7 +44,7 @@ export default function EditarPerfilPage() {
     queryKey: ['my_interests'],
     queryFn: async () => {
       if (!user) return [];
-      const { data } = await supabase.from('user_interest_links').select('interest_id').eq('user_id', user.id);
+      const data = await sb(supabase.from('user_interest_links').select('interest_id').eq('user_id', user.id));
       return (data ?? []).map((i: any) => i.interest_id);
     },
     enabled: !!user,

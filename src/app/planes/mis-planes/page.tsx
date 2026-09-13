@@ -6,6 +6,7 @@ import { Users, Calendar, ChevronRight, Plus } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
+import { sb } from '@/lib/sb';
 
 export default function MisPlanesPage() {
   const { user } = useAuth();
@@ -15,9 +16,9 @@ export default function MisPlanesPage() {
     queryKey: ['my_created_plans'],
     queryFn: async () => {
       if (!user) return [];
-      const { data } = await supabase.from('social_plans').select(`*, members:social_plan_members(id),
+      const data = await sb(supabase.from('social_plans').select(`*, members:social_plan_members(id),
         campaign:campaigns(title, business:businesses(name))`)
-        .eq('creator_id', user.id).order('plan_date', { ascending: false });
+        .eq('creator_id', user.id).order('plan_date', { ascending: false }));
       return data ?? [];
     },
     enabled: !!user && tab === 'created',
@@ -27,12 +28,12 @@ export default function MisPlanesPage() {
     queryKey: ['my_joined_plans'],
     queryFn: async () => {
       if (!user) return [];
-      const { data: memberRows } = await supabase.from('social_plan_members').select('plan_id').eq('user_id', user.id).neq('role', 'creator');
+      const memberRows = await sb(supabase.from('social_plan_members').select('plan_id').eq('user_id', user.id).neq('role', 'creator'));
       if (!memberRows?.length) return [];
       const planIds = memberRows.map((m: any) => m.plan_id);
-      const { data } = await supabase.from('social_plans').select(`*, creator:profiles(full_name),
+      const data = await sb(supabase.from('social_plans').select(`*, creator:profiles(full_name),
         members:social_plan_members(id), campaign:campaigns(title)`)
-        .in('id', planIds).order('plan_date', { ascending: false });
+        .in('id', planIds).order('plan_date', { ascending: false }));
       return data ?? [];
     },
     enabled: !!user && tab === 'joined',

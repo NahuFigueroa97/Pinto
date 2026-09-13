@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { CampaignType } from '@/types/database';
+import { sb } from '@/lib/sb';
 
 const TYPES: { value: CampaignType; label: string; desc: string }[] = [
   { value: 'promo', label: '🏷️ Promo simple', desc: 'Descuento o beneficio directo' },
@@ -31,7 +32,7 @@ export default function NuevaCampanaPage() {
     queryKey: ['business', 'me'],
     queryFn: async () => {
       if (!user) return null;
-      const { data } = await supabase.from('businesses').select('id').eq('owner_user_id', user.id).maybeSingle();
+      const data = await sb(supabase.from('businesses').select('id').eq('owner_user_id', user.id).maybeSingle());
       return data;
     },
     enabled: !!user,

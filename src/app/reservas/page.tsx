@@ -5,21 +5,22 @@ import { CalendarCheck, X, Clock, Users } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { sb } from '@/lib/sb';
 
 export default function ReservasPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: reservations, isLoading } = useQuery({
+  const { data: reservations, isLoading, error: queryError, refetch, isFetching } = useQuery({
     queryKey: ['my_reservations'],
     queryFn: async () => {
       if (!user) return [];
-      const { data } = await supabase
+      const data = await sb(supabase
         .from('reservations')
         .select(`*, campaign:campaigns(id, title, short_description, starts_at, ends_at, business:businesses(name, address))`)
         .eq('user_id', user.id)
         .order('reserved_at', { ascending: false })
-        .limit(50);
+        .limit(50));
       return data ?? [];
     },
     enabled: !!user,
@@ -62,6 +63,18 @@ export default function ReservasPage() {
       <div className="px-4 space-y-3">
         {isLoading ? (
           <div className="flex justify-center py-16"><div className="spinner" /></div>
+        ) : queryError ? (
+          <div className="text-center py-16 px-6">
+            <p className="text-4xl mb-3">😕</p>
+            <p className="text-gray-700 font-medium">No se pudo cargar</p>
+            <p className="text-xs text-gray-400 mt-1 break-words">
+              {queryError instanceof Error ? queryError.message : 'Algo salió mal'}
+            </p>
+            <button onClick={() => refetch()} disabled={isFetching}
+              className="mt-4 px-5 py-2.5 bg-brand-500 text-white rounded-xl font-medium text-sm disabled:opacity-50 active:scale-95 transition">
+              {isFetching ? 'Reintentando...' : 'Reintentar'}
+            </button>
+          </div>
         ) : !reservations?.length ? (
           <div className="text-center py-16 text-gray-400">
             <CalendarCheck size={40} className="mx-auto mb-3 text-gray-200" />

@@ -6,6 +6,7 @@ import { ArrowLeft, Star } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { sb } from '@/lib/sb';
 
 function ValorarInner() {
   const searchParams = useSearchParams();
@@ -17,9 +18,9 @@ function ValorarInner() {
   const { data: members } = useQuery({
     queryKey: ['plan_members_review', planId],
     queryFn: async () => {
-      const { data } = await supabase.from('social_plan_members')
+      const data = await sb(supabase.from('social_plan_members')
         .select('*, user:profiles(id, full_name, avatar_url, reputation_score)')
-        .eq('plan_id', planId);
+        .eq('plan_id', planId));
       return (data ?? []).filter((m: any) => m.user_id !== user?.id);
     },
     enabled: !!planId && !!user,
@@ -28,8 +29,8 @@ function ValorarInner() {
   const { data: existingReviews } = useQuery({
     queryKey: ['my_reviews', planId],
     queryFn: async () => {
-      const { data } = await supabase.from('plan_reviews')
-        .select('reviewed_user_id').eq('plan_id', planId).eq('reviewer_id', user!.id);
+      const data = await sb(supabase.from('plan_reviews')
+        .select('reviewed_user_id').eq('plan_id', planId).eq('reviewer_id', user!.id));
       return new Set((data ?? []).map((r: any) => r.reviewed_user_id));
     },
     enabled: !!planId && !!user,

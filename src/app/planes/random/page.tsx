@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { useQuery } from '@tanstack/react-query';
 import { today } from '@/lib/dates';
+import { sb } from '@/lib/sb';
 
 export default function PintoRandomPage() {
   const { user, role } = useAuth();
@@ -16,13 +17,13 @@ export default function PintoRandomPage() {
   const { data: plans, isLoading } = useQuery({
     queryKey: ['random_plans'],
     queryFn: async () => {
-      const { data } = await supabase.from('social_plans')
+      const data = await sb(supabase.from('social_plans')
         .select(`*, creator:profiles(full_name, avatar_url, reputation_score),
                     members:social_plan_members(id),
                     category:plan_categories(name, emoji)`)
         .eq('status', 'open').eq('visibility', 'public')
         .gte('plan_date', today())
-        .limit(50);
+        .limit(50));
       // Shuffle
       const arr = data ?? [];
       for (let i = arr.length - 1; i > 0; i--) {

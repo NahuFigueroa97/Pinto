@@ -5,21 +5,22 @@ import { Heart, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { sb } from '@/lib/sb';
 
 export default function FavoritosPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: favorites, isLoading } = useQuery({
+  const { data: favorites, isLoading, error: queryError, refetch, isFetching } = useQuery({
     queryKey: ['favorites'],
     queryFn: async () => {
       if (!user) return [];
-      const { data } = await supabase
+      const data = await sb(supabase
         .from('favorites')
         .select(`*, campaign:campaigns(id, title, short_description, type, starts_at, business:businesses(name)),
                     business:businesses(id, name, slug, address, category:business_categories(icon))`)
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }));
       return data ?? [];
     },
     enabled: !!user,
@@ -50,6 +51,18 @@ export default function FavoritosPage() {
       <div className="px-4 space-y-3">
         {isLoading ? (
           <div className="flex justify-center py-16"><div className="spinner" /></div>
+        ) : queryError ? (
+          <div className="text-center py-16 px-6">
+            <p className="text-4xl mb-3">😕</p>
+            <p className="text-gray-700 font-medium">No se pudo cargar</p>
+            <p className="text-xs text-gray-400 mt-1 break-words">
+              {queryError instanceof Error ? queryError.message : 'Algo salió mal'}
+            </p>
+            <button onClick={() => refetch()} disabled={isFetching}
+              className="mt-4 px-5 py-2.5 bg-brand-500 text-white rounded-xl font-medium text-sm disabled:opacity-50 active:scale-95 transition">
+              {isFetching ? 'Reintentando...' : 'Reintentar'}
+            </button>
+          </div>
         ) : !favorites?.length ? (
           <div className="text-center py-16 text-gray-400">
             <Heart size={40} className="mx-auto mb-3 text-gray-200" />

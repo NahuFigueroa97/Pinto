@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { LogOut, Shield, Store, Edit, MapPin, Star, Users, ChevronRight, Megaphone, MessageCircle, Settings } from 'lucide-react';
 import Link from 'next/link';
 import type { UserInterest } from '@/types/database';
+import { sb } from '@/lib/sb';
 
 function getAge(birthYear: number | null): string | null {
   if (!birthYear) return null;
@@ -33,7 +34,7 @@ function UserProfile() {
     queryKey: ['my_interests_display'],
     queryFn: async () => {
       if (!user) return [];
-      const { data } = await supabase.from('user_interest_links').select('interest:user_interests(*)').eq('user_id', user.id);
+      const data = await sb(supabase.from('user_interest_links').select('interest:user_interests(*)').eq('user_id', user.id));
       return (data ?? []).map((r: any) => r.interest) as UserInterest[];
     },
     enabled: !!user,

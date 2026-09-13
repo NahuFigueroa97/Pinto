@@ -11,6 +11,7 @@ import { useBlockedIds, filterBlocked } from '@/lib/blocks';
 import { DistanceBadge } from '@/components/shared/DistanceBadge';
 import type { SocialPlan } from '@/types/database';
 import { today } from '@/lib/dates';
+import { sb } from '@/lib/sb';
 
 export default function PlanesFeedPage() {
   const { user, role } = useAuth();
@@ -22,12 +23,12 @@ export default function PlanesFeedPage() {
   const { data: categories } = useQuery({
     queryKey: ['plan_categories'],
     queryFn: async () => {
-      const { data } = await supabase.from('plan_categories').select('*').order('sort_order');
+      const data = await sb(supabase.from('plan_categories').select('*').order('sort_order'));
       return data ?? [];
     },
   });
 
-  const { data: plans, isLoading } = useQuery({
+  const { data: plans, isLoading, error: queryError, refetch, isFetching } = useQuery({
     // catFilter y location se usan dentro de queryFn pero no estaban en la
     // key: al tocar una categoría, react-query servía el resultado cacheado
     // y los botones de filtro parecían no hacer nada.
@@ -132,6 +133,18 @@ export default function PlanesFeedPage() {
           <div className="flex flex-col items-center py-16 text-gray-400">
             <div className="spinner" />
             <p className="mt-3 text-sm">Buscando planes...</p>
+          </div>
+        ) : queryError ? (
+          <div className="text-center py-16 px-6">
+            <p className="text-4xl mb-3">😕</p>
+            <p className="text-gray-700 font-medium">No se pudo cargar</p>
+            <p className="text-xs text-gray-400 mt-1 break-words">
+              {queryError instanceof Error ? queryError.message : 'Algo salió mal'}
+            </p>
+            <button onClick={() => refetch()} disabled={isFetching}
+              className="mt-4 px-5 py-2.5 bg-brand-500 text-white rounded-xl font-medium text-sm disabled:opacity-50 active:scale-95 transition">
+              {isFetching ? 'Reintentando...' : 'Reintentar'}
+            </button>
           </div>
         ) : !visiblePlans.length ? (
           <div className="text-center py-16 text-gray-400">

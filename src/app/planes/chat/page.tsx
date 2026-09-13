@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useBlockedIds, filterBlocked } from '@/lib/blocks';
 import { moderateContent } from '@/lib/moderation';
+import { sb } from '@/lib/sb';
 
 function ChatInner() {
   const searchParams = useSearchParams();
@@ -24,7 +25,7 @@ function ChatInner() {
   const { data: plan } = useQuery({
     queryKey: ['chat_plan', planId],
     queryFn: async () => {
-      const { data } = await supabase.from('social_plans').select('title').eq('id', planId).single();
+      const data = await sb(supabase.from('social_plans').select('title').eq('id', planId).single());
       return data;
     },
     enabled: !!planId,
@@ -33,11 +34,11 @@ function ChatInner() {
   const { data: messages } = useQuery({
     queryKey: ['chat_messages', planId],
     queryFn: async () => {
-      const { data } = await supabase.from('plan_chat_messages')
+      const data = await sb(supabase.from('plan_chat_messages')
         .select('*, user:profiles(full_name, avatar_url)')
         .eq('plan_id', planId)
         .order('created_at', { ascending: true })
-        .limit(100);
+        .limit(100));
       return data ?? [];
     },
     enabled: !!planId,

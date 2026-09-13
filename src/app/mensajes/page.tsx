@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { moderateContent } from '@/lib/moderation';
+import { sb } from '@/lib/sb';
 
 /**
  * Bandeja de mensajes del usuario.
@@ -68,10 +69,10 @@ function MensajesUsuarioInner() {
         .update({ is_read: true })
         .eq('user_id', user.id).eq('business_id', selectedBusiness).eq('sender_role', 'business');
 
-      const { data } = await supabase.from('business_messages')
+      const data = await sb(supabase.from('business_messages')
         .select('*')
         .eq('user_id', user.id).eq('business_id', selectedBusiness)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true }));
       return data ?? [];
     },
     enabled: !!user && !!selectedBusiness,

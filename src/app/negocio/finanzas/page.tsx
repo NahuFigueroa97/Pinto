@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { BusinessTransaction } from '@/types/database';
 import { parseMoney } from '@/lib/money';
 import { useRouter } from 'next/navigation';
+import { sb } from '@/lib/sb';
 
 type Period = 'day' | 'week' | 'month';
 
@@ -30,7 +31,7 @@ export default function FinanzasPage() {
     queryKey: ['business_me_fin', user?.id],
     queryFn: async () => {
       if (!user) return null;
-      const { data } = await supabase.from('businesses').select('id, name').eq('owner_user_id', user.id).maybeSingle();
+      const data = await sb(supabase.from('businesses').select('id, name').eq('owner_user_id', user.id).maybeSingle());
       return data;
     },
     enabled: !!user,
@@ -40,9 +41,9 @@ export default function FinanzasPage() {
     queryKey: ['biz_transactions', business?.id, period],
     queryFn: async () => {
       if (!business) return [];
-      const { data } = await supabase.from('business_transactions').select('*')
+      const data = await sb(supabase.from('business_transactions').select('*')
         .eq('business_id', business.id).gte('transaction_date', periodStart(period))
-        .order('transaction_date', { ascending: false });
+        .order('transaction_date', { ascending: false }));
       return (data ?? []) as BusinessTransaction[];
     },
     enabled: !!business,

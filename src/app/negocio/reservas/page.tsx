@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { sb } from '@/lib/sb';
 
 export default function NegocioReservasPage() {
   const { user } = useAuth();
@@ -15,24 +16,24 @@ export default function NegocioReservasPage() {
     queryKey: ['my_business'],
     queryFn: async () => {
       if (!user) return null;
-      const { data } = await supabase.from('businesses').select('id').eq('owner_user_id', user.id).maybeSingle();
+      const data = await sb(supabase.from('businesses').select('id').eq('owner_user_id', user.id).maybeSingle());
       return data;
     },
     enabled: !!user,
   });
 
-  const { data: reservations, isLoading } = useQuery({
+  const { data: reservations, isLoading, error: queryError, refetch, isFetching } = useQuery({
     queryKey: ['business_reservations', business?.id],
     queryFn: async () => {
       if (!business) return [];
-      const { data: campaignIds } = await supabase.from('campaigns').select('id').eq('business_id', business.id);
+      const campaignIds = await sb(supabase.from('campaigns').select('id').eq('business_id', business.id));
       if (!campaignIds?.length) return [];
-      const { data } = await supabase
+      const data = await sb(supabase
         .from('reservations')
         .select(`*, campaign:campaigns(title), profile:profiles(full_name)`)
         .in('campaign_id', campaignIds.map((c: any) => c.id))
         .order('reserved_at', { ascending: false })
-        .limit(50);
+        .limit(50));
       return data ?? [];
     },
     enabled: !!business,
@@ -62,6 +63,18 @@ export default function NegocioReservasPage() {
       <div className="px-4 space-y-3">
         {isLoading ? (
           <div className="flex justify-center py-16"><div className="spinner" /></div>
+        ) : queryError ? (
+          <div className="text-center py-16 px-6">
+            <p className="text-4xl mb-3">😕</p>
+            <p className="text-gray-700 font-medium">No se pudo cargar</p>
+            <p className="text-xs text-gray-400 mt-1 break-words">
+              {queryError instanceof Error ? queryError.message : 'Algo salió mal'}
+            </p>
+            <button onClick={() => refetch()} disabled={isFetching}
+              className="mt-4 px-5 py-2.5 bg-brand-500 text-white rounded-xl font-medium text-sm disabled:opacity-50 active:scale-95 transition">
+              {isFetching ? 'Reintentando...' : 'Reintentar'}
+            </button>
+          </div>
         ) : !reservations?.length ? (
           <div className="text-center py-16 text-gray-400">
             <p className="text-4xl mb-3">📋</p>

@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ProfileCard } from '@/components/shared/ProfileCard';
 import Link from 'next/link';
+import { sb } from '@/lib/sb';
 
 function PlanDetailInner() {
   const searchParams = useSearchParams();
@@ -23,13 +24,13 @@ function PlanDetailInner() {
     queryKey: ['plan', id],
     queryFn: async () => {
       if (!id) return null;
-      const { data } = await supabase
+      const data = await sb(supabase
         .from('social_plans')
         .select(`*, creator:profiles(id, full_name, avatar_url, reputation_score, bio, birth_year, show_age,
                     plans_created_count, plans_joined_count, interests_text, zone:zones(name)),
                   campaign:campaigns(id, title, short_description, business:businesses(name, address)),
                   category:plan_categories(name, emoji)`)
-        .eq('id', id).single();
+        .eq('id', id).single());
       return data;
     },
     enabled: !!id,
@@ -39,10 +40,10 @@ function PlanDetailInner() {
     queryKey: ['plan_members', id],
     queryFn: async () => {
       if (!id) return [];
-      const { data } = await supabase
+      const data = await sb(supabase
         .from('social_plan_members')
         .select(`*, user:profiles(id, full_name, avatar_url, reputation_score, zone:zones(name))`)
-        .eq('plan_id', id).order('joined_at');
+        .eq('plan_id', id).order('joined_at'));
       return data ?? [];
     },
     enabled: !!id,
@@ -52,11 +53,11 @@ function PlanDetailInner() {
     queryKey: ['plan_requests', id],
     queryFn: async () => {
       if (!id) return [];
-      const { data } = await supabase
+      const data = await sb(supabase
         .from('social_plan_requests')
         .select(`*, user:profiles(id, full_name, avatar_url, reputation_score, bio, birth_year, show_age,
                     plans_created_count, plans_joined_count, interests_text, zone:zones(name))`)
-        .eq('plan_id', id).eq('status', 'pending').order('created_at');
+        .eq('plan_id', id).eq('status', 'pending').order('created_at'));
       return data ?? [];
     },
     enabled: !!id && plan?.creator_id === user?.id,
@@ -66,8 +67,8 @@ function PlanDetailInner() {
     queryKey: ['my_plan_request', id],
     queryFn: async () => {
       if (!id || !user) return null;
-      const { data } = await supabase.from('social_plan_requests').select('*')
-        .eq('plan_id', id).eq('user_id', user.id).maybeSingle();
+      const data = await sb(supabase.from('social_plan_requests').select('*')
+        .eq('plan_id', id).eq('user_id', user.id).maybeSingle());
       return data;
     },
     enabled: !!id && !!user,

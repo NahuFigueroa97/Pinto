@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Send, MessageCircle } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { sb } from '@/lib/sb';
 
 function NegocioMensajesInner() {
   const { user } = useAuth();
@@ -27,7 +28,7 @@ function NegocioMensajesInner() {
     queryKey: ['business_me_msg', user?.id],
     queryFn: async () => {
       if (!user) return null;
-      const { data } = await supabase.from('businesses').select('id, name').eq('owner_user_id', user.id).maybeSingle();
+      const data = await sb(supabase.from('businesses').select('id, name').eq('owner_user_id', user.id).maybeSingle());
       return data;
     },
     enabled: !!user,
@@ -76,10 +77,10 @@ function NegocioMensajesInner() {
         .update({ is_read: true })
         .eq('business_id', business.id).eq('user_id', selectedChat).eq('sender_role', 'user');
 
-      const { data } = await supabase.from('business_messages')
+      const data = await sb(supabase.from('business_messages')
         .select('*')
         .eq('business_id', business.id).eq('user_id', selectedChat)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true }));
       return data ?? [];
     },
     enabled: !!business && !!selectedChat,

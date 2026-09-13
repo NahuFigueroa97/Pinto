@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
 import type { Campaign, BusinessCategory } from '@/types/database';
+import { sb } from '@/lib/sb';
 
 const CATEGORY_ICONS: Record<string, typeof Coffee> = {
   cafeteria: Coffee,
@@ -45,16 +46,16 @@ export default function HomePage() {
   const { data: categories } = useQuery({
     queryKey: ['business_categories'],
     queryFn: async () => {
-      const { data } = await supabase
+      const data = await sb(supabase
         .from('business_categories')
         .select('*')
         .eq('is_active', true)
-        .order('name');
+        .order('name'));
       return (data ?? []) as BusinessCategory[];
     },
   });
 
-  const { data: campaigns, isLoading } = useQuery({
+  const { data: campaigns, isLoading, error: queryError, refetch, isFetching } = useQuery({
     queryKey: ['campaigns_active', selectedCategory],
     queryFn: async () => {
       let query = supabase
@@ -69,8 +70,8 @@ export default function HomePage() {
         const cat = categories.find(c => c.slug === selectedCategory);
         if (cat) {
           // Get business IDs for this category, then filter campaigns
-          const { data: bizData } = await supabase
-            .from('businesses').select('id').eq('category_id', cat.id);
+          const bizData = await sb(supabase
+            .from('businesses').select('id').eq('category_id', cat.id));
           const bizIds = bizData?.map(b => b.id) ?? [];
           if (bizIds.length === 0) return [];
           query = query.in('business_id', bizIds);
@@ -137,6 +138,18 @@ export default function HomePage() {
           <div className="flex flex-col items-center py-16 text-gray-400">
             <div className="spinner" />
             <p className="mt-3 text-sm">✨ Buscando planes...</p>
+          </div>
+        ) : queryError ? (
+          <div className="text-center py-16 px-6">
+            <p className="text-4xl mb-3">😕</p>
+            <p className="text-gray-700 font-medium">No se pudo cargar</p>
+            <p className="text-xs text-gray-400 mt-1 break-words">
+              {queryError instanceof Error ? queryError.message : 'Algo salió mal'}
+            </p>
+            <button onClick={() => refetch()} disabled={isFetching}
+              className="mt-4 px-5 py-2.5 bg-brand-500 text-white rounded-xl font-medium text-sm disabled:opacity-50 active:scale-95 transition">
+              {isFetching ? 'Reintentando...' : 'Reintentar'}
+            </button>
           </div>
         ) : !campaigns?.length ? (
           <div className="text-center py-16">

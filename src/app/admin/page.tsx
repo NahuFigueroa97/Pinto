@@ -6,6 +6,7 @@ import { Shield, Store, Megaphone, Users, Eye, CalendarCheck, Star, Check, X, Ch
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { sb } from '@/lib/sb';
 
 // Había 5 tabs pero la expresión ternaria solo cubría 3, así que
 // "verifications" y "stats" se dibujaban las dos como "Reportes".
@@ -49,9 +50,9 @@ export default function AdminDashboard() {
   const { data: reports } = useQuery({
     queryKey: ['admin_reports'],
     queryFn: async () => {
-      const { data } = await supabase.from('user_reports')
+      const data = await sb(supabase.from('user_reports')
         .select('*, reporter:profiles!reporter_id(full_name)')
-        .order('created_at', { ascending: false }).limit(50);
+        .order('created_at', { ascending: false }).limit(50));
       return data ?? [];
     },
   });
@@ -59,11 +60,11 @@ export default function AdminDashboard() {
   const { data: verifications } = useQuery({
     queryKey: ['admin_verifications'],
     queryFn: async () => {
-      const { data } = await supabase.from('profiles')
+      const data = await sb(supabase.from('profiles')
         .select('id, full_name, avatar_url, verification_requested_at')
         .not('verification_requested_at', 'is', null)
         .eq('is_verified', false)
-        .order('verification_requested_at', { ascending: true });
+        .order('verification_requested_at', { ascending: true }));
       return data ?? [];
     },
   });
@@ -71,11 +72,11 @@ export default function AdminDashboard() {
   const { data: businesses } = useQuery({
     queryKey: ['admin_businesses'],
     queryFn: async () => {
-      const { data } = await supabase
+      const data = await sb(supabase
         .from('businesses')
         .select('*, category:business_categories(name, icon), owner:profiles(full_name, role)')
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(50));
       return data ?? [];
     },
     enabled: tab === 'businesses',
@@ -84,11 +85,11 @@ export default function AdminDashboard() {
   const { data: campaigns } = useQuery({
     queryKey: ['admin_campaigns'],
     queryFn: async () => {
-      const { data } = await supabase
+      const data = await sb(supabase
         .from('campaigns')
         .select('*, business:businesses(name)')
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(50));
       return data ?? [];
     },
     enabled: tab === 'campaigns',

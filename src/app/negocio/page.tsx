@@ -8,6 +8,7 @@ import Link from 'next/link';
 import type { Business } from '@/types/database';
 import { parseMoney, formatMoney } from '@/lib/money';
 import { useState } from 'react';
+import { sb } from '@/lib/sb';
 
 export default function NegocioDashboard() {
   const { user } = useAuth();
@@ -17,10 +18,10 @@ export default function NegocioDashboard() {
     queryKey: ['business', 'me', user?.id],
     queryFn: async () => {
       if (!user) return null;
-      const { data } = await supabase.from('businesses').select('*').eq('owner_user_id', user.id);
+      const data = await sb(supabase.from('businesses').select('*').eq('owner_user_id', user.id));
       if (data && data.length > 0) {
         const b = data[0] as Business;
-        const { data: catData } = await supabase.from('business_categories').select('name, icon').eq('id', b.category_id).single();
+        const catData = await sb(supabase.from('business_categories').select('name, icon').eq('id', b.category_id).single());
         if (catData) b.category = catData as any;
         return b;
       }
@@ -33,7 +34,7 @@ export default function NegocioDashboard() {
     queryKey: ['business_stats', business?.id],
     queryFn: async () => {
       if (!business) return null;
-      const { data: campData } = await supabase.from('campaigns').select('id').eq('business_id', business.id);
+      const campData = await sb(supabase.from('campaigns').select('id').eq('business_id', business.id));
       const campIds = campData?.map((c: any) => c.id) ?? [];
       const [reservations, views, unreadMsgs] = await Promise.all([
         campIds.length > 0 ? supabase.from('reservations').select('id', { count: 'exact' }).in('campaign_id', campIds).eq('status', 'confirmed') : { count: 0 },
@@ -55,7 +56,7 @@ export default function NegocioDashboard() {
     queryKey: ['pending_reservations', business?.id],
     queryFn: async () => {
       if (!business) return [];
-      const { data: campData } = await supabase.from('campaigns').select('id, title, price_text').eq('business_id', business.id);
+      const campData = await sb(supabase.from('campaigns').select('id, title, price_text').eq('business_id', business.id));
       if (!campData?.length) return [];
       const { data, error } = await supabase.from('reservations')
         .select('*, user:profiles(full_name)')

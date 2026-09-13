@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useUserLocation } from '@/lib/geolocation';
 import type L from 'leaflet';
+import { sb } from '@/lib/sb';
 
 // Catamarca center
 const DEFAULT_LAT = -28.4696;
@@ -37,7 +38,7 @@ export default function NuevoNegocioPage() {
   const { data: categories } = useQuery({
     queryKey: ['business_categories'],
     queryFn: async () => {
-      const { data } = await supabase.from('business_categories').select('*').eq('is_active', true).order('sort_order');
+      const data = await sb(supabase.from('business_categories').select('*').eq('is_active', true).order('sort_order'));
       return data ?? [];
     },
   });

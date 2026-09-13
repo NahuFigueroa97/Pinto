@@ -6,6 +6,7 @@ import { ArrowLeft, Upload, X } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { sb } from '@/lib/sb';
 
 function compressImage(file: File, maxWidth = 800, quality = 0.7): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -41,10 +42,10 @@ function FotosInner() {
   const { data: photos } = useQuery({
     queryKey: ['plan_photos', planId],
     queryFn: async () => {
-      const { data } = await supabase.from('plan_photos')
+      const data = await sb(supabase.from('plan_photos')
         .select('*, user:profiles(full_name)')
         .eq('plan_id', planId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }));
       return data ?? [];
     },
     enabled: !!planId,

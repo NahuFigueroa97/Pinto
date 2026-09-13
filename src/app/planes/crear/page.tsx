@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useUserLocation } from '@/lib/geolocation';
 import { moderateContent } from '@/lib/moderation';
+import { sb } from '@/lib/sb';
 
 function CrearPlanInner() {
   const searchParams = useSearchParams();
@@ -32,7 +33,7 @@ function CrearPlanInner() {
   const { data: categories } = useQuery({
     queryKey: ['plan_categories'],
     queryFn: async () => {
-      const { data } = await supabase.from('plan_categories').select('*').order('sort_order');
+      const data = await sb(supabase.from('plan_categories').select('*').order('sort_order'));
       return data ?? [];
     },
   });
@@ -42,7 +43,7 @@ function CrearPlanInner() {
     queryKey: ['campaign_for_plan', campaignId],
     queryFn: async () => {
       if (!campaignId) return null;
-      const { data } = await supabase.from('campaigns').select('*, business:businesses(name, address)').eq('id', campaignId).single();
+      const data = await sb(supabase.from('campaigns').select('*, business:businesses(name, address)').eq('id', campaignId).single());
       return data;
     },
     enabled: !!campaignId,

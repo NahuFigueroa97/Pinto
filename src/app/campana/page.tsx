@@ -9,6 +9,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Campaign, Reservation } from '@/types/database';
 import { moderateContent } from '@/lib/moderation';
 import Link from 'next/link';
+import { sb } from '@/lib/sb';
 
 const TYPE_LABELS: Record<string, string> = {
   promo: '🏷️ Promo',
@@ -33,11 +34,11 @@ function CampaignDetailInner() {
     queryKey: ['campaign', id],
     queryFn: async () => {
       if (!id) return null;
-      const { data } = await supabase
+      const data = await sb(supabase
         .from('campaigns')
         .select(`*, business:businesses(id, name, slug, address, phone, instagram, logo_url, description)`)
         .eq('id', id)
-        .single();
+        .single());
 
       if (data && user) {
         supabase.from('analytics_events').insert({
@@ -56,7 +57,7 @@ function CampaignDetailInner() {
     queryKey: ['favorite', 'campaign', id],
     queryFn: async () => {
       if (!user || !id) return false;
-      const { data } = await supabase.from('favorites').select('id').eq('user_id', user.id).eq('campaign_id', id).maybeSingle();
+      const data = await sb(supabase.from('favorites').select('id').eq('user_id', user.id).eq('campaign_id', id).maybeSingle());
       return !!data;
     },
     enabled: !!user && !!id,
@@ -66,7 +67,7 @@ function CampaignDetailInner() {
     queryKey: ['my_reservation', id],
     queryFn: async () => {
       if (!user || !id) return null;
-      const { data } = await supabase.from('reservations').select('*').eq('campaign_id', id).eq('user_id', user.id).eq('status', 'confirmed').maybeSingle();
+      const data = await sb(supabase.from('reservations').select('*').eq('campaign_id', id).eq('user_id', user.id).eq('status', 'confirmed').maybeSingle());
       return data as Reservation | null;
     },
     enabled: !!user && !!id,
