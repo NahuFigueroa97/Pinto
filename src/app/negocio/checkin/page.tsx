@@ -69,6 +69,11 @@ export default function CheckinPage() {
   // Lo que define el descuento es el grupo que se PRESENTÓ, no el que
   // reservó. El mostrador tiene que poder corregirlo.
   const [partySize, setPartySize] = useState('');
+  // El loop de la cámara captura submitCode una sola vez; si partySize
+  // viviera solo en la clausura, escanear después de tipear la cantidad
+  // mandaría el valor viejo y el descuento saldría mal. El ref siempre
+  // tiene el último.
+  const partySizeRef = useRef('');
 
   const stopCamera = useCallback(() => {
     if (scanLoopRef.current !== null) {
@@ -93,7 +98,7 @@ export default function CheckinPage() {
     try {
       const { data, error } = await supabase.rpc('redeem_reservation', {
         p_code: code,
-        p_party_size: partySize ? parseInt(partySize) : null,
+        p_party_size: partySizeRef.current ? parseInt(partySizeRef.current) : null,
       });
       if (error) throw error;
       const res = data as CheckinResult;
@@ -293,7 +298,7 @@ export default function CheckinPage() {
             <input
               type="number" min={1} max={50} inputMode="numeric"
               value={partySize}
-              onChange={e => setPartySize(e.target.value)}
+              onChange={e => { setPartySize(e.target.value); partySizeRef.current = e.target.value; }}
               placeholder="auto"
               className="w-20 px-2.5 py-1.5 rounded-lg border border-gray-200 text-sm text-center outline-none focus:border-accent-400"
             />

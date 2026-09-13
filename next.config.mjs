@@ -30,6 +30,11 @@ function buildId() {
 function checkEnv(phase) {
   if (phase !== PHASE_PRODUCTION_BUILD && phase !== PHASE_DEVELOPMENT_SERVER) return;
 
+  // `next lint` también reporta phase-production-build, así que la fase sola
+  // no alcanza para distinguirlo. Lintear no debería exigir credenciales:
+  // se corre en CI y en pre-commit, donde no hay .env.local.
+  if (process.argv.some((a) => a === 'lint' || a.endsWith('/lint'))) return;
+
   const required = ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY'];
   const missing = required.filter((k) => !process.env[k]);
 
