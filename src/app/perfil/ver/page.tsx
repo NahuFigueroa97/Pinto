@@ -73,6 +73,15 @@ function VerPerfilInner() {
     enabled: !!id,
   });
 
+  /**
+   * Planes en común.
+   *
+   * Esto antes listaba los planes recientes de cualquiera: entrabas a un
+   * perfil y veías a dónde había ido esa persona. Con la policy nueva
+   * (017_privacidad_social.sql) sólo vuelven las filas de planes donde vos
+   * también estás, así que lo que queda es lo que ya sabías. El título
+   * cambia para que diga lo que realmente muestra.
+   */
   const { data: recentPlans } = useQuery({
     queryKey: ['user_recent_plans', id],
     queryFn: async () => {
@@ -250,7 +259,7 @@ function VerPerfilInner() {
         {/* Recent Plans */}
         {recentPlans && recentPlans.length > 0 && (
           <div>
-            <h3 className="font-semibold text-sm mb-2">Planes recientes</h3>
+            <h3 className="font-semibold text-sm mb-2">Planes que compartieron</h3>
             <div className="space-y-1.5">
               {recentPlans.map((p: any) => (
                 <div key={p.id} className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">

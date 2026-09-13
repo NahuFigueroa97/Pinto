@@ -1,15 +1,17 @@
 'use client';
 
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { Clock, Users, ChevronRight } from 'lucide-react';
+import { Clock, ChevronRight, RefreshCw } from 'lucide-react';
 import { useBlockedIds, filterBlocked } from '@/lib/blocks';
 import { PageSpinner } from '@/components/shared/PageSpinner';
 
+// `joined_plan` se saco a proposito (ver 017_privacidad_social.sql): sumarse
+// a un plan no es un acto publico y se publicaba con nombre y titulo para
+// todo el mundo. El trigger ya no lo genera y las filas viejas se borraron.
 const ACTION_LABELS: Record<string, { emoji: string; text: (m: any) => string }> = {
   created_plan: { emoji: '🎉', text: (m) => `creó el plan "${m?.title || ''}"` },
-  joined_plan: { emoji: '🤝', text: (m) => `se unió a "${m?.title || ''}"` },
   completed_plan: { emoji: '✅', text: (m) => `completó "${m?.title || ''}"` },
   reviewed: { emoji: '⭐', text: () => `dejó una valoración` },
   uploaded_photo: { emoji: '📸', text: () => `subió una foto de la juntada` },
@@ -26,38 +28,69 @@ function timeAgo(dateStr: string): string {
   return `Hace ${days}d`;
 }
 
+/** Tamaño de tanda del feed. */
+const FEED_PAGE = 20;
+
 export default function FeedPage() {
   const { blockedSet } = useBlockedIds();
 
-  const { data: feed, isLoading, error, refetch, isFetching } = useQuery({
+  /**
+   * Feed paginado por cursor.
+   *
+   * Antes traía 50 filas con `select('*')` y el perfil embebido, y las
+   * volvía a pedir cada 15 segundos. Multiplicado por toda la gente con la
+   * app abierta eso es un goteo constante y caro para algo que cambia cada
+   * varios minutos; y sin paginación el feed nunca podía mostrar más de 50
+   * cosas por más que hubiera.
+   *
+   * Ahora: tandas de 20, cursor por `created_at` (hay índice descendente),
+   * columnas explícitas y sin sondeo. Se refresca al entrar, al tocar
+   * Actualizar y cuando llega una notificación (ver NotificationRouter).
+   */
+  const {
+    data, isLoading, error, refetch, isFetching,
+    fetchNextPage, hasNextPage, isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ['activity_feed'],
-    queryFn: async () => {
-      // El error se descartaba con `data ?? []`, así que un fallo de RLS o
-      // de red se veía igual que "no hay actividad". Y sin timeout, una
-      // petición colgada dejaba el spinner girando indefinidamente.
-      // El timeout ya no va acá: el cliente de Supabase aborta toda petición
-      // a los 20 s (ver src/lib/supabase.ts). Tener dos límites distintos
-      // para lo mismo hacía que el mensaje de error dijera 15 s cuando el
-      // corte real podía ser otro.
-      const { data, error: queryError } = await supabase
+    initialPageParam: null as string | null,
+    queryFn: async ({ pageParam }) => {
+      let q = supabase
         .from('activity_feed')
-        .select('*, actor:profiles(full_name, avatar_url)')
+        .select('id, actor_id, action, target_type, target_id, metadata, created_at, actor:profiles(full_name, avatar_url)')
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(FEED_PAGE);
+      if (pageParam) q = q.lt('created_at', pageParam);
+
+      const { data: rows, error: queryError } = await q;
+      // El error se descartaba con `data ?? []`, así que un fallo de RLS o
+      // de red se veía igual que "no hay actividad".
       if (queryError) throw queryError;
-      return data ?? [];
+      return rows ?? [];
     },
-    refetchInterval: 15000,
+    getNextPageParam: (ultima) =>
+      ultima.length < FEED_PAGE ? undefined : (ultima[ultima.length - 1] as { created_at: string }).created_at,
+    staleTime: 30_000,
   });
 
   // La actividad de personas bloqueadas no aparece en el feed
-  const visibleFeed = filterBlocked<any>(feed, blockedSet, item => item.actor_id);
+  const visibleFeed = filterBlocked<any>(data?.pages.flat(), blockedSet, item => item.actor_id);
 
   return (
     <div className="max-w-lg mx-auto pb-6">
-      <header className="px-4 pt-6 pb-3">
-        <h1 className="text-xl font-display font-bold">📣 Actividad</h1>
-        <p className="text-sm text-gray-500">Lo que está pasando en Pintó</p>
+      <header className="px-4 pt-6 pb-3 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-display font-bold">📣 Actividad</h1>
+          <p className="text-sm text-gray-500">Lo que está pasando en Pintó</p>
+        </div>
+        {/* Sin sondeo automático, el refresco tiene que ser explícito. */}
+        <button
+          onClick={() => void refetch()}
+          disabled={isFetching}
+          aria-label="Actualizar"
+          className="p-2 -mr-1 text-gray-400 disabled:opacity-40"
+        >
+          <RefreshCw size={17} className={isFetching ? 'animate-spin' : ''} />
+        </button>
       </header>
 
       <div className="px-4 space-y-2">
@@ -102,6 +135,16 @@ export default function FeedPage() {
               </Link>
             );
           })
+        )}
+
+        {hasNextPage && !isLoading && !error && (
+          <button
+            onClick={() => void fetchNextPage()}
+            disabled={isFetchingNextPage}
+            className="w-full py-3 text-sm font-medium text-gray-500 bg-white border border-gray-100 rounded-xl disabled:opacity-50"
+          >
+            {isFetchingNextPage ? 'Cargando...' : 'Ver más actividad'}
+          </button>
         )}
       </div>
     </div>

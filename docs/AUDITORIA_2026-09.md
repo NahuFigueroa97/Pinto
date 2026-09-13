@@ -473,3 +473,103 @@ que alguien escriba. Por eso:
   cada mensaje nuevo y al volver del segundo plano, con guarda de
   `visibilityState` para no mentir, y el error del RPC se muestra en vez de
   tragarse con `void`.
+
+---
+
+## Anexo — Auditoría para uso masivo (13/09)
+
+### Privacidad: el feed era la punta del iceberg
+
+"En el feed sale quién se une a cuál plan, debería ser secreto."
+
+Correcto, y había algo bastante peor debajo. La policy
+`members_select USING (true)` dejaba que **cualquiera, incluso sin sesión**,
+listara todos los miembros de todos los planes. Una sola consulta bajaba el
+grafo social completo de la ciudad: quién sale con quién y a dónde. Tapar la
+línea del feed y dejar eso abierto no habría arreglado nada.
+
+`017_privacidad_social.sql`:
+
+- La lista de miembros la ve sólo quien es del plan. Para el resto, el plan
+  dice cuánta gente va, no quién.
+- El feed deja de publicar `joined_plan` (trigger y función eliminados, filas
+  existentes borradas). Crear un plan público es deliberado; sumarse a uno no.
+- El feed deja de ser legible sin sesión.
+- Efecto colateral bueno: en el perfil de otra persona, "planes recientes"
+  pasa a mostrar sólo los que compartieron con vos, porque la policy filtra
+  el resto. Se renombró para que diga lo que muestra.
+
+La policy no puede consultar `social_plan_members` directamente —RLS sobre
+una tabla que se lee a sí misma entra en recursión infinita—, así que el
+`EXISTS` va en una función `SECURITY DEFINER`.
+
+### Rendimiento: por qué se sentía lenta la mensajería
+
+El chat bajaba **200 mensajes con el perfil embebido cada 3 segundos**. Con
+mil chats abiertos son unas 300 consultas por segundo devolviendo 200 filas
+cada una.
+
+Y escondido ahí, un bug de fondo: `.order('created_at', ascending: true)
+.limit(200)` trae los 200 mensajes **más viejos**. En cuanto un chat pasara
+de 200, la gente se quedaba mirando el historial antiguo y los mensajes
+nuevos no aparecían nunca.
+
+Ahora la primera carga trae los últimos 50 y el sondeo pide sólo lo
+posterior al último mensaje que ya se tiene: casi siempre cero filas. El
+corte sale del `created_at` de una fila que vino del servidor, así que no
+depende del reloj del teléfono. Botón "ver mensajes anteriores" para el
+historial.
+
+Lo mismo en el resto:
+
+- Los listados mostraban "3/6" embebiendo las filas de miembros sólo para
+  contarlas, en seis pantallas. Ahora es `social_plans.members_count`,
+  mantenido por trigger: cuesta lo mismo con 10 planes que con 100.000.
+- El feed pagina por cursor en tandas de 20, con columnas explícitas y sin
+  sondeo (se refresca al entrar, al tocar Actualizar y cuando llega una
+  notificación). Antes traía 50 filas cada 15 s y no había forma de ver nada
+  más viejo que eso.
+- `/planes` tenía `limit(30)` sin decirlo: ahora hay "ver más planes".
+- Índice parcial `idx_social_plans_listado` con exactamente las condiciones
+  del listado (`status='open' AND visibility='public'`, ordenado por fecha).
+
+### Abuso: la clave anónima viaja en el APK
+
+Es pública por diseño, así que **todo lo que se valide sólo en el cliente no
+se valida**. No había ningún límite: con un script y esa clave se podía
+inundar el chat de un plan o crear diez mil planes. Ni siquiera hace falta
+mala intención — un bucle mal escrito alcanza.
+
+`018_limites_abuso.sql` agrega límites holgados (20 mensajes/minuto, 10
+planes/día, 40 solicitudes/día, 20 denuncias/día) y un tope de 2.000
+caracteres por mensaje.
+
+**Lo que deliberadamente NO se hizo**: replicar el filtro de palabras en SQL.
+Se desincroniza de la lista del cliente en la primera corrección, y los
+falsos positivos en un chat entre amigos —donde se putea de cariño— cuestan
+más de lo que evitan. Lo que Google Play exige para contenido de usuarios es
+que haya forma de denunciar y de bloquear, y las dos existen. Si en algún
+momento hace falta filtrar de verdad, el lugar es un trigger que **marque
+para revisión**, no una lista que rebote mensajes.
+
+### Visto: "no sale bien la info"
+
+El panel mostraba el mensaje recortado a una línea y una hora sin explicar de
+qué era. La marca de lectura es **una por persona y por plan**, no una por
+mensaje: decir "lo leyó a las 14:32" sería inventar. Ahora muestra el mensaje
+completo con su hora de envío, avatares, leídos y pendientes, y dice
+explícitamente que la hora es la de la última vez que esa persona abrió el
+chat.
+
+### Lo que queda pendiente para escalar de verdad
+
+1. **Realtime en lugar de sondeo.** El chat pasó de 200 filas cada 3 s a
+   ~0 filas cada 4 s, pero sigue siendo una petición por chat abierto. Con
+   Supabase Realtime serían cero hasta que pase algo. Es el próximo salto,
+   y obliga a revisar que `ws` no entre al bundle del APK.
+2. **Imágenes sin redimensionar.** Los avatares y las fotos se sirven al
+   tamaño original desde Storage. Supabase tiene transformaciones; hoy una
+   foto de 4 MB se baja entera para mostrarla en 96 píxeles.
+3. **Fan-out de notificaciones.** `notify_on_plan_chat` inserta una fila en
+   `notification_queue` por miembro y por mensaje. Con grupos grandes y
+   mucho tráfico conviene agrupar.

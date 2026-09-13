@@ -52,7 +52,7 @@ export default function CercaPage() {
     queryFn: async () => {
       if (!location) return [];
       const data = await sb(supabase.from('social_plans')
-        .select('*, creator:profiles!creator_id(full_name), members:social_plan_members(id)')
+        .select('*, creator:profiles!creator_id(full_name)')
         .eq('status', 'open').eq('visibility', 'public')
         .gte('plan_date', today())
         .not('latitude', 'is', null).limit(50));
@@ -261,7 +261,7 @@ export default function CercaPage() {
                     <h3 className="font-semibold text-sm truncate">{p.title}</h3>
                     <div className="flex items-center gap-2 text-xs text-gray-400 mt-0.5">
                       <span>{p.creator?.full_name}</span>
-                      <span><Users size={10} className="inline" /> {p.members?.length}/{p.max_members}</span>
+                      <span><Users size={10} className="inline" /> {p.members_count ?? 0}/{p.max_members}</span>
                     </div>
                   </div>
                   <DistanceBadge distance={p.distance} />

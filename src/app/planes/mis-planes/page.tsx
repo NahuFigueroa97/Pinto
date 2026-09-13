@@ -17,7 +17,7 @@ export default function MisPlanesPage() {
     queryKey: ['my_created_plans'],
     queryFn: async () => {
       if (!user) return [];
-      const data = await sb(supabase.from('social_plans').select(`*, members:social_plan_members(id),
+      const data = await sb(supabase.from('social_plans').select(`*,
         campaign:campaigns(title, business:businesses(name))`)
         .eq('creator_id', user.id).order('plan_date', { ascending: false }));
       return data ?? [];
@@ -33,7 +33,7 @@ export default function MisPlanesPage() {
       if (!memberRows?.length) return [];
       const planIds = memberRows.map((m: any) => m.plan_id);
       const data = await sb(supabase.from('social_plans').select(`*, creator:profiles!creator_id(full_name),
-        members:social_plan_members(id), campaign:campaigns(title)`)
+        campaign:campaigns(title)`)
         .in('id', planIds).order('plan_date', { ascending: false }));
       return data ?? [];
     },
@@ -97,7 +97,7 @@ export default function MisPlanesPage() {
                   <span className="flex items-center gap-0.5"><Calendar size={11} />
                     {new Date(p.plan_date + 'T00:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}
                   </span>
-                  <span className="flex items-center gap-0.5"><Users size={11} /> {p.members?.length ?? 0}/{p.max_members}</span>
+                  <span className="flex items-center gap-0.5"><Users size={11} /> {p.members_count ?? 0}/{p.max_members}</span>
                   {p.campaign && <span className="text-accent-500 truncate">📢 {p.campaign.title}</span>}
                 </div>
               </div>

@@ -298,7 +298,7 @@ function CampaignPlans({ campaignId }: { campaignId: string }) {
     queryFn: async () => {
       try {
         const { data, error } = await supabase.from('social_plans')
-          .select('*, creator:profiles!creator_id(full_name), members:social_plan_members(id)')
+          .select('*, creator:profiles!creator_id(full_name)')
           .eq('campaign_id', campaignId).eq('status', 'open').eq('visibility', 'public')
           .order('plan_date');
         if (error) return [];
@@ -336,7 +336,7 @@ function CampaignPlans({ campaignId }: { campaignId: string }) {
             <div className="flex-1 min-w-0">
               <h4 className="font-medium text-sm truncate">{p.title}</h4>
               <p className="text-xs text-gray-400">
-                {p.creator?.full_name} · <Users size={10} className="inline" /> {p.members?.length ?? 0}/{p.max_members}
+                {p.creator?.full_name} · <Users size={10} className="inline" /> {p.members_count ?? 0}/{p.max_members}
               </p>
             </div>
             <ChevronRight size={14} className="text-gray-300" />

@@ -14,6 +14,9 @@ import { today } from '@/lib/dates';
 import { sb } from '@/lib/sb';
 import { PageSpinner } from '@/components/shared/PageSpinner';
 
+/** Tamaño de tanda del listado de planes. */
+const PLANES_PAGE = 30;
+
 export default function PlanesFeedPage() {
   const { user, role } = useAuth();
   const { location } = useUserLocation();
@@ -29,22 +32,25 @@ export default function PlanesFeedPage() {
     },
   });
 
+  // Cuántos planes pedir. Crece al tocar "ver más": antes la lista se
+  // cortaba en 30 sin decirlo y no había forma de ver el resto.
+  const [tope, setTope] = useState(PLANES_PAGE);
+
   const { data: plans, isLoading, error: queryError, refetch, isFetching } = useQuery({
     // catFilter y location se usan dentro de queryFn pero no estaban en la
     // key: al tocar una categoría, react-query servía el resultado cacheado
     // y los botones de filtro parecían no hacer nada.
-    queryKey: ['social_plans', filter, catFilter, location?.lat, location?.lng],
+    queryKey: ['social_plans', filter, catFilter, location?.lat, location?.lng, tope],
     queryFn: async () => {
       let query = supabase
         .from('social_plans')
         .select(`*, creator:profiles!creator_id(id, full_name, avatar_url, reputation_score, zone:zones(name)),
-                    campaign:campaigns(id, title, business:businesses(name)),
-                    members:social_plan_members(id)`)
+                    campaign:campaigns(id, title, business:businesses(name))`)
         .eq('status', 'open')
         .eq('visibility', 'public')
         .gte('plan_date', today())
         .order('plan_date')
-        .limit(30);
+        .limit(tope);
 
       if (catFilter) { query = query.eq('category_id', catFilter); }
       if (filter === 'today') {
@@ -196,7 +202,7 @@ export default function PlanesFeedPage() {
                 {/* Members */}
                 <span className="flex items-center gap-0.5">
                   <Users size={11} />
-                  {plan.members?.length ?? 0}/{plan.max_members}
+                  {plan.members_count ?? 0}/{plan.max_members}
                 </span>
 
                 {/* Distance */}
@@ -206,6 +212,17 @@ export default function PlanesFeedPage() {
               </div>
             </Link>
           ))
+        )}
+
+        {/* Si volvió exactamente el tope, es probable que haya más. */}
+        {!isLoading && !queryError && plans && plans.length >= tope && (
+          <button
+            onClick={() => setTope((t: number) => t + PLANES_PAGE)}
+            disabled={isFetching}
+            className="w-full py-3 text-sm font-medium text-gray-500 bg-white border border-gray-100 rounded-xl disabled:opacity-50"
+          >
+            {isFetching ? 'Cargando...' : 'Ver más planes'}
+          </button>
         )}
       </div>
     </div>

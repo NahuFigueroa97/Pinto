@@ -20,7 +20,6 @@ export default function PintoRandomPage() {
     queryFn: async () => {
       const data = await sb(supabase.from('social_plans')
         .select(`*, creator:profiles!creator_id(full_name, avatar_url, reputation_score),
-                    members:social_plan_members(id),
                     category:plan_categories(name, emoji)`)
         .eq('status', 'open').eq('visibility', 'public')
         .gte('plan_date', today())
@@ -83,7 +82,7 @@ export default function PintoRandomPage() {
               </div>
               <div className="bg-gray-50 rounded-xl p-3">
                 <p className="text-xs text-gray-400">👥 Grupo</p>
-                <p className="font-medium">{(plan as any).members?.length ?? 0} / {plan?.max_members}</p>
+                <p className="font-medium">{(plan as any).members_count ?? 0} / {plan?.max_members}</p>
               </div>
             </div>
 

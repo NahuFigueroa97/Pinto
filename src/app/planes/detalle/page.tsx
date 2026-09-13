@@ -89,6 +89,12 @@ function PlanDetailInner() {
 
   const isMember = members?.some((m: any) => m.user_id === user?.id);
   const isCreator = plan?.creator_id === user?.id;
+
+  // Quien no es del plan recibe la lista vacía por RLS, así que el conteo no
+  // puede salir de ahí: sale de social_plans.members_count, que el trigger
+  // mantiene y no filtra quiénes son.
+  const soyDelPlan = Boolean(isMember || isCreator);
+  const memberCount = (plan as { members_count?: number } | undefined)?.members_count ?? members?.length ?? 0;
   const isPast = plan?.plan_date ? new Date(plan.plan_date + 'T23:59:59') < new Date() : false;
 
   const requestJoin = useMutation({
@@ -200,7 +206,7 @@ function PlanDetailInner() {
 
         {/* Cuánto beneficio tiene desbloqueado el grupo tal como está hoy */}
         {campaignTiers && campaignTiers.length > 0 && (
-          <OfferLadder tiers={campaignTiers} partySize={members?.length ?? 1} compact />
+          <OfferLadder tiers={campaignTiers} partySize={memberCount || 1} compact />
         )}
 
         {plan.description && <p className="text-sm text-gray-600 leading-relaxed">{plan.description}</p>}
@@ -216,7 +222,7 @@ function PlanDetailInner() {
           </div>
           <div className="bg-gray-50 rounded-xl p-3">
             <div className="flex items-center gap-1 text-xs text-gray-400 mb-0.5"><Users size={12} /> Grupo</div>
-            <p className="text-sm font-medium">{members?.length ?? 0} / {plan.max_members}</p>
+            <p className="text-sm font-medium">{memberCount} / {plan.max_members}</p>
           </div>
           {plan.meeting_point && (
             <div className="bg-gray-50 rounded-xl p-3 col-span-2">
@@ -232,9 +238,23 @@ function PlanDetailInner() {
           {plan.creator && <ProfileCard profile={plan.creator as any} compact />}
         </div>
 
-        {/* Members */}
+        {/*
+          Miembros.
+
+          Desde 017_privacidad_social.sql la lista sólo la ve quien es del
+          plan: sumarse a algo no es un acto público y `members_select` con
+          USING (true) dejaba bajar el grafo social entero sin siquiera tener
+          sesión. Para el resto el plan dice cuánta gente va, no quién.
+        */}
         <div>
-          <h3 className="font-semibold text-sm mb-2">Miembros ({members?.length ?? 0})</h3>
+          <h3 className="font-semibold text-sm mb-2">
+            Miembros ({memberCount})
+          </h3>
+          {!soyDelPlan ? (
+            <p className="text-xs text-gray-400 bg-gray-50 rounded-xl px-3 py-2.5">
+              🔒 Quiénes van se ve al entrar al plan.
+            </p>
+          ) : (
           <div className="flex flex-wrap gap-2">
             {members?.map((m: any) => (
               <Link key={m.id} href={`/perfil/ver?id=${m.user_id}`}
@@ -247,6 +267,7 @@ function PlanDetailInner() {
               </Link>
             ))}
           </div>
+          )}
         </div>
 
         {/* Pending requests (creator only) */}
@@ -291,7 +312,7 @@ function PlanDetailInner() {
                   `📋 Plan: ${plan.title}\n` +
                   `📅 Cuándo: ${planDate}${plan.plan_time ? ` a las ${plan.plan_time.slice(0, 5)}` : ''}\n` +
                   `📍 Dónde: ${plan.meeting_point || 'Sin punto fijo'}\n` +
-                  `👥 Con ${(members?.length ?? 1)} personas\n\n` +
+                  `👥 Con ${memberCount || 1} personas\n\n` +
                   `🗺️ Mi ubicación actual: ${locationUrl || 'No disponible'}\n\n` +
                   `Si no te aviso que llegué bien, llamame 💛`
                 );

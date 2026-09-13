@@ -33,6 +33,22 @@ interface ReadState {
   last_read_at: string | null;
 }
 
+/** Cuántos mensajes por tanda. Suficiente para llenar la pantalla y poco para la red. */
+const CHAT_PAGE = 50;
+
+/**
+ * Une dos tandas por id sin duplicar y deja todo ordenado por fecha.
+ *
+ * El id es la única clave confiable: el mensaje optimista y el real tienen
+ * contenido idéntico y fechas casi iguales.
+ */
+function mergeById(a: ChatMessage[], b: ChatMessage[]): ChatMessage[] {
+  const porId = new Map<string, ChatMessage>();
+  for (const m of a) porId.set(m.id, m);
+  for (const m of b) porId.set(m.id, m);
+  return Array.from(porId.values()).sort((x, y) => x.created_at.localeCompare(y.created_at));
+}
+
 function sameDay(a: string, b: string) {
   return new Date(a).toDateString() === new Date(b).toDateString();
 }
@@ -74,21 +90,80 @@ function ChatInner() {
     enabled: !!planId,
   });
 
+  /**
+   * Mensajes, en dos modos: primera carga y incremental.
+   *
+   * Antes esto bajaba `.order('created_at', ascending: true).limit(200)`
+   * cada 3 segundos. Dos problemas graves:
+   *
+   *  1. Ascendente con límite trae los 200 mensajes MÁS VIEJOS. En un chat
+   *     que pase de 200 te quedabas mirando el historial antiguo y los
+   *     mensajes nuevos no aparecían nunca.
+   *  2. Bajar 200 filas con el perfil embebido cada 3 s, por cada persona
+   *     con el chat abierto, es una barbaridad. Con mil chats activos son
+   *     unas 300 consultas por segundo devolviendo 200 filas cada una. Es
+   *     exactamente la lentitud que se nota al escribir.
+   *
+   * Ahora la primera carga trae los últimos CHAT_PAGE y el sondeo pide sólo
+   * lo posterior al último mensaje que ya tenemos: casi siempre cero filas,
+   * y cuando hay algo, una o dos. El `created_at` del corte sale de una fila
+   * que ya vino del servidor, así que no depende del reloj del teléfono.
+   */
   const { data: messages } = useQuery({
     queryKey: ['chat_messages', planId],
     queryFn: async () => {
-      const rows = await sb(
-        supabase.from('plan_chat_messages')
-          .select('*, user:profiles(full_name, avatar_url)')
-          .eq('plan_id', planId)
-          .order('created_at', { ascending: true })
-          .limit(200),
+      const cached = queryClient.getQueryData<ChatMessage[]>(['chat_messages', planId]) ?? [];
+      const desde = cached.length ? cached[cached.length - 1].created_at : null;
+
+      const base = () => supabase
+        .from('plan_chat_messages')
+        .select('*, user:profiles!user_id(full_name, avatar_url)')
+        .eq('plan_id', planId);
+
+      if (desde) {
+        const nuevos = await sb(
+          base().gt('created_at', desde).order('created_at', { ascending: true }).limit(CHAT_PAGE),
+        );
+        if (!nuevos?.length) return cached;
+        return mergeById(cached, nuevos as ChatMessage[]);
+      }
+
+      // Descendente + reverse: los ÚLTIMOS CHAT_PAGE, que es lo que se quiere ver.
+      const ultimos = await sb(
+        base().order('created_at', { ascending: false }).limit(CHAT_PAGE),
       );
-      return (rows ?? []) as ChatMessage[];
+      return ((ultimos ?? []) as ChatMessage[]).slice().reverse();
     },
     enabled: !!planId,
-    refetchInterval: 3000,
+    refetchInterval: 4000,
   });
+
+  /** Trae la tanda anterior a lo que ya está cargado. */
+  const [cargandoViejos, setCargandoViejos] = useState(false);
+  const [hayMasViejos, setHayMasViejos] = useState(true);
+
+  const cargarAnteriores = async () => {
+    const cached = queryClient.getQueryData<ChatMessage[]>(['chat_messages', planId]) ?? [];
+    if (!planId || !cached.length || cargandoViejos) return;
+    setCargandoViejos(true);
+    try {
+      const viejos = await sb(
+        supabase.from('plan_chat_messages')
+          .select('*, user:profiles!user_id(full_name, avatar_url)')
+          .eq('plan_id', planId)
+          .lt('created_at', cached[0].created_at)
+          .order('created_at', { ascending: false })
+          .limit(CHAT_PAGE),
+      );
+      const tanda = ((viejos ?? []) as ChatMessage[]).slice().reverse();
+      if (tanda.length < CHAT_PAGE) setHayMasViejos(false);
+      if (tanda.length) {
+        queryClient.setQueryData<ChatMessage[]>(['chat_messages', planId], mergeById(tanda, cached));
+      }
+    } finally {
+      setCargandoViejos(false);
+    }
+  };
 
   /** Quién leyó hasta cuándo, para el visto. */
   const { data: reads } = useQuery({
@@ -281,6 +356,19 @@ function ChatInner() {
       </header>
 
       <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto px-4 py-3 space-y-1">
+        {/* Paginación hacia atrás: la primera carga trae sólo la última tanda. */}
+        {hayMasViejos && all.length >= CHAT_PAGE && (
+          <div className="flex justify-center pb-2">
+            <button
+              onClick={() => void cargarAnteriores()}
+              disabled={cargandoViejos}
+              className="text-[0.7rem] text-gray-500 bg-white border border-gray-200 rounded-full px-4 py-1.5 disabled:opacity-50"
+            >
+              {cargandoViejos ? 'Cargando...' : 'Ver mensajes anteriores'}
+            </button>
+          </div>
+        )}
+
         {all.length === 0 && (
           <div className="text-center py-10 text-gray-400 text-sm">
             <p className="text-3xl mb-2">💬</p>
@@ -377,58 +465,86 @@ function ChatInner() {
       )}
 
       {/* Detalle de lectura, como el "Info del mensaje" de WhatsApp */}
+      {/*
+        Info del mensaje.
+
+        Lo que se puede saber de verdad es hasta cuándo leyó cada persona el
+        chat, no a qué hora abrió este mensaje puntual: la marca de lectura
+        es una por persona y por plan, no una por mensaje. Decir "lo leyó a
+        las 14:32" sería inventar. Así que se muestra la última lectura y se
+        dice que es eso.
+      */}
       {infoOf && (
         <div
           className="fixed inset-0 z-40 bg-black/40 flex items-end"
           onClick={() => setInfoOf(null)}
         >
           <div
-            className="bg-white w-full max-w-lg mx-auto rounded-t-3xl p-5 pb-8"
+            className="bg-white w-full max-w-lg mx-auto rounded-t-3xl p-5 pb-8 max-h-[80vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between gap-3 mb-4">
-              <div className="min-w-0">
-                <p className="text-xs text-gray-400">Info del mensaje</p>
-                <p className="text-sm font-medium truncate">{infoOf.content}</p>
-              </div>
-              <button onClick={() => setInfoOf(null)} className="p-1 text-gray-400 shrink-0">
+            <div className="flex items-start justify-between gap-3 mb-1">
+              <p className="text-xs font-bold text-gray-400">Info del mensaje</p>
+              <button onClick={() => setInfoOf(null)} className="p-1 -mt-1 text-gray-400 shrink-0">
                 <X size={18} />
               </button>
             </div>
 
+            {/* El mensaje completo: antes iba en una línea con `truncate` y
+                de un mensaje largo no se veía casi nada. */}
+            <div className="bg-brand-50 border border-brand-100 rounded-xl px-3 py-2 mb-4">
+              <p className="text-sm whitespace-pre-wrap break-words leading-snug">{infoOf.content}</p>
+              <p className="text-[0.6rem] text-gray-400 mt-1">
+                Enviado {dayLabel(infoOf.created_at).toLowerCase()} a las{' '}
+                {new Date(infoOf.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+              </p>
+            </div>
+
             {(() => {
-              const readers = seenBy(infoOf.created_at);
-              const readerIds = new Set(readers.map(r => r.user_id));
-              const pendientes = (reads ?? []).filter(r => !readerIds.has(r.user_id));
+              const leyeron = seenBy(infoOf.created_at);
+              const idsLeyeron = new Set(leyeron.map(r => r.user_id));
+              const pendientes = (reads ?? []).filter(r => !idsLeyeron.has(r.user_id));
+
+              const fila = (r: ReadState, leido: boolean) => (
+                <div key={r.user_id} className="flex items-center gap-2.5 py-1.5">
+                  <span className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-[0.6rem] font-bold text-gray-500 shrink-0 overflow-hidden">
+                    {r.avatar_url
+                      ? <img src={r.avatar_url} alt="" className="w-full h-full object-cover" />
+                      : (r.full_name?.[0]?.toUpperCase() ?? '?')}
+                  </span>
+                  <span className="text-sm flex-1 min-w-0 truncate">{r.full_name ?? 'Alguien del grupo'}</span>
+                  {leido && r.last_read_at && (
+                    <span className="text-[0.6rem] text-gray-400 shrink-0">
+                      leyó {new Date(r.last_read_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  )}
+                </div>
+              );
+
               return (
-                <div className="space-y-4">
+                <div className="space-y-5">
                   <div>
-                    <p className="text-[0.7rem] font-bold text-sky-500 flex items-center gap-1.5 mb-2">
-                      <CheckCheck size={13} /> Leído por {readers.length}
+                    <p className="text-[0.7rem] font-bold text-sky-500 flex items-center gap-1.5 mb-1">
+                      <CheckCheck size={13} /> Leído por {leyeron.length} de {reads?.length ?? 0}
                     </p>
-                    {readers.length === 0 ? (
-                      <p className="text-xs text-gray-400 pl-5">Todavía nadie</p>
-                    ) : readers.map(r => (
-                      <div key={r.user_id} className="flex items-center justify-between py-1 pl-5">
-                        <span className="text-sm">{r.full_name}</span>
-                        <span className="text-[0.65rem] text-gray-400">
-                          {r.last_read_at && new Date(r.last_read_at).toLocaleTimeString('es-AR',
-                            { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                    ))}
+                    {leyeron.length === 0
+                      ? <p className="text-xs text-gray-400 py-1.5">Todavía nadie.</p>
+                      : leyeron.map(r => fila(r, true))}
                   </div>
 
                   {pendientes.length > 0 && (
                     <div>
-                      <p className="text-[0.7rem] font-bold text-gray-400 flex items-center gap-1.5 mb-2">
+                      <p className="text-[0.7rem] font-bold text-gray-400 flex items-center gap-1.5 mb-1">
                         <Check size={13} /> Sin leer {pendientes.length}
                       </p>
-                      {pendientes.map(r => (
-                        <p key={r.user_id} className="text-sm text-gray-500 py-1 pl-5">{r.full_name}</p>
-                      ))}
+                      {pendientes.map(r => fila(r, false))}
                     </div>
                   )}
+
+                  <p className="text-[0.6rem] text-gray-400 leading-relaxed border-t border-gray-100 pt-3">
+                    La hora es la de la última vez que esa persona abrió el chat,
+                    no la de este mensaje en particular.
+                  </p>
                 </div>
               );
             })()}
