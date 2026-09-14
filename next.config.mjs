@@ -50,7 +50,7 @@ function checkEnv(phase) {
 
     NEXT_PUBLIC_SUPABASE_URL=https://<TU_PROJECT_REF>.supabase.co
     NEXT_PUBLIC_SUPABASE_ANON_KEY=<tu anon / publishable key>
-    NEXT_PUBLIC_SITE_URL=https://<donde publiques la web>
+    NEXT_PUBLIC_SITE_URL=https://<usuario>.github.io/Pinto
 
   Los valores están en Supabase Dashboard > Project Settings > API Keys.
   Ver .env.example y README.md.

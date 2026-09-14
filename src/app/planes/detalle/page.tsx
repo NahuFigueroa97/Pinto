@@ -16,6 +16,7 @@ import { QueryState } from '@/components/shared/QueryState';
 import { tap } from '@/lib/haptics';
 import { compartirPlan } from '@/lib/compartir';
 import { exito } from '@/lib/haptics';
+import { useBlockedIds } from '@/lib/blocks';
 
 function PlanDetailInner() {
   const searchParams = useSearchParams();
@@ -90,6 +91,7 @@ function PlanDetailInner() {
   // haya en el grupo AHORA. Es el gancho: sumar uno más mejora el descuento.
   const { data: campaignTiers } = useCampaignTiers(plan?.campaign_id);
 
+  const { isBlocked } = useBlockedIds();
   const isMember = members?.some((m: any) => m.user_id === user?.id);
   const isCreator = plan?.creator_id === user?.id;
 
@@ -110,11 +112,18 @@ function PlanDetailInner() {
       // porque el creador te bloqueó) el formulario se cerraba como si
       // hubiera funcionado y la solicitud nunca existía.
       if (error) {
-        throw new Error(
-          error.code === '42501'
-            ? 'No podés pedir unirte a este plan.'
-            : 'No se pudo enviar la solicitud. Probá de nuevo.',
-        );
+        // 42501 = la policy lo rechazó. La causa típica es que el creador te
+        // bloqueó, pero el mensaje NO lo dice: enterarte de que te bloquearon
+        // es justamente lo que un bloqueo no tiene que revelar.
+        if (error.code === '42501') throw new Error('No podés pedir unirte a este plan.');
+
+        // 23514 = los límites de 018_limites_abuso.sql, que ya traen un
+        // mensaje escrito para el usuario ("Pediste sumarte a demasiados
+        // planes hoy"). Reemplazarlo por uno genérico perdía la única parte
+        // útil: qué pasó y cuándo volver a intentar.
+        if (error.code === '23514' && error.message) throw new Error(error.message);
+
+        throw new Error('No se pudo enviar la solicitud. Probá de nuevo.');
       }
     },
     onSuccess: () => {
@@ -277,12 +286,24 @@ function PlanDetailInner() {
           <div className="flex flex-wrap gap-2">
             {members?.map((m: any) => (
               <Link key={m.id} href={`/perfil/ver?id=${m.user_id}`}
-                className="flex items-center gap-1.5 bg-surface border border-line rounded-full px-3 py-1.5 text-sm">
+                className={`flex items-center gap-1.5 border rounded-full px-3 py-1.5 text-sm ${
+                  isBlocked(m.user_id) ? 'bg-canvas border-line-strong opacity-70' : 'bg-surface border-line'
+                }`}>
                 <span className="w-6 h-6 rounded-full bg-brand-100 flex items-center justify-center text-[0.55rem] font-bold text-brand-600">
                   {m.user?.full_name?.[0]?.toUpperCase() ?? '?'}
                 </span>
                 <span className="text-xs font-medium">{m.user?.full_name}</span>
                 {m.role === 'creator' && <span className="text-[0.55rem] text-accent-500">👑</span>}
+                {/*
+                  A la gente bloqueada se le esconden los mensajes, pero NO se
+                  la saca de esta lista: saber quién va a la juntada es
+                  información de seguridad. Enterarte recién al llegar de que
+                  está la persona que bloqueaste es exactamente lo que no
+                  puede pasar. Se marca y se decide.
+                */}
+                {isBlocked(m.user_id) && (
+                  <span className="text-[0.55rem] font-semibold text-muted">🚫 bloqueada</span>
+                )}
               </Link>
             ))}
           </div>

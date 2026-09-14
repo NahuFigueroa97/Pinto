@@ -147,6 +147,15 @@ function UserProfile() {
           </Link>
         )}
 
+        <Link href="/perfil/bloqueados" className="flex items-center gap-3 p-4 bg-surface rounded-xl border border-line shadow-sm">
+          <span className="text-xl">🚫</span>
+          <div>
+            <span className="font-medium text-sm block">Bloqueados</span>
+            <span className="text-[0.6rem] text-faint">Quiénes no te pueden contactar</span>
+          </div>
+          <ChevronRight size={16} className="ml-auto text-faint" />
+        </Link>
+
         <SelectorTema />
         <button onClick={async () => { await signOut(); router.push('/'); }}
           className="flex items-center gap-3 p-4 bg-surface rounded-xl border border-line shadow-sm w-full text-left">
@@ -241,6 +250,15 @@ function BusinessProfile() {
         <Link href="/perfil/editar" className="flex items-center gap-3 p-4 bg-surface rounded-xl border border-line shadow-sm">
           <span className="text-xl">⚙️</span>
           <span className="font-medium text-sm">Configuración de cuenta</span>
+          <ChevronRight size={16} className="ml-auto text-faint" />
+        </Link>
+
+        <Link href="/perfil/bloqueados" className="flex items-center gap-3 p-4 bg-surface rounded-xl border border-line shadow-sm">
+          <span className="text-xl">🚫</span>
+          <div>
+            <span className="font-medium text-sm block">Bloqueados</span>
+            <span className="text-[0.6rem] text-faint">Quiénes no te pueden contactar</span>
+          </div>
           <ChevronRight size={16} className="ml-auto text-faint" />
         </Link>
 

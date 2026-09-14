@@ -31,7 +31,7 @@ NEXT_PUBLIC_SUPABASE_URL=https://<TU_PROJECT_REF>.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_anon_key_aqui
 # URL pública donde están publicadas las páginas. Obligatoria para que el mail
 # de recuperación de contraseña no apunte a https://localhost dentro del APK.
-NEXT_PUBLIC_SITE_URL=https://tu-dominio-o-github-pages
+NEXT_PUBLIC_SITE_URL=https://nahufigueroa97.github.io/Pinto
 ```
 
 > `next build` inlinea estas variables **en tiempo de build**: si cambian hay

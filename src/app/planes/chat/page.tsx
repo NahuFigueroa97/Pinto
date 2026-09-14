@@ -343,11 +343,28 @@ function ChatInner() {
     inputRef.current?.focus();
   };
 
+  /**
+   * El visto no cuenta a quien bloqueaste.
+   *
+   * Sus mensajes ya no se ven (filterBlocked), pero seguía contando para el
+   * total: con una sola persona bloqueada en el grupo, "Visto por todos"
+   * era inalcanzable para siempre y el panel de info listaba a alguien cuyos
+   * mensajes no se ven. Si se lo esconde de un lado, hay que esconderlo de
+   * los dos.
+   *
+   * A quien te bloqueó a vos sí se lo sigue contando: no te enterás de que
+   * te bloquearon, igual que en WhatsApp.
+   */
+  const lecturas = useMemo(
+    () => (reads ?? []).filter(r => !blockedSet.has(r.user_id)),
+    [reads, blockedSet],
+  );
+
+  const others = lecturas.length;
+
   /** Cuántos miembros leyeron un mensaje dado. */
   const seenBy = (iso: string) =>
-    (reads ?? []).filter(r => r.last_read_at && new Date(r.last_read_at) >= new Date(iso));
-
-  const others = reads?.length ?? 0;
+    lecturas.filter(r => r.last_read_at && new Date(r.last_read_at) >= new Date(iso));
 
   return (
     <div className="flex flex-col h-[100dvh] max-w-lg mx-auto bg-canvas">
@@ -509,7 +526,7 @@ function ChatInner() {
             {(() => {
               const leyeron = seenBy(infoOf.created_at);
               const idsLeyeron = new Set(leyeron.map(r => r.user_id));
-              const pendientes = (reads ?? []).filter(r => !idsLeyeron.has(r.user_id));
+              const pendientes = lecturas.filter(r => !idsLeyeron.has(r.user_id));
 
               const fila = (r: ReadState, leido: boolean) => (
                 <div key={r.user_id} className="flex items-center gap-2.5 py-1.5">
@@ -531,7 +548,7 @@ function ChatInner() {
                 <div className="space-y-5">
                   <div>
                     <p className="text-[0.7rem] font-bold text-sky-500 flex items-center gap-1.5 mb-1">
-                      <CheckCheck size={13} /> Leído por {leyeron.length} de {reads?.length ?? 0}
+                      <CheckCheck size={13} /> Leído por {leyeron.length} de {others}
                     </p>
                     {leyeron.length === 0
                       ? <p className="text-xs text-faint py-1.5">Todavía nadie.</p>

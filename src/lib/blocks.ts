@@ -51,6 +51,57 @@ export function useBlockedIds() {
   };
 }
 
+export interface PerfilBloqueado {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  blocked_at: string;
+}
+
+/**
+ * Los perfiles que bloqueaste, con nombre y foto.
+ *
+ * useBlockedIds sólo devuelve ids, que sirve para filtrar listados pero no
+ * para mostrarle a alguien a quién tiene bloqueado. Sin esta consulta no hay
+ * forma de armar la pantalla de "Bloqueados" — y sin esa pantalla no hay
+ * forma de desbloquear a nadie, porque al bloquear a alguien desaparece de
+ * todos los listados y su perfil deja de ser alcanzable.
+ *
+ * El hint !blocked_id no es opcional: user_blocks tiene DOS claves foráneas
+ * a profiles (blocker_id y blocked_id), así que sin decir cuál se usa,
+ * PostgREST falla con PGRST201.
+ */
+export function useBlockedProfiles() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: [...BLOCKED_IDS_KEY, 'perfiles', user?.id],
+    queryFn: async () => {
+      if (!user) return [] as PerfilBloqueado[];
+      const { data, error } = await supabase
+        .from('user_blocks')
+        .select('created_at, blocked:profiles!blocked_id(id, full_name, avatar_url)')
+        .eq('blocker_id', user.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+
+      type Embebido = {
+        created_at: string;
+        // Sin tipos generados, supabase-js asume que todo embed es una lista
+        // aunque la relación sea a-uno. En runtime acá viene un objeto.
+        blocked: PerfilBloqueado | PerfilBloqueado[] | null;
+      };
+
+      return ((data ?? []) as unknown as Embebido[]).flatMap((fila) => {
+        const p = Array.isArray(fila.blocked) ? fila.blocked[0] : fila.blocked;
+        // Si el perfil se borró, la fila de bloqueo sobra: no hay a quién mostrar.
+        return p ? [{ ...p, blocked_at: fila.created_at }] : [];
+      });
+    },
+    enabled: !!user,
+  });
+}
+
 /** Bloquear / desbloquear a otra persona. */
 export function useBlockUser() {
   const { user } = useAuth();
