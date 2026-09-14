@@ -40,15 +40,44 @@ NEXT_PUBLIC_SITE_URL=https://pinto.com.ar
 De ahí sale el link que arma `src/lib/compartir.ts`. Ojo: se inlinea en
 tiempo de build, así que hay que rehacer `next build` y `npx cap sync`.
 
-### 2. Sacar el SHA-256 del certificado de firma
+> Ya está puesto `pintoAppLinkHost=nahufigueroa97.github.io`.
 
-**Tiene que ser el del certificado con el que Google Play firma la app**, no
-el de tu keystore local. Si usás Play App Signing (lo normal), está en:
+### 2. Sacar las huellas SHA-256
+
+Son **dos**, y hacen falta las dos:
+
+| Cuál | Para qué | De dónde |
+|---|---|---|
+| **Debug** | Que el link abra la app que instalás vos con `npm run android:dev` | tu `~/.android/debug.keystore` |
+| **Play App Signing** | Que el link abra la app de quien la instala desde Play | Play Console |
+
+El script las junta y arma el archivo:
+
+```bash
+npm run assetlinks                    # sólo la de debug
+npm run assetlinks -- AA:BB:CC:...    # + la de Play
+```
+
+Guardarlo directo:
+
+```bash
+npm run assetlinks -- AA:BB:CC:... > assetlinks.json
+```
+
+> Las huellas SHA-256 **no son secretas**: el archivo que generás se publica
+> en internet para que Android lo lea. No hay nada que proteger ahí.
+
+#### La de Play
+
+
+
+**Tiene que ser el del certificado con el que Google Play firma la app.** Si
+usás Play App Signing (lo normal), está en:
 
 > Play Console → tu app → Configuración → Integridad de la aplicación →
 > Firma de apps → *Huella digital del certificado SHA-256*
 
-Si firmás vos:
+Si firmás vos, sin Play App Signing:
 
 ```bash
 keytool -list -v -keystore /ruta/al/pinto.keystore -alias pinto | grep SHA256
@@ -70,8 +99,22 @@ En `https://<tu-dominio>/.well-known/assetlinks.json`, servido como
 }]
 ```
 
-Si firmás local **y** con Play App Signing, poné las dos huellas en el
-arreglo: durante las pruebas internas conviven.
+El arreglo admite varias huellas y conviene que estén todas: la de debug, la
+de Play y —si firmás local— la tuya. Conviven sin problema.
+
+## Por qué no alcanza con instalar la app
+
+Desde **Android 12 no hay término medio**: si la verificación del dominio no
+da, el link **no abre la app nunca**, ni siquiera preguntando. Antes aparecía
+un "¿con qué querés abrirlo?"; ahora va directo al navegador y no hay ninguna
+señal de que algo falló.
+
+Por eso el `assetlinks.json` no es un extra: sin él, todo el resto del
+mecanismo está pero no se activa.
+
+(Como salida manual, el usuario puede ir a Ajustes → Aplicaciones → Pintó →
+*Abrir de forma predeterminada* → Agregar enlace. Pero eso no se le puede
+pedir a nadie.)
 
 ## Probar
 

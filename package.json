@@ -20,7 +20,8 @@
     "android:logs": "adb logcat -s Capacitor:V Capacitor/Console:V chromium:V FirebaseMessaging:V",
     "check:embeds": "node scripts/check-embeds.mjs",
     "verify": "npm run typecheck && npm run lint && npm run check:embeds && npm run check:spinners",
-    "check:spinners": "node scripts/check-spinners.mjs"
+    "check:spinners": "node scripts/check-spinners.mjs",
+    "assetlinks": "node scripts/assetlinks.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.1",
