@@ -75,6 +75,9 @@ export default function AdminDashboard() {
       const data = await sb(supabase
         .from('businesses')
         .select('*, category:business_categories(name, icon), owner:profiles(full_name, role)')
+        // Los ocultados por denuncias primero: con el alta automática, es lo
+        // único de esta pestaña que pide una decisión.
+        .order('status', { ascending: true })
         .order('created_at', { ascending: false })
         .limit(50));
       return data ?? [];
@@ -191,19 +194,30 @@ export default function AdminDashboard() {
               <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusColors[b.status]}`}>{b.status}</span>
             </div>
             <div className="flex gap-2 mt-3">
-              {b.status === 'pending' && (
+              {/*
+                Desde 020 el rol acá dejó de ser el de portero y pasó a ser el
+                de excepción: los negocios se publican solos y se ocultan
+                solos si varias personas los denuncian. Lo que queda es
+                revisar esos casos y devolverlos si la denuncia era infundada.
+              */}
+              {b.status === 'suspended' && (
                 <>
                   <button onClick={() => updateBizStatus.mutate({ id: b.id, status: 'active' })} className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-300">
-                    <Check size={12} /> Aprobar
+                    <Check size={12} /> Restablecer
                   </button>
                   <button onClick={() => updateBizStatus.mutate({ id: b.id, status: 'rejected' })} className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full bg-red-50 text-red-500 dark:bg-red-500/15 dark:text-red-300">
-                    <X size={12} /> Rechazar
+                    <X size={12} /> Rechazar definitivo
                   </button>
                 </>
               )}
-              {b.status === 'active' && (
+              {(b.status === 'active' || b.status === 'pending') && (
                 <button onClick={() => updateBizStatus.mutate({ id: b.id, status: 'suspended' })} className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full bg-red-50 text-red-500 dark:bg-red-500/15 dark:text-red-300">
-                  Suspender
+                  Ocultar
+                </button>
+              )}
+              {b.status === 'rejected' && (
+                <button onClick={() => updateBizStatus.mutate({ id: b.id, status: 'active' })} className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-300">
+                  <Check size={12} /> Restablecer
                 </button>
               )}
             </div>

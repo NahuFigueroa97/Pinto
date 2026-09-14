@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ArrowLeft, MapPin, Clock, Phone, Instagram, MessageCircle, Heart, ChevronRight, Star } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, Phone, Instagram, MessageCircle, Heart, ChevronRight, Star, Flag } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -111,7 +111,9 @@ function NegocioDetalleInner() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-display font-bold">{business.name}</h1>
-            {business.is_verified && <span className="text-blue-500 text-sm">✔</span>}
+            {business.is_verified
+              ? <span className="text-blue-500 text-sm" title="Verificado">✔</span>
+              : <span className="text-[0.6rem] font-medium px-2 py-0.5 rounded-full bg-subtle text-muted">sin verificar</span>}
           </div>
           <p className="text-sm text-muted">{(business.category as any)?.name} · {(business.zone as any)?.name ?? (business.city as any)?.name}</p>
         </div>
@@ -160,6 +162,22 @@ function NegocioDetalleInner() {
               ))}
             </div>
           )}
+
+          {/*
+            Denunciar.
+
+            Desde 020 los negocios se publican sin que nadie los revise antes.
+            La contrapartida obligatoria es que cualquiera pueda avisar si el
+            local no existe o la promo es mentira: con tres denuncias de
+            personas distintas el negocio se oculta solo, sin esperar a que un
+            administrador entre.
+          */}
+          <Link
+            href={`/reportar?type=business&id=${business.id}`}
+            className="flex items-center justify-center gap-1.5 w-full min-h-[44px] mt-2 text-xs font-medium text-faint"
+          >
+            <Flag size={13} /> Denunciar este negocio
+          </Link>
         </div>
       </div>
     </div>

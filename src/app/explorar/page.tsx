@@ -130,7 +130,12 @@ export default function ExplorarPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <h3 className="font-semibold text-sm truncate">{biz.name}</h3>
-                  {biz.is_verified && <span className="text-blue-500 shrink-0" title="Verificado">✔</span>}
+                  {biz.is_verified
+                    ? <span className="text-blue-500 shrink-0" title="Verificado">✔</span>
+                    /* Los negocios se publican sin revisión previa, así que la
+                       etiqueta no es decorativa: es lo único que le dice a la
+                       gente que todavía nadie comprobó que el local exista. */
+                    : <span className="shrink-0 text-[0.55rem] font-medium px-1.5 py-0.5 rounded-full bg-subtle text-muted" title="Todavía nadie canjeó una promo acá">sin verificar</span>}
                   {biz.is_featured && <Star size={12} className="text-yellow-500 fill-yellow-500 shrink-0" />}
                 </div>
                 <p className="text-xs text-muted truncate">{(biz.category as any)?.name}</p>

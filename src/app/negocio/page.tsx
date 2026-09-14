@@ -11,6 +11,7 @@ import { Link2 } from 'lucide-react';
 import { useState } from 'react';
 import { sb } from '@/lib/sb';
 import { PageSpinner } from '@/components/shared/PageSpinner';
+import type { BusinessLimits } from '@/types/database';
 
 export default function NegocioDashboard() {
   const { user } = useAuth();
@@ -61,12 +62,9 @@ export default function NegocioDashboard() {
     queryFn: async () => {
       const { data, error } = await supabase.rpc('business_limits', { p_business_id: business!.id });
       if (error) throw error;
-      return data as {
-        plan: { slug: string; name: string; price_monthly: number };
-        campaigns: { used: number; max: number | null };
-        featured: { used: number; max: number | null };
-        can_create: boolean;
-      };
+      // El tipo vive en src/types/database.ts junto al resto: repetido acá se
+      // desincronizó apenas business_limits() devolvió un campo más.
+      return data as BusinessLimits;
     },
     enabled: !!business?.id,
   });
@@ -149,22 +147,58 @@ export default function NegocioDashboard() {
       </header>
 
       {/*
-        Los negocios entran como 'pending' y los aprueba un admin. Antes el
-        alta mandaba status:'active' desde el cliente y se salteaba la
-        moderación; ahora hay que avisarle al dueño que está en revisión, si
-        no no entiende por qué su negocio no aparece en Explorar.
+        Estado del negocio.
+
+        Desde 020 ya no hay 'pending': el negocio se publica al instante. Lo
+        que queda acá es lo excepcional — que se haya ocultado por denuncias.
+        Antes esto explicaba una espera que podía durar días y que dependía
+        de que una persona se acordara de entrar al panel.
       */}
       {business.status !== 'active' && (
-        <div className="mx-4 mb-3 rounded-2xl border border-yellow-200 bg-yellow-50 p-3">
-          <p className="text-sm font-bold text-yellow-800">
-            {business.status === 'pending' ? '⏳ Tu negocio está en revisión' :
-             business.status === 'suspended' ? '⛔ Tu negocio está suspendido' :
-             '❌ Tu negocio fue rechazado'}
+        <div className="mx-4 mb-3 rounded-2xl border border-yellow-200 bg-yellow-50 dark:bg-yellow-500/15 dark:border-yellow-500/30 p-3">
+          <p className="text-sm font-bold text-yellow-800 dark:text-yellow-200">
+            {business.status === 'suspended' ? '⛔ Tu negocio está oculto' : '❌ Tu negocio fue rechazado'}
           </p>
-          <p className="text-xs text-yellow-700 mt-0.5">
-            {business.status === 'pending'
-              ? 'Podés ir cargando tus promos. Cuando lo aprobemos va a aparecer en Explorar y en Cerca mío.'
+          <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-0.5">
+            {business.status === 'suspended'
+              ? 'Recibimos varias denuncias y lo pausamos mientras las revisamos. Si creés que es un error, escribinos a soporte@pinto.app.'
               : 'Escribinos a soporte@pinto.app para revisar tu caso.'}
+          </p>
+        </div>
+      )}
+
+      {/*
+        Verificación.
+
+        El sello no lo da nadie a mano: se gana cuando varias personas
+        DISTINTAS canjean una promo en el local. Mostrar cuánto falta —y no
+        un "verificate" a secas— convierte la etiqueta en algo accionable:
+        lo que hay que hacer es conseguir clientes, que es lo que el negocio
+        quiere hacer igual.
+      */}
+      {business.status === 'active' && limits && !limits.verification?.verified && (
+        <div className="mx-4 mb-3 rounded-2xl border border-line bg-surface p-3.5 shadow-sm">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <p className="text-sm font-bold text-ink">Sin verificar todavía</p>
+            <span className="text-[0.6rem] font-medium px-2 py-0.5 rounded-full bg-subtle text-muted">
+              {limits.verification.people_so_far} de {limits.verification.people_needed}
+            </span>
+          </div>
+
+          <div className="h-1.5 rounded-full bg-subtle overflow-hidden mb-2">
+            <div
+              className="h-full bg-brand-500 rounded-full transition-all"
+              style={{ width: `${Math.min(100, (limits.verification.people_so_far / limits.verification.people_needed) * 100)}%` }}
+            />
+          </div>
+
+          <p className="text-xs text-muted leading-relaxed">
+            {limits.verification.people_missing === 1
+              ? 'Falta que 1 persona más canjee una promo en tu local y se verifica solo.'
+              : `Faltan ${limits.verification.people_missing} personas más canjeando una promo en tu local y se verifica solo.`}
+          </p>
+          <p className="text-[0.65rem] text-faint mt-1.5">
+            Mientras tanto: hasta {limits.campaigns.max} promos activas y no podés destacarlas en la portada.
           </p>
         </div>
       )}

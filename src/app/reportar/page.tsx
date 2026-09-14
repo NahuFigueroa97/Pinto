@@ -19,7 +19,9 @@ const REASONS = [
 
 function ReportarInner() {
   const searchParams = useSearchParams();
-  const targetType = (searchParams.get('type') || 'user') as 'user' | 'plan';
+  // 'business' desde 020: los negocios se publican sin revisión previa, así
+  // que poder denunciarlos dejó de ser opcional.
+  const targetType = (searchParams.get('type') || 'user') as 'user' | 'plan' | 'photo' | 'business';
   const targetId = searchParams.get('id') || '';
   const router = useRouter();
   const { user } = useAuth();

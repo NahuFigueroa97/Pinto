@@ -49,6 +49,8 @@ Cerrá sesión y volvé a entrar en la app. Te va a aparecer
 | Denuncias ya resueltas | 180 días | `cleanup_old_reports()` |
 | Contadores (miembros, planes creados) | En cada alta/baja | Trigger `update_plan_counters()` |
 | Límites de abuso | En cada inserción | Triggers de `018_limites_abuso.sql` |
+| Verificación de negocios | Al 5º canje de personas distintas | Trigger `on_checkin_verify_business` |
+| Ocultar negocios denunciados | A la 3ª denuncia de personas distintas | Trigger `on_report_suspend_business` |
 
 Todo lo de limpieza corre junto, **una vez por día a las 4 AM**
 (`run_all_cleanups()`). Para ver qué borró la última corrida:
@@ -69,14 +71,17 @@ select jobname, schedule, active from cron.job;
 
 **Perfil → Panel de admin**, cinco pestañas:
 
-### Negocios — *bloqueante*
+### Negocios — *sólo excepciones*
 
-Todo negocio nuevo nace en `pending` y **no aparece en la app hasta que lo
-aprobás**. Es a propósito: si cualquiera pudiera publicarse solo, la app se
-llenaría de comercios falsos. Pero significa que si nadie entra a aprobar,
-para el dueño del bar la app simplemente no funciona.
+Desde `020_negocios_autoservicio.sql` **ya no hay que aprobar nada**. Los
+negocios se publican al instante marcados como "Sin verificar", y se
+verifican solos cuando **5 personas distintas** canjean una promo en el
+local. Mientras tanto tienen tope de 2 promos activas y no pueden destacarse
+en la portada.
 
-Es lo primero que hay que mirar todos los días al principio.
+Lo único que queda en esta pestaña es revisar los que se **ocultaron solos**
+por denuncias (3 personas distintas) y devolverlos si la denuncia era
+infundada. Salen primeros en la lista.
 
 ### Denuncias — *obligación de Google Play*
 

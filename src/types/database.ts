@@ -487,6 +487,13 @@ export interface BusinessLimits {
   featured: { used: number; max: number | null };
   can_create: boolean;
   max_tiers: number;
+  /** Desde 020: cuánto falta para que el negocio se verifique solo. */
+  verification: {
+    verified: boolean;
+    people_so_far: number;
+    people_needed: number;
+    people_missing: number;
+  };
 }
 
 /** Resultado de public.campaign_funnel(). */
